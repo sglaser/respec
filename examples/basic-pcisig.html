@@ -1,11 +1,23 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<html lang="en"
+      xml:lang="en"
+      xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="utf-8"/>
   <title>Basic ReSpec Evolution Example</title>
-  <!-- <script src="../js/deps/require.js" data-main="../js/profile-pcisig-common" async class="remove"></script> -->
-  <script src="https://sglaser.github.io/respec/builds/respec-pcisig-common.js" async class="remove"></script>
-  <!--  <script src="../builds/respec-pcisig-common.js" async class="remove"></script> -->
+  <!--<script src="../js/deps/jquery.js"></script>-->
+  <!--<script src="../js/deps/jquery.svg.js"></script>-->
+  <!--<script src="../js/deps/require.js"-->
+          <!--data-main="../js/profile-pcisig-common"-->
+          <!--async-->
+          <!--class="remove"></script>-->
+  <!--<script src="https://sglaser.github.io/respec/builds/respec-pcisig-common.js"-->
+  <!--async-->
+  <!--class="remove"></script>-->
+
+  <script async="async"
+          class="remove"
+          src="../builds/respec-pcisig-common.js"></script>
   <script class="remove">
     var respecConfig = {
       specStatus: "WD",
@@ -15,22 +27,37 @@
       shortName: "dahut",
       xcssOverride: "base.css",
       numberByChapter: "true",
-      previousStatus: "none"
+      previousStatus: "none",
+      cssOverride: "../Spec/StyleSheets/2017/base.css"
     };
   </script>
 </head>
 <body>
-<section id="conformance" class="introductory">CONFORMANCE SECTION</section>
+<nav id="toc">
+  <section class="introductory section-level-1"
+           id="sect-toc"></section>
+</nav>
+<nav id="tof">
+  <section class="introductory section-level-1"
+           id="sect-tof"></section>
+</nav>
+<nav id="toe">
+  <section class="introductory section-level-1"
+           id="sect-toe"></section>
+</nav>
+<nav id="tot">
+  <section class="introductory section-level-1"
+           id="sect-tot"></section>
+</nav>
+<section class="introductory"
+         id="conformance">
+  CONFORMANCE SECTION
+</section>
 <section id="abstract">
-  <p>
-    This is just a very basic document. [[!REX]]
-    [[DOM4]], [[XML10]], [[\WHATEVER]]
-  </p>
+  <p>This is just a very basic document. [[!REX]] [[DOM4]], [[XML10]], [[\WHATEVER]]</p>
 </section>
 <section id="sotd">
-  <p>
-    CUSTOM PARAGRAPH
-  </p>
+  <p>CUSTOM PARAGRAPH</p>
 </section>
 <section class="informative">
   <h2>Informative section</h2>
@@ -44,24 +71,34 @@
     <p>blahblah</p>
   </section>
 </section>
-<section id="revision-history"><h1>Revision History</h1></section>
-
-<section> <!-- id="sect-example-figures-equations-and-tables"> -->
+<section id="revision-history">
+  <h1>Revision History</h1>
+</section>
+<section>
+  <!-- id="sect-example-figures-equations-and-tables"> -->
   <h2>Example Figures, Equations, and Tables</h2>
   <figure>
     <code>First Figure</code>
-    <figcaption>First Figure</figcaption>
+    <figcaption>
+      First Figure
+    </figcaption>
   </figure>
   <figure>
     <code>Second Figure</code>
-    <figcaption>Second Figure</figcaption>
+    <figcaption>
+      Second Figure
+    </figcaption>
   </figure>
   <figure>
     <code>Third Figure</code>
-    <figcaption>Third Figure</figcaption>
+    <figcaption>
+      Third Figure
+    </figcaption>
   </figure>
   <table class="data complex">
-    <caption>First Table</caption>
+    <caption>
+      First Table
+    </caption>
     <thead>
     <tr>
       <th>Column 1</th>
@@ -76,7 +113,9 @@
     </tbody>
   </table>
   <table class="data complex">
-    <caption>Second Table</caption>
+    <caption>
+      Second Table
+    </caption>
     <thead>
     <tr>
       <th>Column 3</th>
@@ -91,7 +130,9 @@
     </tbody>
   </table>
   <table class="data complex">
-    <caption>Third Table</caption>
+    <caption>
+      Third Table
+    </caption>
     <thead>
     <tr>
       <th>Column 5</th>
@@ -103,33 +144,85 @@
       <td>Data 5</td>
       <td>Data 6</td>
     </tr>
+    <tr>
+      <td>Subtable</td>
+      <td>
+        <table class="data complex">
+          <thead>
+          <tr>
+            <th>Column 7</th>
+            <th>Column 8</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td>Data 9</td>
+            <td>Data 10</td>
+          </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td>Data 11</td>
+      <td>Data 12</td>
+    </tr>
+    </tbody>
+  </table>
+  <table class="data complex">
+    <caption>
+      Fourth Table
+    </caption>
+    <thead>
+    <tr>
+      <th>Column 1</th>
+      <th>Column 2</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td>Data 13</td>
+      <td>Data 14</td>
+    </tr>
     </tbody>
   </table>
   <figure class="equation">
     <code>Equation One</code>
-    <figcaption>Equation One</figcaption>
+    <figcaption>
+      Equation One
+    </figcaption>
   </figure>
   <figure class="equation">
     <code>Equation Two</code>
-    <figcaption>Equation Two</figcaption>
+    <figcaption>
+      Equation Two
+    </figcaption>
   </figure>
   <figure class="equation">
     <code>Equation Three</code>
-    <figcaption>Equation Three</figcaption>
+    <figcaption>
+      Equation Three
+    </figcaption>
   </figure>
 </section>
 <section>
   <h2>Example Figures, Equations, and Tables #2</h2>
   <figure>
     <code>Fourth Figure</code>
-    <figcaption>Fourth Figure</figcaption>
+    <figcaption>
+      Fourth Figure
+    </figcaption>
   </figure>
   <figure>
     <code>Sixth Figure</code>
-    <figcaption>sixth Figure</figcaption>
+    <figcaption>
+      sixth Figure
+    </figcaption>
   </figure>
   <table class="data complex">
-    <caption>Fourth Table</caption>
+    <caption>
+      Fifth Table
+    </caption>
     <thead>
     <tr>
       <th>Column 1</th>
@@ -144,7 +237,9 @@
     </tbody>
   </table>
   <table class="data complex">
-    <caption>Fifth Table</caption>
+    <caption>
+      Sixth Table
+    </caption>
     <thead>
     <tr>
       <th>Column 3</th>
@@ -160,27 +255,37 @@
   </table>
   <figure class="equation">
     <code>Equation Four</code>
-    <figcaption>Equation Four</figcaption>
+    <figcaption>
+      Equation Four
+    </figcaption>
   </figure>
   <figure class="equation">
     <code>Equation Five</code>
-    <figcaption>Equation Five</figcaption>
+    <figcaption>
+      Equation Five
+    </figcaption>
   </figure>
-  <div class="note" title="This is the first note">
+  <div class="note"
+       title="This is the first note">
     <p>This is the body of an note.</p>
     <p>This is the body of an note.</p>
     <p>This is the body of an note.</p>
     <figure>
       <code>Fifth Figure</code>
-      <figcaption>Fifth Figure</figcaption>
+      <figcaption>
+        Fifth Figure
+      </figcaption>
     </figure>
     <p>This is the body of an note.</p>
   </div>
-  <div class="impnote" title="This is the first implementation note">
+  <div class="impnote"
+       title="This is the first implementation note">
     <p>This is the body of an implementation note.</p>
     <p>This is the body of an implementation note.</p>
     <table class="data complex">
-      <caption>Sixth Table</caption>
+      <caption>
+        Seventh Table
+      </caption>
       <thead>
       <tr>
         <th>Column 5</th>
@@ -197,18 +302,136 @@
     <p>This is the body of an implementation note.</p>
     <figure class="equation">
       <code>Equation Six</code>
-      <figcaption>Equation Six</figcaption>
+      <figcaption>
+        Equation Six
+      </figcaption>
     </figure>
     <p>This is the body of an implementation note.</p>
   </div>
-  <figure id="json-register" class="register">
-        <pre class="json">
-           { "width" : 48,
+  <figure class="capability"
+          id="json-capability">
+      <pre class="json">
+           { "debug": false,
+             "preClass": "hide",
+             "width" : 128,
+             "isMemoryBlock": true,
+              "defaultUnused" : "C",
+              "xxcellBitValueTop": 28,
+              "fields": [
+                {   "msb": 4,
+                    "lsb": 0,
+                    "name": "bits 4:0",
+                    "attr": "ro"
+                }, {
+                    "msb": 7,
+                    "lsb": 6,
+                    "name": "A"
+                }, {
+                    "msb": 9,
+                    "name": "B"
+                }, {
+                    "lsb": 10,
+                    "name": "D",
+                    "addClass": "svg_error"
+                }, {
+                    "lsb": 11,
+                    "name": "E"
+                }, {
+                    "lsb": 12,
+                    "name": "F",
+                    "value": "1"
+                }, {
+                    "lsb": 13,
+                    "name": "G",
+                    "href": "field-bit13"
+                }, {
+                    "lsb": 14,
+                    "msb": 20,
+                    "name": "H",
+                    "value": "value"
+                }, {
+                    "lsb": 24,
+                    "msb": 31,
+                    "name": "byte",
+                    "value": [ "A", "B", "C", "D", "E", "F", "G", "H"]
+                }, {
+                    "lsb": 34,
+                    "msb": 121,
+                    "name": "word"
+                }] }
+        </pre>
+    <figcaption>
+      Graph for JSON Defined Capability Example
+    </figcaption>
+  </figure>
+  <figure class="message"
+          id="json-message">
+      <pre class="json">
+           {  "debug": false,
+              "preClass": "hide",
+              "wordWidth": 32,
+              "isMessage": true,
+              "width" : 128,
+              "defaultUnused" : "M",
+              "fields": [
+                {   "msb": 4,
+                    "lsb": 0,
+                    "name": "bits 4:0",
+                    "attr": "ro"
+                }, {
+                    "msb": 7,
+                    "lsb": 6,
+                    "name": "A"
+                }, {
+                    "msb": 9,
+                    "name": "B"
+                }, {
+                    "lsb": 10,
+                    "name": "D",
+                    "addClass": "svg_error"
+                }, {
+                    "lsb": 11,
+                    "name": "E"
+                }, {
+                    "lsb": 12,
+                    "name": "F",
+                    "value": "1"
+                }, {
+                    "lsb": 13,
+                    "name": "G",
+                    "href": "field-bit13"
+                }, {
+                    "lsb": 14,
+                    "msb": 20,
+                    "name": "H",
+                    "value": "value"
+                }, {
+                    "lsb": 24,
+                    "msb": 31,
+                    "name": "byte",
+                    "value": [ "A", "B", "C", "D", "E", "F", "G", "H"]
+                }, {
+                    "lsb": 34,
+                    "msb": 121,
+                    "name": "word"
+                } ] }
+        </pre>
+    <figcaption>
+      Graph for JSON Defined Message Example
+    </figcaption>
+  </figure>
+  <figure class="register"
+          id="json-register">
+      <pre class="json">
+           {  "debug": false,
+              "width" : 64,
+              "preClass": "hide",
+              "isRegister": true,
               "defaultUnused" : "Bogus",
               "fields": [
                 {   "msb": 4,
                     "lsb": 0,
-                    "name": "field 4:0",
+                    "name": "bits 4:0",
                     "attr": "ro"
                 }, {
                     "msb": 7,
@@ -234,24 +457,28 @@
                     "href": "field-bit13"
                 }, {
                     "lsb": 14,
-                    "msb": 24,
-                    "name": "bit 20:14",
-                    "value": "value"
+                    "msb": 23,
+                    "name": "bit 20:13",
+                    "value": "value",
+                    "forceFit": false
                 }, {
-                    "lsb": 25,
-                    "msb": 32,
+                    "lsb": 24,
+                    "msb": 31,
                     "name": "byte",
                     "value": [ "A", "B", "C", "D", "E", "F", "G", "H"]
                 } ] }
         </pre>
-    <figcaption>Graph for JSON Defined Register Example</figcaption>
+    <figcaption>
+      Graph for JSON Defined Register Example
+    </figcaption>
   </figure>
-
-  <figure class="register pcisig_reg" data-table="#tbl-pcisig-style-register-1">
-    <figcaption>PCISIG-Style Register #1</figcaption>
-  </figure>
-  <table class="pcisig_reg">
-    <caption>PCISIG-Style Register #1</caption>
+  <table class="pcisig_reg register"
+         data-json='{"debug": true, "preClass": "hide"}'
+         data-width="24"
+         id="tbl-pcisig-style-register-1">
+    <caption>
+      PCISIG-Style Register #1
+    </caption>
     <thead>
     <tr>
       <th>Bit&nbsp;Location</th>
@@ -263,10 +490,7 @@
     <tr>
       <td>0</td>
       <td>
-        <p>
-          <dfn class="field">Z</dfn>
-          &ndash; This field is a very special field.
-        </p>
+        <p><dfn class="field">Z</dfn> &ndash; This field is a very special field.</p>
         <p>This is the middle paragraph.</p>
         <p>This is the last paragraph.</p>
       </td>
@@ -275,10 +499,8 @@
     <tr>
       <td>2:1</td>
       <td>
-        <p>
-          <dfn class="field">bit1_2</dfn>
-          &ndash; Bits 1 &amp; 2
-        </p>
+        <p><dfn class="field">bit1_2</dfn> &ndash; Bits 1 &amp; 2</p>
+        <p>Hardwired to <span class="value">["0","1"]</span></p>
       </td>
       <td>RW</td>
     </tr>
@@ -290,10 +512,8 @@
     <tr>
       <td>4</td>
       <td>
-        <p>
-          <dfn class="field">Ab</dfn>
-          &ndash; four
-        </p>
+        <p><dfn class="field">Ab</dfn> &ndash; four</p>
+        <p>Hardwired to <span class="value">"x"</span></p>
       </td>
       <td>RW</td>
     </tr>
@@ -305,14 +525,8 @@
     <tr>
       <td>6</td>
       <td>
-        <p>
-          <dfn class="field">bit 6a</dfn>
-          &ndash; six a
-        </p>
-        <p>
-          <dfn class="field">bit 6b</dfn>
-          &ndash; six b
-        </p>
+        <p><dfn class="field">bit 6a</dfn> &ndash; six a</p>
+        <p><dfn class="field">bit 6b</dfn> &ndash; six b</p>
         <p>bit 6c six c</p>
       </td>
       <td>RW</td>
@@ -329,10 +543,13 @@
     </tr>
     <tr>
       <td>9</td>
-      <td>
-        <dfn class="field">bit9</dfn>
-      </td>
+      <td><dfn class="field">bit9</dfn></td>
       <td>RW</td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td><dfn class="field">Sticky Bit</dfn></td>
+      <td>RWS</td>
     </tr>
     <tr>
       <td>14</td>
@@ -348,32 +565,28 @@
           </thead>
           <tbody>
           <tr>
-            <td>
-              <dfn class="field">first</dfn>
-            </td>
-            <td>
-              <dfn class="field">second</dfn>
-            </td>
-            <td>
-              <dfn class="field">third</dfn>
-            </td>
+            <td><dfn class="field">first</dfn></td>
+            <td><dfn class="field">second</dfn></td>
+            <td><dfn class="field">third</dfn></td>
           </tr>
           <tr>
             <td colspan="3">second row</td>
           </tr>
           </tbody>
         </table>
-        <p>
-          <dfn class="field">fourth</dfn>
-        </p>
+        <p><dfn class="field">fourth</dfn></p>
       </td>
       <td>RW</td>
     </tr>
     </tbody>
   </table>
   <p>Dummy paragraph before PCISIG-Style Register #2</p>
-  <table class="register pcisig_reg" data-unused="RsvdZ">
-    <caption>PCISIG-Style Register #2</caption>
+  <table class="register pcisig_reg"
+         data-json='{"debug": false, "preClass": "hide"}'
+         data-unused="RsvdZ">
+    <caption>
+      PCISIG-Style Register #2
+    </caption>
     <thead>
     <tr>
       <th>Bit&nbsp;Location</th>
@@ -385,10 +598,7 @@
     <tr>
       <td>0</td>
       <td>
-        <p>
-          <dfn class="field">xx_Z</dfn>
-          &ndash; This field is a very special field.
-        </p>
+        <p><dfn class="field">xx_Z</dfn> &ndash; This field is a very special field.</p>
         <p>This is the middle paragraph.</p>
         <p>This is the last paragraph.</p>
       </td>
@@ -397,10 +607,7 @@
     <tr>
       <td>2:1</td>
       <td>
-        <p>
-          <dfn class="field">xx_bit1_2</dfn>
-          &ndash; Bits 1 &amp; 2
-        </p>
+        <p><dfn class="field">xx_bit1_2</dfn> &ndash; Bits 1 &amp; 2</p>
       </td>
       <td>RW</td>
     </tr>
@@ -412,10 +619,7 @@
     <tr>
       <td>4</td>
       <td>
-        <p>
-          <dfn class="field">xx_Ab</dfn>
-          &ndash; four
-        </p>
+        <p><dfn class="field">xx_Ab</dfn> &ndash; four</p>
       </td>
       <td>RW</td>
     </tr>
@@ -427,14 +631,8 @@
     <tr>
       <td>6</td>
       <td>
-        <p>
-          <dfn class="field">xx_bit 6a</dfn>
-          &ndash; six a
-        </p>
-        <p>
-          <dfn class="field">xx_bit 6b</dfn>
-          &ndash; six b
-        </p>
+        <p><dfn class="field">xx_bit 6a</dfn> &ndash; six a</p>
+        <p><dfn class="field">xx_bit 6b</dfn> &ndash; six b</p>
         <p>bit 6c six c</p>
       </td>
       <td>RW</td>
@@ -451,9 +649,7 @@
     </tr>
     <tr>
       <td>9</td>
-      <td>
-        <dfn class="field">xx_bit9</dfn>
-      </td>
+      <td><dfn class="field">xx_bit9</dfn></td>
       <td>RW</td>
     </tr>
     <tr>
@@ -470,37 +666,29 @@
           </thead>
           <tbody>
           <tr>
-            <td>
-              <dfn class="field">xx_first</dfn>
-            </td>
-            <td>
-              <dfn class="field">xx_second</dfn>
-            </td>
-            <td>
-              <dfn class="field">xx_third</dfn>
-            </td>
+            <td><dfn class="field">xx_first</dfn></td>
+            <td><dfn class="field">xx_second</dfn></td>
+            <td><dfn class="field">xx_third</dfn></td>
           </tr>
           <tr>
             <td colspan="3">xx_second row</td>
           </tr>
           </tbody>
         </table>
-        <p>
-          <dfn class="field">xx_fourth</dfn>
-        </p>
+        <p><dfn class="field">xx_fourth</dfn></p>
       </td>
       <td>RW</td>
     </tr>
     </tbody>
   </table>
-
   <section>
     <h2>Device Capabilities 2 Register (Offset 24h)</h2>
-    <figure class="register pcisig_reg" data-table="#tbl-device-capabilities-2-register">
-      <figcaption>Device Capabilities 2 Register</figcaption>
-    </figure>
-    <table class="pcisig_reg" id="tbl-device-capabilities-2-register">
-      <caption>Device Capabilities 2 Register</caption>
+    <table class="pcisig_reg register"
+           data-json='{"debug": false, "preClass": "hide"}'
+           id="tbl-device-capabilities-2-register">
+      <caption>
+        Device Capabilities 2 Register
+      </caption>
       <thead>
       <tr>
         <th>Bit&nbsp;Location</th>
@@ -513,17 +701,10 @@
         <td>3:0</td>
         <td>
           <p>
-            <dfn class="field">Completion Timeout Ranges Supported</dfn> – This field indicates device Function support
-            for the optional Completion Timeout programmability mechanism. This mechanism allows system software to
-            modify
-            the Completion Timeout value.
+            <dfn class="field">Completion Timeout Ranges Supported</dfn> – This field indicates device Function support for the optional Completion Timeout programmability mechanism. This mechanism allows system software to modify the Completion Timeout value.
           </p>
-          <p>
-            This field is applicable only to Root Ports, Endpoints that issue Requests on their own behalf, and PCI
-            Express to PCI/PCI-X Bridges that take ownership of Requests issued on PCI Express. For all other Functions
-            this field is Reserved and MUST be hardwired to 0000b.</p>
-          <p>
-            Four time value ranges are defined:</p>
+          <p>This field is applicable only to Root Ports, Endpoints that issue Requests on their own behalf, and PCI Express to PCI/PCI-X Bridges that take ownership of Requests issued on PCI Express. For all other Functions this field is Reserved and MUST be hardwired to 0000b.</p>
+          <p>Four time value ranges are defined:</p>
           <dl>
             <dt>Range A</dt>
             <dd>50 &mu;s to 10 ms</dd>
@@ -537,10 +718,7 @@
           <p>Bits are set according to the table below to show timeout value ranges supported.</p>
           <dl>
             <dt>0000b</dt>
-            <dd>Completion Timeout programming not supported – the Function MUST implement a timeout value in the range
-              50
-              &mu;s to 50 ms.
-            </dd>
+            <dd>Completion Timeout programming not supported – the Function MUST implement a timeout value in the range 50 &mu;s to 50 ms.</dd>
             <dt>0001b</dt>
             <dd>Range A</dd>
             <dt>0010b</dt>
@@ -561,142 +739,93 @@
         </td>
         <td>HwInit</td>
       </tr>
-
       <tr>
         <td>4</td>
         <td>
           <p>
-            <dfn class="field">Completion Timeout Disable Supported</dfn> – A value of 1b indicates support for the
-            Completion Timeout Disable mechanism.
+            <dfn class="field">Completion Timeout Disable Supported</dfn> – A value of 1b indicates support for the Completion Timeout Disable mechanism.
           </p>
-          <p>The Completion Timeout Disable mechanism is REQUIRED for Endpoints that issue Requests on their own behalf
-            and PCI Express to PCI/PCI-X Bridges that take ownership of Requests issued on PCI Express.
-          </p>
+          <p>The Completion Timeout Disable mechanism is REQUIRED for Endpoints that issue Requests on their own behalf and PCI Express to PCI/PCI-X Bridges that take ownership of Requests issued on PCI Express.</p>
           <p>This mechanism is OPTIONAL for Root Ports.</p>
           <p>For all other Functions this field is Reserved and MUST be hardwired to 0b.</p>
         </td>
         <td>RO</td>
       </tr>
-
       <tr>
         <td>5</td>
         <td>
           <p>
-            <dfn class="field">ARI Forwarding Supported</dfn> – Applicable only to Switch Downstream Ports and Root
-            Ports;
-            MUST be 0b for other Function types. This bit MUST be set to 1b if a Switch Downstream Port or Root Port
-            supports this optional capability. See Section 6.13 for additional details.
+            <dfn class="field">ARI Forwarding Supported</dfn> – Applicable only to Switch Downstream Ports and Root Ports; MUST be 0b for other Function types. This bit MUST be set to 1b if a Switch Downstream Port or Root Port supports this optional capability. See Section 6.13 for additional details.
           </p>
         </td>
         <td>RO</td>
       </tr>
-
       <tr>
         <td>6</td>
         <td>
           <p>
-            <dfn class="field">AtomicOp Routing Supported</dfn> – Applicable only to Switch Upstream Ports, Switch
-            Downstream Ports, and Root Ports; MUST be 0b for other Function types. This bit MUST be set to 1b if the
-            Port
-            supports this optional capability. See Section 6.15 for additional details.
+            <dfn class="field">AtomicOp Routing Supported</dfn> – Applicable only to Switch Upstream Ports, Switch Downstream Ports, and Root Ports; MUST be 0b for other Function types. This bit MUST be set to 1b if the Port supports this optional capability. See Section 6.15 for additional details.
           </p>
         </td>
         <td>RO</td>
       </tr>
-
-
       <tr>
         <td>7</td>
         <td>
           <p>
-            <dfn class="field">32-bit AtomicOp Completer Supported</dfn> – Applicable to Functions with Memory Space
-            BARs
-            as well as all Root Ports; MUST be 0b otherwise. Includes FetchAdd, Swap, and CAS AtomicOps. This bit MUST
-            be
-            set to 1b if the Function supports this optional capability. See Section 6.15.3.1 for additional RC
-            requirements.
+            <dfn class="field">32-bit AtomicOp Completer Supported</dfn> – Applicable to Functions with Memory Space BARs as well as all Root Ports; MUST be 0b otherwise. Includes FetchAdd, Swap, and CAS AtomicOps. This bit MUST be set to 1b if the Function supports this optional capability. See Section 6.15.3.1 for additional RC requirements.
           </p>
         </td>
         <td>RO</td>
       </tr>
-
-
       <tr>
         <td>8</td>
         <td>
           <p>
-            <dfn class="field">64-bit AtomicOp Completer Supported</dfn> – Applicable to Functions with Memory Space
-            BARs
-            as well as all Root Ports; MUST be 0b otherwise. Includes FetchAdd, Swap, and CAS AtomicOps. This bit MUST
-            be
-            set to 1b if the Function supports this optional capability. See Section 6.15.3.1 for additional RC
-            requirements.
+            <dfn class="field">64-bit AtomicOp Completer Supported</dfn> – Applicable to Functions with Memory Space BARs as well as all Root Ports; MUST be 0b otherwise. Includes FetchAdd, Swap, and CAS AtomicOps. This bit MUST be set to 1b if the Function supports this optional capability. See Section 6.15.3.1 for additional RC requirements.
           </p>
         </td>
         <td>RO</td>
       </tr>
-
-
       <tr>
         <td>9</td>
         <td>
           <p>
-            <dfn class="field">128-bit CAS Completer Supported</dfn> – Applicable to Functions with Memory Space BARs as
-            well as all Root Ports; MUST be 0b otherwise. This bit MUST be set to 1b if the Function supports this
-            optional capability. See Section 6.15 for additional details.
+            <dfn class="field">128-bit CAS Completer Supported</dfn> – Applicable to Functions with Memory Space BARs as well as all Root Ports; MUST be 0b otherwise. This bit MUST be set to 1b if the Function supports this optional capability. See Section 6.15 for additional details.
           </p>
         </td>
         <td>RO</td>
       </tr>
-
       <tr>
         <td>10</td>
         <td>
           <p>
-            <dfn class="field">No RO-enabled PR-PR Passing</dfn> – If this bit is Set, the routing element never carries
-            out the passing permitted by Table 2-39 entry A2b that is associated with the Relaxed Ordering Attribute
-            field
-            being Set.
+            <dfn class="field">No RO-enabled PR-PR Passing</dfn> – If this bit is Set, the routing element never carries out the passing permitted by Table 2-39 entry A2b that is associated with the Relaxed Ordering Attribute field being Set.
           </p>
-          <p>
-            This bit applies only for Switches and RCs that support peer-to-peer traffic between Root Ports. This bit
-            applies only to Posted Requests being forwarded through the Switch or RC and does not apply to traffic
-            originating or terminating within the Switch or RC itself. All Ports on a Switch or RC MUST report the same
-            value for this bit.</p>
-          <p class="issue" title="This is an issue">Clearly this applies when both requests are forwarded. What about
-            when
-            only one of the requests is forwarded?</p>
-          <p>
-            For all other functions, this bit MUST be 0b
-          </p>
+          <p>This bit applies only for Switches and RCs that support peer-to-peer traffic between Root Ports. This bit applies only to Posted Requests being forwarded through the Switch or RC and does not apply to traffic originating or terminating within the Switch or RC itself. All Ports on a Switch or RC MUST report the same value for this bit.</p>
+          <p class="issue"
+             title="This is an issue">Clearly this applies when both requests are forwarded. What about when only one of the requests is forwarded?</p>
+          <p>For all other functions, this bit MUST be 0b</p>
         </td>
         <td>HwInit</td>
       </tr>
-
       <tr>
         <td>11</td>
         <td>
           <p>
-            <dfn class="field">LTR Mechanism Supported</dfn> – A value of 1b indicates support for the optional Latency
-            Tolerance Reporting (LTR) mechanism.
+            <dfn class="field">LTR Mechanism Supported</dfn> – A value of 1b indicates support for the optional Latency Tolerance Reporting (LTR) mechanism.
           </p>
           <p>Root Ports, Switches and Endpoints are PERMITTED to implement this capability.</p>
-          <p>For a multi-Function device associated with an Upstream Port, each Function MUST report the same value for
-            this bit.</p>
-          <p>For Bridges and other Functions that do not implement this capability, this bit MUST be hardwired to 0b.
-          </p>
+          <p>For a multi-Function device associated with an Upstream Port, each Function MUST report the same value for this bit.</p>
+          <p>For Bridges and other Functions that do not implement this capability, this bit MUST be hardwired to 0b.</p>
         </td>
         <td>RO</td>
       </tr>
-
-
       <tr>
         <td>13:12</td>
         <td>
           <p>
-            <dfn class="field">TPH Completer Supported</dfn> – Value indicates Completer support for TPH or Extended
-            TPH.
-            Applicable only to Root Ports and Endpoints. For all other Functions, this field is Reserved.
+            <dfn class="field">TPH Completer Supported</dfn> – Value indicates Completer support for TPH or Extended TPH. Applicable only to Root Ports and Endpoints. For all other Functions, this field is Reserved.
           </p>
           <p>Defined Encodings are:</p>
           <dl>
@@ -713,15 +842,11 @@
         </td>
         <td>RO</td>
       </tr>
-
       <tr>
         <td>15:14</td>
         <td>
           <p>
-            <dfn class="field">LN System CLS</dfn> – Applicable only to Root Ports and RCRBs; MUST be 00b for all other
-            Function types. This field indicates if the Root Port or RCRB supports LN protocol as an LN Completer, and
-            if
-            so, what cacheline size is in effect.
+            <dfn class="field">LN System CLS</dfn> – Applicable only to Root Ports and RCRBs; MUST be 00b for all other Function types. This field indicates if the Root Port or RCRB supports LN protocol as an LN Completer, and if so, what cacheline size is in effect.
           </p>
           <p>Encodings are:</p>
           <dl>
@@ -737,14 +862,11 @@
         </td>
         <td>HWInit</td>
       </tr>
-
       <tr>
         <td>19:18</td>
         <td>
           <p>
-            <dfn class="field">OBFF Supported</dfn> – This field indicates if OBFF is supported and, if so, what
-            signaling
-            mechanism is used.
+            <dfn class="field">OBFF Supported</dfn> – This field indicates if OBFF is supported and, if so, what signaling mechanism is used.
           </p>
           <dl>
             <dt>00b</dt>
@@ -758,49 +880,35 @@
           </dl>
           <p>The value reported in this field MUST indicate support for WAKE# signaling only if:</p>
           <ul>
-            <li>for a Downstream Port, driving the WAKE# signal for OBFF is supported and the connector or component
-              connected Downstream is known to receive that same WAKE# signal
-            </li>
-            <li>for an Upstream Port, receiving the WAKE# signal for OBFF is supported and, if the component is on an
-              add-in-card, that the component is connected to the WAKE# signal on the connector.
-            </li>
+            <li>for a Downstream Port, driving the WAKE# signal for OBFF is supported and the connector or component connected Downstream is known to receive that same WAKE# signal</li>
+            <li>for an Upstream Port, receiving the WAKE# signal for OBFF is supported and, if the component is on an add-in-card, that the component is connected to the WAKE# signal on the connector.</li>
           </ul>
           <p>Root Ports, Switch Ports, and Endpoints are PERMITTED to implement this capability.</p>
-          <p>For a multi-Function device associated with an Upstream Port, each Function MUST report the same value for
-            this field.</p>
+          <p>For a multi-Function device associated with an Upstream Port, each Function MUST report the same value for this field.</p>
           <p>For Bridges and Ports that do not implement this capability, this field MUST be hardwired to 00b.</p>
         </td>
         <td>Hwinit</td>
       </tr>
-
       <tr>
         <td>20</td>
         <td>
           <p>
-            <dfn class="field">Extended Fmt Field Supported</dfn> – If Set, the Function supports the 3-bit definition
-            of
-            the Fmt field. If Clear, the Function supports a 2-bit definition of the Fmt field. See Section 2.2.
+            <dfn class="field">Extended Fmt Field Supported</dfn> – If Set, the Function supports the 3-bit definition of the Fmt field. If Clear, the Function supports a 2-bit definition of the Fmt field. See Section 2.2.
           </p>
-          <p>MUST be Set for Functions that support End-End TLP Prefixes. All Functions in an Upstream Port MUST have
-            the
-            same value for this bit. Each Downstream Port of a component
+          <p>MUST be Set for Functions that support End-End TLP Prefixes. All Functions in an Upstream Port MUST have the same value for this bit. Each Downstream Port of a component
             <del>MAY</del>
             <ins>is PERMITTED to</ins>
             have a different value for this bit.
           </p>
-          <p>It is STRONGLY RECOMMENDED that Functions support the 3-bit definition of the Fmt field.
-          </p>
+          <p>It is STRONGLY RECOMMENDED that Functions support the 3-bit definition of the Fmt field.</p>
         </td>
         <td>RO</td>
       </tr>
-
-
       <tr>
         <td>21</td>
         <td>
           <p>
-            <dfn class="field">End-End TLP Prefix Supported</dfn> – Indicates whether End-End TLP Prefix support is
-            offered by a Function. Values are:
+            <dfn class="field">End-End TLP Prefix Supported</dfn> – Indicates whether End-End TLP Prefix support is offered by a Function. Values are:
           </p>
           <dl>
             <dt>0b</dt>
@@ -808,19 +916,15 @@
             <dt>1b</dt>
             <dd>Support is provided to receive TLPs containing End-End TLP Prefixes.</dd>
           </dl>
-          <p>All Ports of a Switch MUST have the same value for this bit.
-          </p>
+          <p>All Ports of a Switch MUST have the same value for this bit.</p>
         </td>
         <td>HwInit</td>
       </tr>
-
-
       <tr>
         <td>23:22</td>
         <td>
           <p>
-            <dfn class="field">Max End-End TLP Prefixes</dfn> – Indicates the maximum number of End-End TLP Prefixes
-            supported by this Function. See Section 2.2.10.2 for important details. Values are:
+            <dfn class="field">Max End-End TLP Prefixes</dfn> – Indicates the maximum number of End-End TLP Prefixes supported by this Function. See Section 2.2.10.2 for important details. Values are:
           </p>
           <dl>
             <dt>01b</dt>
@@ -838,58 +942,77 @@
             <ins>are PERMITTED to</ins>
             report different values for this field.
           </p>
-          <p>For Switches where End-End TLP Prefix Supported is Set, this field MUST be 00b indicating support for up to
-            four End-End TLP Prefixes.
-          </p>
+          <p>For Switches where End-End TLP Prefix Supported is Set, this field MUST be 00b indicating support for up to four End-End TLP Prefixes.</p>
         </td>
         <td>HwInit</td>
       </tr>
-
       <tr>
         <td>31</td>
         <td>
           <p>
-            <dfn class="field">FRS Supported</dfn> – When Set, indicates support for the optional Function Readiness
-            Status (FRS) capability. MUST be Set for all Functions that support generation or receipt capabilities of
-            FRS
-            Messages. MUST NOT be Set by Switch Functions that do not generate FRS Messages on their own behalf.
+            <dfn class="field">FRS Supported</dfn> – When Set, indicates support for the optional Function Readiness Status (FRS) capability. MUST be Set for all Functions that support generation or receipt capabilities of FRS Messages. MUST NOT be Set by Switch Functions that do not generate FRS Messages on their own behalf.
           </p>
         </td>
         <td>HwInit</td>
       </tr>
       </tbody>
     </table>
-    <p class="impnote" title="Use of the No RO-enabled PR-PR Passing Bit">
-      The No RO-enabled PR-PR Passing bit allows platforms to utilize PCI Express switching elements on the path between
-      a
-      requester and completer for requesters that could benefit from a slightly less 5 relaxed ordering model. An
-      example
-      is a device that cannot ensure that multiple overlapping posted writes to the same address are outstanding at the
-      same time. The method by which such a device is enabled to utilize this mode is beyond the scope of this
-      specification.</p>
-
-    <section><h2>Field referenced</h2>
+    <p class="impnote"
+       title="Use of the No RO-enabled PR-PR Passing Bit">The No RO-enabled PR-PR Passing bit allows platforms to utilize PCI Express switching elements on the path between a requester and completer for requesters that could benefit from a slightly less 5 relaxed ordering model. An example is a device that cannot ensure that multiple overlapping posted writes to the same address are outstanding at the same time. The method by which such a device is enabled to utilize this mode is beyond the scope of this specification.</p>
+    <section>
+      <h2>Field referenced</h2>
       <ul>
-        <li><a>Completion Timeout Ranges Supported</a></li>
-        <li><a>Completion Timeout Disable Supported</a></li>
-        <li><a>ARI Forwarding Supported</a></li>
-        <li><a>AtomicOp Routing Supported</a></li>
-        <li><a>32-bit AtomicOp Completer Supported</a></li>
-        <li><a>64-bit AtomicOp Completer Supported</a></li>
-        <li><a>128-bit CAS Completer Supported</a></li>
-        <li><a>No RO-enabled PR-PR Passing</a></li>
-        <li><a>LTR Mechanism Supported</a></li>
-        <li><a>TPH Completer Supported</a></li>
-        <li><a>LN System CLS</a></li>
-        <li><a>OBFF Supported</a></li>
-        <li><a>Extended Fmt Field Supported</a></li>
-        <li><a>End-End TLP Prefix Supported</a></li>
-        <li><a>Max End-End TLP Prefixes</a></li>
-        <li><a>FRS Supported</a></li>
+        <li>
+          <a>Completion Timeout Ranges Supported</a>
+        </li>
+        <li>
+          <a>Completion Timeout Disable Supported</a>
+        </li>
+        <li>
+          <a>ARI Forwarding Supported</a>
+        </li>
+        <li>
+          <a>AtomicOp Routing Supported</a>
+        </li>
+        <li>
+          <a>32-bit AtomicOp Completer Supported</a>
+        </li>
+        <li>
+          <a>64-bit AtomicOp Completer Supported</a>
+        </li>
+        <li>
+          <a>128-bit CAS Completer Supported</a>
+        </li>
+        <li>
+          <a>No RO-enabled PR-PR Passing</a>
+        </li>
+        <li>
+          <a>LTR Mechanism Supported</a>
+        </li>
+        <li>
+          <a>TPH Completer Supported</a>
+        </li>
+        <li>
+          <a>LN System CLS</a>
+        </li>
+        <li>
+          <a>OBFF Supported</a>
+        </li>
+        <li>
+          <a>Extended Fmt Field Supported</a>
+        </li>
+        <li>
+          <a>End-End TLP Prefix Supported</a>
+        </li>
+        <li>
+          <a>Max End-End TLP Prefixes</a>
+        </li>
+        <li>
+          <a>FRS Supported</a>
+        </li>
       </ul>
     </section>
   </section>
-
 </section>
 </body>
 </html>

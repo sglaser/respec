@@ -1,16 +1,16 @@
 // Module ui/about-respec
 // A simple about dialog with pointer to the help
-import "deps/hyperhtml";
-import { ui } from "core/ui";
-import { l10n, lang } from "core/l10n";
+import { l10n, lang } from "../core/l10n";
+import hyperHTML from "hyperhtml";
+import { ui } from "../core/ui";
 
 // window.respecVersion is added at build time (see tools/builder.js)
 window.respecVersion = window.respecVersion || "Developer Edition";
 const div = document.createElement("div");
 const render = hyperHTML.bind(div);
 const button = ui.addCommand(
-  l10n[lang].about_respec,
-  "ui/about-respec",
+  `About ${window.respecVersion}`,
+  show,
   "Ctrl+Shift+Alt+A",
   "ℹ️"
 );
@@ -21,7 +21,7 @@ function show() {
     div,
     button
   );
-  let entries = [];
+  const entries = [];
   if ("getEntriesByType" in performance) {
     performance
       .getEntriesByType("measure")
@@ -45,7 +45,8 @@ function show() {
     ReSpec is a document production toolchain, with a notable focus on W3C specifications.
   </p>
   <p>
-    You can find more information in the <a href='https://w3.org/respec/'>documentation</a>.
+    <a href='https://github.com/w3c/respec/wiki'>Documentation</a>,
+    <a href='https://github.com/w3c/respec/issues'>Bugs</a>.
   </p>
   <p>
    You can find more information on the PCISIG version of ReSpec at
@@ -87,5 +88,3 @@ function perfEntryToTR({ name, duration }) {
     </td>
   `;
 }
-
-export { show };

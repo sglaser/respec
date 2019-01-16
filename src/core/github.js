@@ -4,8 +4,7 @@
  * @see https://github.com/w3c/respec/wiki/github
  */
 
-import l10n from "core/l10n";
-import { pub } from "core/pubsubhub";
+import { pub } from "./pubsubhub";
 
 export const name = "core/github";
 
@@ -14,7 +13,7 @@ function findNext(header) {
   // is available in the Link header. Link headers look like this:
   // Link: <url1>; rel="next", <url2>; rel="foo"; bar="baz"
   // More info here: https://developer.github.com/v3/#link-header
-  var m = (header || "").match(/<([^>]+)>\s*;\s*rel="next"/);
+  const m = (header || "").match(/<([^>]+)>\s*;\s*rel="next"/);
   return (m && m[1]) || null;
 }
 
@@ -36,14 +35,6 @@ export async function fetchAll(url, headers = {}, output = []) {
   return next ? fetchAll(next, headers, output) : output;
 }
 
-export async function fetch(url) {
-  let response = await window.fetch(url);
-  if (!response.ok) {
-    throw new Error("GitHub Response not OK. Probably exceeded request limit.");
-  }
-  return await response.json();
-}
-
 export function fetchIndex(url, headers) {
   // converts URLs of the form:
   // https://api.github.com/repos/user/repo/comments{/number}
@@ -62,44 +53,46 @@ export async function run(conf) {
     typeof conf.github === "object" &&
     !conf.github.hasOwnProperty("repoURL")
   ) {
-    pub(
-      "error",
-      "`respecConf.github` missing property `repoURL`. See https://github.com/w3c/respec/wiki/github"
-    );
+    const msg =
+      "Config option `[github](https://github.com/w3c/respec/wiki/github)` " +
+      "is missing property `repoURL`.";
+    pub("error", msg);
     return;
   }
+  let tempURL = conf.github.repoURL || conf.github;
+  if (!tempURL.endsWith("/")) tempURL += "/";
   let ghURL;
   try {
-    ghURL = new URL(conf.github.repoURL || conf.github);
+    ghURL = new URL(tempURL, "https://github.com");
   } catch (err) {
     pub("error", `\`respecConf.github\` is not a valid URL? (${ghURL})`);
     return;
   }
   if (ghURL.origin !== "https://github.com") {
-    pub(
-      "error",
-      `\`respecConf.github\` must be HTTPS and pointing to GitHub. (${ghURL})`
-    );
+    const msg = `\`respecConf.github\` must be HTTPS and pointing to GitHub. (${ghURL})`;
+    pub("error", msg);
     return;
   }
   const [org, repo] = ghURL.pathname.split("/").filter(item => item);
   if (!org || !repo) {
-    pub(
-      "error",
-      `\`respecConf.github\` URL needs a path with, for example, w3c/my-spec`
-    );
+    const msg =
+      "`respecConf.github` URL needs a path with, for example, w3c/my-spec";
+    pub("error", msg);
+    return;
   }
   const branch = conf.github.branch || "gh-pages";
+  const issueBase = new URL("./issues/", ghURL).href;
   const newProps = {
-    otherLinks: [],
-    shortName: repo,
     edDraftURI: `https://${org.toLowerCase()}.github.io/${repo}/`,
+    githubToken: undefined,
+    githubUser: undefined,
     githubAPI: `https://api.github.com/repos/${org}/${repo}`,
-    issueBase: `${ghURL.href}${ghURL.pathname.endsWith("/") ? "" : "/"}issues/`,
+    issueBase,
+    atRiskBase: issueBase,
+    otherLinks: [],
+    pullBase: new URL("./pulls/", ghURL).href,
+    shortName: repo,
   };
-  const commitsHref = `${ghURL.href}${
-    ghURL.pathname.endsWith("/") ? "" : "/"
-  }commits/${branch}`;
   const otherLink = {
     key: conf.l10n.participate,
     data: [
@@ -113,11 +106,20 @@ export async function run(conf) {
       },
       {
         value: conf.l10n.commit_history,
-        href: commitsHref,
+        href: new URL(`./commits/${branch}`, ghURL.href).href,
+      },
+      {
+        value: conf.l10n.pull_requests,
+        href: newProps.pullBase,
       },
     ],
   };
-  // Assign new properties, but retain exsiting ones
-  Object.assign(conf, { ...newProps, ...conf });
+  // Assign new properties, but retain existing ones
+  const normalizedGHObj = {
+    branch,
+    repoURL: ghURL.href,
+  };
+  const normalizedConfig = { ...newProps, ...conf, github: normalizedGHObj };
+  Object.assign(conf, normalizedConfig);
   conf.otherLinks.unshift(otherLink);
 }

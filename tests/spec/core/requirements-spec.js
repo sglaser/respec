@@ -1,34 +1,34 @@
 "use strict";
-describe("Core — Requirements", function() {
+describe("Core — Requirements", () => {
   afterAll(flushIframes);
-  it("should process requirements", function(done) {
-    var ops = {
-      config: makeBasicConfig(),
-      body: makeDefaultBody() + "<p class='req' id='req-id'>REQ</p>",
-    };
-    makeRSDoc(ops, function(doc) {
-      var $req = $("p.req", doc);
-      var $a = $req.find("a");
-      expect($req.text()).toEqual("Req. 1: REQ");
-      expect($a.length).toEqual(1);
-      expect($a.text()).toEqual("Req. 1");
-      expect($a.attr("href")).toEqual("#req-id");
-    }).then(done);
+
+  it("should process requirements", async () => {
+    const body = "<p class='req' id='req-id'>REQ</p>";
+    const ops = makeStandardOps(null, body);
+    const doc = await makeRSDoc(ops);
+
+    const req = doc.querySelector("p.req");
+    expect(req.textContent).toEqual("Req. 1: REQ");
+    const refs = req.querySelectorAll("a");
+    expect(refs.length).toEqual(1);
+    const [ref] = refs;
+    expect(ref.textContent).toEqual("Req. 1");
+    expect(ref.getAttribute("href")).toEqual("#req-id");
   });
 
-  it("should process requirement references", function(done) {
-    var ops = {
-      config: makeBasicConfig(),
-      body:
-        makeDefaultBody() +
-        "<a href='#req-id' class='reqRef'></a>" +
-        "<a href='#foo' class='reqRef'></a>" +
-        "<p class='req' id='req-id'>REQ</p>",
-    };
-    makeRSDoc(ops, function(doc) {
-      var $refs = $("a.reqRef", doc);
-      expect($refs.first().text()).toEqual("Req. 1");
-      expect($refs.last().text()).toEqual("Req. not found 'foo'");
-    }).then(done);
+  it("should process requirement references", async () => {
+    const body = `
+      <a href='#req-id' class='reqRef'></a>
+      <a href='#foo' class='reqRef'></a>
+      <p class='req' id='req-id'>REQ</p>
+    `;
+    const ops = makeStandardOps(null, body);
+    const doc = await makeRSDoc(ops);
+
+    const refs = doc.querySelectorAll("a.reqRef");
+    expect(refs.length).toEqual(2);
+    const [validRef, invalidRef] = refs;
+    expect(validRef.textContent).toEqual("Req. 1");
+    expect(invalidRef.textContent).toEqual("Req. not found 'foo'");
   });
 });

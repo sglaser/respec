@@ -1,3 +1,4 @@
+// @ts-check
 // Module core/examples
 // Manages examples, including marking them up, numbering, inserting the title,
 // and reindenting.
@@ -5,67 +6,77 @@
 // When an example is found, it is reported using the "example" event. This can
 // be used by a containing shell to extract all examples.
 
-import { pub } from "core/pubsubhub";
-import css from "deps/text!core/css/examples.css";
+import { addId, reindent } from "./utils";
+import css from "text!../../assets/examples.css";
+import hyperHTML from "hyperhtml";
+import { pub } from "./pubsubhub";
 
 export const name = "core/examples";
 
-var makeTitle = function(conf, $el, num, report) {
-  var txt = num > 0 ? " " + num : "";
-  var $tit = $(
-    `<div class='example-title'><span>${conf.l10n.example}${txt}</span></div>`
-  );
-  report.title = $el.attr("title");
-  if (report.title) {
-    $tit.append(
-      $("<span style='text-transform: none'>: " + report.title + "</span>")
-    );
-    $el.removeAttr("title");
-  }
-  $tit.addClass("marker");
-  return $tit;
-};
+function makeTitle(conf, elem, num, report) {
+  report.title = elem.title;
+  if (report.title) elem.removeAttribute("title");
+  const number = num > 0 ? " " + num : "";
 
-export function run(conf, doc, cb) {
-  var $exes = $("pre.example, pre.illegal-example, aside.example"),
-    num = 0;
-  if ($exes.length) {
-    $(doc).find("head link").first().before($("<style/>").text(css));
-    $exes.each(function(i, ex) {
-      var $ex = $(ex),
-        report = { number: num, illegal: $ex.hasClass("illegal-example") };
-      if ($ex.is("aside")) {
-        num++;
-        var $tit = makeTitle(conf, $ex, num, report);
-        $ex.prepend($tit);
-        pub("example", report);
-      } else {
-        var inAside = !!$ex.parents("aside").length;
-        if (!inAside) num++;
-        // reindent
-        var lines = $ex.html().split("\n");
-        while (lines.length && /^\s*$/.test(lines[0])) lines.shift();
-        while (lines.length && /^\s*$/.test(lines[lines.length - 1]))
-          lines.pop();
-        var matches = /^(\s+)/.exec(lines[0]);
-        if (matches) {
-          var rep = new RegExp("^" + matches[1]);
-          for (var j = 0; j < lines.length; j++) {
-            lines[j] = lines[j].replace(rep, "");
-          }
-        }
-        report.content = lines.join("\n");
-        $ex.html(lines.join("\n"));
-        $ex.removeClass("example illegal-example");
-        // wrap
-        var $div = $("<div class='example'></div>"),
-          $tit = makeTitle(conf, $ex, inAside ? 0 : num, report);
-        $div.append($tit);
-        $div.append($ex.clone());
-        $ex.replaceWith($div);
-        if (!inAside) pub("example", report);
-      }
-    });
-  }
-  cb();
+  return hyperHTML`
+  <div class="marker"><a class="self-link">${conf.l10n.example}${number}</a>${
+    report.title
+      ? hyperHTML`<span class="example-title">: ${report.title}</span>`
+      : ""
+  }</div>`;
+}
+
+export function run(conf) {
+  /** @type {NodeListOf<HTMLElement>} */
+  const examples = document.querySelectorAll(
+    "pre.example, pre.illegal-example, aside.example"
+  );
+  if (!examples.length) return;
+
+  document.head.insertBefore(
+    hyperHTML`<style>${css}</style>`,
+    document.querySelector("link")
+  );
+
+  let number = 0;
+  examples.forEach(example => {
+    const illegal = example.classList.contains("illegal-example");
+    const report = {
+      number,
+      illegal,
+    };
+    const { title } = example;
+    if (example.localName === "aside") {
+      ++number;
+      const div = makeTitle(conf, example, number, report);
+      example.prepend(div);
+      const id = addId(example, "ex-" + number, title);
+      const selfLink = div.querySelector("a.self-link");
+      selfLink.href = `#${id}`;
+      pub("example", report);
+    } else {
+      const inAside = !!example.closest("aside");
+      if (!inAside) ++number;
+
+      const reindentedHtml = reindent(example.innerHTML);
+      example.innerHTML = report.content = reindentedHtml;
+
+      // wrap
+      example.classList.remove("example", "illegal-example");
+      // relocate the id to the div
+      const id = example.id ? example.id : null;
+      if (id) example.removeAttribute("id");
+      const div = hyperHTML`
+        <div class='example' id="${id}">
+          ${makeTitle(conf, example, inAside ? 0 : number, report)}
+          ${example.cloneNode(true)}
+        </div>
+      `;
+      addId(div, "ex-" + number, title);
+      const selfLink = div.querySelector("a.self-link");
+      selfLink.href = `#${div.id}`;
+      example.parentElement.replaceChild(div, example);
+      if (!inAside) pub("example", report);
+    }
+  });
 }

@@ -75,7 +75,9 @@ describe("Core - Github", () => {
   });
   describe("the definition list items (localized)", () => {
     function definitionListTest(doc) {
-      const { respecConfig: { l10n } } = doc.defaultView;
+      const {
+        respecConfig: { l10n },
+      } = doc.defaultView;
       const participate = Array.from(doc.querySelectorAll("dt")).find(
         node => node.textContent === l10n.participate + ":"
       );
@@ -93,6 +95,13 @@ describe("Core - Github", () => {
       expect(commitHistory).toBeTruthy();
       const ghLink = Array.from(doc.querySelectorAll("dd")).find(
         elem => elem.textContent.trim() === "GitHub w3c/respec"
+      );
+      const pullRequests = Array.from(doc.querySelectorAll("dd")).find(
+        elem => elem.textContent.trim() === l10n.pull_requests
+      );
+      expect(pullRequests).toBeTruthy();
+      expect(pullRequests.querySelector("a").href).toEqual(
+        "https://github.com/w3c/respec/pulls/"
       );
       expect(ghLink).toBeTruthy();
       expect(ghLink.querySelector("a").href).toEqual(

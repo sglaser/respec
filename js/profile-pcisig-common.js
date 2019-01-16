@@ -10,7 +10,12 @@ require.config({
     shortcut: {
       exports: "shortcut"
     },
-    "jquery.svg": ["jquery"]
+    "jquery.svg": {
+      deps: ["jQuery"]
+    },
+    jquery: {
+      exports: "jQuery"
+    }
 
     //highlight: {
     //  exports: "hljs",

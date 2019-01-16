@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 
 "use strict";
-const async = require("marcosc-async");
 const colors = require("colors");
 const fsp = require("fs-extra");
 const loading = require("loading-indicator");
 const path = require("path");
 const presets = require("loading-indicator/presets");
-const r = require("requirejs");
-const UglifyJS = require("uglify-es");
+const webpack = require("webpack");
+const { promisify } = require("util");
 const commandLineArgs = require("command-line-args");
 const getUsage = require("command-line-usage");
 colors.setTheme({
@@ -27,7 +26,8 @@ const optionList = [
   {
     alias: "p",
     defaultOption: true,
-    description: "Name of profile to build. Profile must be " +
+    description:
+      "Name of profile to build. Profile must be " +
       "in the js/ folder, and start with 'profile-' (e.g., profile-w3c-common.js)",
     multiple: false,
     name: "profile",
@@ -54,7 +54,7 @@ const usageSections = [
     ],
   },
   {
-    content: "Project home: [underline]{https://github.com/w3c/respec}",
+    content: "Project home: {underline https://github.com/w3c/respec}",
     raw: true,
   },
 ];
@@ -68,31 +68,19 @@ const usageSections = [
  * @param  {String} version The version of the script.
  * @return {Promise} Resolves when done writing the files.
  */
-function appendBoilerplate(outPath, version, name) {
-  return async(function*(optimizedJs, sourceMap) {
-    const respecJs = `"use strict";
-/* ReSpec ${version}
-Created by Robin Berjon, http://berjon.com/ (@robinberjon)
-Documentation: http://w3.org/respec/.
-See original source for licenses: https://github.com/w3c/respec */
+async function appendBoilerplate(outPath, version, name) {
+  const mapPath = path.dirname(outPath) + `/respec-${name}.js.map`;
+  const [optimizedJs, sourceMap] = await Promise.all([
+    fsp.readFile(outPath, "utf-8"),
+    fsp.readFile(mapPath, "utf-8"),
+  ]);
+  const respecJs = `"use strict";
 window.respecVersion = "${version}";
-${optimizedJs}
-require(['profile-${name}']);`;
-    const result = UglifyJS.minify(respecJs, {
-      toplevel: true,
-      sourceMap: {
-        filename: `respec-${name}.js`,
-        url: `respec-${name}.build.js.map`,
-      },
-    });
-    if ("error" in result) {
-      throw new Error(result.error);
-    }
-    const mapPath = path.dirname(outPath) + `/respec-${name}.build.js.map`;
-    const promiseToWriteJs = fsp.writeFile(outPath, result.code, "utf-8");
-    const promiseToWriteMap = fsp.writeFile(mapPath, sourceMap, "utf-8");
-    yield Promise.all([promiseToWriteJs, promiseToWriteMap]);
-  }, Builder);
+${optimizedJs}`;
+  const respecJsMap = sourceMap.replace(`"mappings":"`, `"mappings":";;`);
+  const promiseToWriteJs = fsp.writeFile(outPath, respecJs, "utf-8");
+  const promiseToWriteMap = fsp.writeFile(mapPath, respecJsMap, "utf-8");
+  await Promise.all([promiseToWriteJs, promiseToWriteMap]);
 }
 
 const Builder = {
@@ -101,11 +89,11 @@ const Builder = {
    *
    * @returns {Promise<String>} The version string.
    */
-  getRespecVersion: async(function*() {
+  getRespecVersion: async () => {
     const packagePath = path.join(__dirname, "../package.json");
-    const content = yield fsp.readFile(packagePath, "utf-8");
+    const content = await fsp.readFile(packagePath, "utf-8");
     return JSON.parse(content).version;
-  }),
+  },
 
   /**
    * Async function runs Requirejs' optimizer to generate the output.
@@ -114,7 +102,7 @@ const Builder = {
    * @param  {[type]} options [description]
    * @return {[type]}         [description]
    */
-  build({ name }) {
+  async build({ name }) {
     if (!name) {
       throw new TypeError("name is required");
     }
@@ -126,43 +114,50 @@ const Builder = {
       frames: presets.clock,
       delay: 1,
     });
-    return async.task(function*() {
-      // optimisation settings
-      const buildVersion = yield this.getRespecVersion();
-      const outputWritter = appendBoilerplate(outPath, buildVersion, name);
-      const config = {
-        baseUrl: path.join(__dirname, "../js/"),
-        deps: ["deps/require"],
-        generateSourceMaps: true,
-        inlineText: true,
-        logLevel: 2, // Show uglify warnings and errors.
-        mainConfigFile: `js/profile-${name}.js`,
-        name: `profile-${name}`,
-        optimize: "none",
-        preserveLicenseComments: false,
-        useStrict: true,
-      };
-      const promiseToWrite = new Promise((resolve, reject) => {
-        config.out = (concatinatedJS, sourceMap) => {
-          outputWritter(concatinatedJS, sourceMap).then(resolve).catch(reject);
-        };
-      });
-      r.optimize(config);
-      const buildDir = path.resolve(__dirname, "../builds/");
-      const workerDir = path.resolve(__dirname, "../worker/");
-      // copy respec-worker
-      fsp
-        .createReadStream(`${workerDir}/respec-worker.js`)
-        .pipe(fsp.createWriteStream(`${buildDir}/respec-worker.js`));
-      yield promiseToWrite;
-      loading.stop(timer);
-    }, this);
+
+    // optimisation settings
+    const buildVersion = await this.getRespecVersion();
+    const config = {
+      mode: "production",
+      entry: require.resolve("../js/profile-w3c-common.js"),
+      output: {
+        path: buildPath,
+        filename: outFile,
+      },
+      module: {
+        rules: [
+          {
+            // shortcut.js uses global scope
+            test: require.resolve("../js/shortcut.js"),
+            use: "exports-loader?shortcut",
+          },
+        ],
+      },
+      resolveLoader: {
+        // to import texts via e.g. "text!./css/webidl.css"
+        alias: { text: "raw-loader" },
+      },
+      devtool: "source-map",
+    };
+    const buildDir = path.resolve(__dirname, "../builds/");
+    const workerDir = path.resolve(__dirname, "../worker/");
+    const stats = await promisify(webpack)(config);
+    if (stats.hasErrors()) {
+      throw new Error(stats.toJson().errors);
+    }
+    await appendBoilerplate(outPath, buildVersion, name);
+    // copy respec-worker
+    await fsp.copyFile(
+      `${workerDir}/respec-worker.js`,
+      `${buildDir}/respec-worker.js`
+    );
+    loading.stop(timer);
   },
 };
 
 exports.Builder = Builder;
 if (require.main === module) {
-  async.task(function* run() {
+  (async function run() {
     let parsedArgs;
     try {
       parsedArgs = commandLineArgs(optionList);
@@ -180,11 +175,11 @@ if (require.main === module) {
       return;
     }
     try {
-      yield Builder.build({ name });
+      await Builder.build({ name });
     } catch (err) {
       console.error(colors.error(err.stack));
       return process.exit(1);
     }
     process.exit(0);
-  });
+  })();
 }

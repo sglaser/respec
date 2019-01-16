@@ -9,10 +9,8 @@
 //  This module only really works when you are in an HTTP context, and will most likely
 //  fail if you are editing your documents on your local drive. That is due to security
 //  restrictions in the browser.
-"use strict";
-
-import {pub} from "core/pubsubhub";
-import {runTransforms} from "core/utils";
+import { pub } from "./pubsubhub";
+import { runTransforms } from "./utils";
 
 export const name = "core/data-include";
 
@@ -74,9 +72,9 @@ function cleanUp(el) {
   ].forEach(attr => el.removeAttribute(attr));
 }
 
-export function run(conf, doc, cb) {
+export async function run() {
   const promisesToInclude = Array.from(
-    doc.querySelectorAll("[data-include]")
+    document.querySelectorAll("[data-include]")
   ).map(async el => {
     const url = el.dataset.include;
     if (!url) {
@@ -89,10 +87,12 @@ export function run(conf, doc, cb) {
       const text = await response.text();
       processResponse(text, id, url);
     } catch (err) {
-      const msg = `\`data-include\` failed: \`${url}\` (${err.message}). See console for details.`;
+      const msg = `\`data-include\` failed: \`${url}\` (${
+        err.message
+      }). See console for details.`;
       console.error("data-include failed for element: ", el, err);
       pub("error", msg);
     }
   });
-  Promise.all(promisesToInclude).then(cb);
+  await Promise.all(promisesToInclude);
 }

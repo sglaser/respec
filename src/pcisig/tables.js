@@ -13,13 +13,11 @@ export function run(conf, doc, cb) {
   let tblMap = {},
     tot = [],
     num = 0;
-  $("table").each(function () {
-    let $tbl = $(this),
-      $cap = $tbl.find("caption"),
-      tit = $cap.text(),
-      id = $tbl.makeID("tbl", tit);
-
+  $("table > caption").each(function () {
     // set proper caption title
+    let $cap = $(this),
+      tit = $cap.text(),
+      id = $cap.parent().makeID("tbl", tit);
     num++;
     $cap
       .wrapInner($("<span class='tbl-title'/>"))
@@ -41,7 +39,9 @@ export function run(conf, doc, cb) {
         .append($totCap.contents())
         .end()
     );
+
   });
+
 
   // Update all anchors with empty content that reference a table ID
   $("a[href]", doc).each(function () {

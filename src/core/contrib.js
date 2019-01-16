@@ -4,113 +4,80 @@
 // #gh-commenters: people having contributed comments to issues.
 // #gh-contributors: people whose PR have been merged.
 // Spec editors get filtered out automatically.
-
-import { fetch as ghFetch, fetchIndex } from "core/github";
-import { pub } from "core/pubsubhub";
+import { flatten, joinAnd } from "./utils";
+import { fetchIndex } from "./github";
+import { pub } from "./pubsubhub";
 export const name = "core/contrib";
 
 function prop(prop) {
-  return function(o) {
-    return o[prop];
-  };
+  return o => o[prop];
+}
+const nameProp = prop("name");
+const urlProp = prop("url");
+
+function findUserURLs(...thingsWithUsers) {
+  const usersURLs = thingsWithUsers
+    .reduce(flatten, [])
+    .filter(thing => thing && thing.user)
+    .map(({ user }) => user.url);
+  return [...new Set(usersURLs)];
 }
 
-function findUsers(...thingsToFind) {
-  var users = {};
-  thingsToFind.forEach(function(things) {
-    things.forEach(function(thing) {
-      if (thing.user) {
-        users[thing.user.url] = true;
-      }
-    });
-  });
-  return Object.keys(users);
+async function toHTML(urls, editors, element, headers) {
+  const args = await Promise.all(urls.map(url => fetch(url, { headers })));
+  const names = args
+    .map(([user]) => user.name || user.login)
+    .filter(name => !editors.includes(name))
+    .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+  element.textContent = joinAnd(names);
+  element.id = null;
 }
 
-function join(things) {
-  if (!things.length) {
-    return "";
-  }
-  things = things.slice(0);
-  var last = things.pop();
-  var length = things.length;
-  if (length === 0) {
-    return last;
-  }
-  if (length === 1) {
-    return things[0] + " and " + last;
-  }
-  return things.join(", ") + ", and " + last;
-}
-
-function toHTML(urls, editors, element) {
-  return $.when
-    .apply(
-      $,
-      urls.map(function(url) {
-        return ghFetch(url);
-      })
-    )
-    .then(function(...args) {
-      var names = args
-        .map(function(user) {
-          user = user[0];
-          return user.name || user.login;
-        })
-        .filter(function(name) {
-          return editors.indexOf(name) < 0;
-        });
-      names.sort(function(a, b) {
-        return a.toLowerCase().localeCompare(b.toLowerCase());
-      });
-      $(element).html(join(names)).attr("id", null);
-    });
-}
-
-export async function run(conf, doc, cb) {
-  var $commenters = doc.querySelector("#gh-commenters");
-  var $contributors = doc.querySelector("#gh-contributors");
-
-  if (!$commenters && !$contributors) {
-    return cb();
-  }
-
-  if (!conf.githubAPI) {
-    var elements = [];
-    if ($commenters) elements.push("#" + $commenters.id);
-    if ($contributors) elements.push("#" + $contributors.id);
-    pub(
-      "error",
-      "Requested list of contributors and/or commenters from GitHub (" +
-        elements.join(" and ") +
-        ") but config.githubAPI is not set."
-    );
-    cb();
+export async function run(conf) {
+  const ghCommenters = document.getElementById("gh-commenters");
+  const ghContributors = document.getElementById("gh-contributors");
+  if (!ghCommenters && !ghContributors) {
     return;
   }
+  const headers = {};
+  const { githubAPI, githubUser, githubToken } = conf;
+  if (githubUser && githubToken) {
+    const credentials = btoa(`${githubUser}:${githubToken}`);
+    const Authorization = `Basic ${credentials}`;
+    Object.assign(headers, { Authorization });
+  }
+  if (!githubAPI) {
+    const msg =
+      "Requested list of contributors and/or commenters from GitHub, but " +
+      "[`githubAPI`](https://github.com/w3c/respec/wiki/githubAPI) is not set.";
+    pub("error", msg);
+    return;
+  }
+  const response = await fetch(githubAPI, { headers });
+  if (!response.ok) {
+    const msg =
+      "Error fetching repository information from GitHub. " +
+      `(HTTP Status ${response.status}).`;
+    pub("error", msg);
+    return;
+  }
+  const indexes = await response.json();
+  const { issues_url, issue_comment_url, contributors_url } = indexes;
 
-  ghFetch(conf.githubAPI)
-    .then(function(json) {
-      return $.when(
-        fetchIndex(json.issues_url),
-        fetchIndex(json.issue_comment_url),
-        fetchIndex(json.contributors_url)
-      );
-    })
-    .then(function(issues, comments, contributors) {
-      var editors = respecConfig.editors.map(prop("name"));
-      var commenters = findUsers(issues, comments);
-      contributors = contributors.map(prop("url"));
-      return $.when(
-        toHTML(commenters, editors, $commenters),
-        toHTML(contributors, editors, $contributors)
-      );
-    })
-    .then(cb, function(error) {
-      pub(
-        "error",
-        "Error loading contributors and/or commenters from  Error: " + error
-      );
-      cb();
-    });
+  const [issues, comments, contributors] = await Promise.all([
+    fetchIndex(issues_url, headers),
+    fetchIndex(issue_comment_url, headers),
+    fetchIndex(contributors_url, headers),
+  ]);
+  const editors = conf.editors.map(nameProp);
+  const commenterUrls = ghCommenters ? findUserURLs(issues, comments) : [];
+  const contributorUrls = ghContributors ? contributors.map(urlProp) : [];
+  try {
+    await Promise.all(
+      toHTML(commenterUrls, editors, ghCommenters, headers),
+      toHTML(contributorUrls, editors, ghContributors, headers)
+    );
+  } catch (error) {
+    pub("error", "Error loading contributors and/or commenters from GitHub.");
+  }
 }

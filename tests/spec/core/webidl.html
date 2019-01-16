@@ -11,10 +11,10 @@
           ,   shortName:    "webidl"
           ,   editors:      [{ name: "Robin Berjon", url: "http://berjon.com/" }]
           ,   wg:           "ReSpec Hackin' Gang"
-          ,   wgURI:        "http://darobin.github.com/respec"
+          ,   wgURI:        "https://darobin.github.com/respec"
           ,   wgPublicList: "none"
-          ,   wgPatentURI:  "XXX"
-          ,   edDraftURI:   "http://darobin.github.com/respec"
+          ,   wgPatentURI:  "https://example.com/"
+          ,   edDraftURI:   "https://darobin.github.com/respec"
         };
     </script>
   </head>
@@ -68,6 +68,18 @@
     };
     </pre>
     </section>
+    <section>
+      <h2>Section with definitions</h2>
+      <p>
+        <dfn>TestInterface</dfn> interface
+        <dfn>TestCBInterface</dfn> interface
+        <dfn>TestDictionary</dfn> dictionary
+        <dfn>TestEnum</dfn> enum
+        <dfn>TestMixin</dfn> mixin interface
+        <dfn>TestCallBack</dfn> callback
+        <dfn>TestTypedef</dfn> typedef
+      </p>
+    </section>
     <section id="sec-parenthesis-method" data-dfn-for="ParenthesisTest" data-link-for="ParenthesisTest">
       <h2>More linking</h2>
       <pre class="idl no-link-warnings">
@@ -82,16 +94,49 @@
           void dataLtOverride();
           void fullyQualified();
           void fullyQualifiedNoParens();
+          void doTheFoo();
       };
       </pre>
+      <pre class="idl" id="similar-names">
+      // makes sure that types and identifiers are not confused
+      interface SimilarlyNamed {
+        attribute TestInterface testInterface;
+        attribute TestCBInterface testCBInterface;
+        attribute TestDictionary testDictionary;
+        attribute TestEnum testEnum;
+        attribute TestTypedef testTypedef;
+        readonly maplike&lt;SimilarlyNamed, SimilarlyNamed>;
+      };
+      TestInterface includes TestMixin;
+      interface TestInterface {};
+      callback interface TestCBInterface {};
+      typedef (TestInterface or TestCBInterface) TestTypedef;
+      callback TestCallBack = TestCallBack ();
+      dictionary TestDictionary {};
+      enum TestEnum { "value" };
+      interface mixin TestMixin {
+        attribute Bar bar;
+      };
+      interface Bar {};
+      </pre>
+      <section data-dfn-for="SimilarlyNamed">
+        <h3><dfn>SimilarlyNamed</dfn> interface</h3>
+        <p>
+          <dfn>testInterface</dfn> attribute;
+          <dfn>testCBInterface</dfn> attribute;
+          <dfn>testDictionary</dfn> attribute;
+          <dfn>testEnum</dfn> attribute;
+          <dfn>testTypedef</dfn> attribute;
+        </p>
+      </section>
+      <p data-dfn-for="TestMixin"><dfn>bar</dfn> attribute of TestMixin</p>
       <p id="meth-basic-doc" data-dfn-for="ParenthesisTest">
-        <dfn>ull</dfn> is a method. Its <dfn data-lt="ull!overload-1">overloaded form</dfn> returns a <code>SuperStar/</code>
+        <dfn>ull()</dfn> is a method. Its <dfn data-lt="ull!overload-1">overloaded form</dfn> returns a <code>SuperStar/</code>
       </p>
       <p><dfn data-lt="this also links">dataLtOverride()</dfn></p>
       <p><dfn>ParenthesisTest</dfn></p>
       <p><dfn>basic()</dfn>...</p>
       <p><dfn>ext()</dfn>...</p>
-      <p><dfn>ull()</dfn>...</p>
       <p><dfn>paramed()</dfn>...</p>
       <p><dfn>withName()</dfn>...</p>
       <p><dfn>named()</dfn>...</p>
@@ -115,6 +160,9 @@
     <p><a id="fullyQualifiedNoParens-2">ParenthesisTest.fullyQualifiedNoParens()</a></p>
     <p><a id="fullyQualifiedNoParens-3" data-link-for="ParenthesisTest">fullyQualifiedNoParens()</a></p>
     <p><a id="fullyQualifiedNoParens-4" data-link-for="ParenthesisTest">fullyQualifiedNoParens</a></p>
+    <section>
+      <h2><dfn>Bar</dfn> interface</h2>
+    </section>
     <section>
       <h2>Unsupported</h2>
       <p>
@@ -189,12 +237,25 @@
       <pre id='if-callback' class='idl'>
         callback interface SuperStar {};
       </pre>
+      <p>
+        Interface mixin .
+      </p>
+      <pre id='if-mixin' class='idl'>
+        interface mixin SuperStar {};
+      </pre>
+      <pre id='if-partial-mixin' class='idl'>
+        partial interface mixin SuperStar {};
+      </pre>
       <pre id='if-doc' class='idl'>
         interface DocInterface {};
         interface DocIsNotCaseSensitive {};
         interface UndocInterface {};
+        namespace Afterglow {};
       </pre>
-      <p id='if-doc-p'><dfn>DocInterface</dfn> is an interface and so is <dfn>DoCiSnOtCaSeSeNsItIvE</dfn>.</p>
+      <p id='if-doc-p'>
+        <dfn>DocInterface</dfn> is an interface and so is <dfn>DoCiSnOtCaSeSeNsItIvE</dfn>.
+        <dfn>Afterglow</dfn> is a namespace.
+      </p>
     </section>
     <section>
       <h2>Constructors</h2>
@@ -280,6 +341,12 @@
       <p>
         Basic attributes testing.
       </p>
+      <p>
+        The <code><dfn>Performance</dfn></code> interface.
+      </p>
+      <p data-dfn-for="AttrBasic">
+        The <dfn>performance</dfn> attribute.
+      </p>
       <pre id='attr-basic' class='idl'>
         interface AttrBasic {
           // 1
@@ -297,8 +364,9 @@
           // 3.10.31
           attribute FrozenArray&lt;DOMString&gt; alist;
           // 4.0
-          attribute Promise&lt;DOMString&gt; operation;<!--
-
+          attribute Promise&lt;DOMString&gt; operation;
+          // 5.0
+          readonly attribute Performance performance;<!--
           // 3
            static attribute DOMString unmovable;
           // 4
@@ -319,10 +387,31 @@
         Basic operations testing.
       </p>
       <!--
-      getter, setter, creator, deleter, legacycaller, stringifier, serilizer
+      getter, setter, creator, deleter, stringifier, serilizer
       static
       specials don't necessarily have an indentifier
        -->
+       <pre class="idl" id="stringifiertest">
+        interface StringifierTest {
+          stringifier StringPass ();
+          stringifier StringNamedPass named ();
+        };
+      </pre>
+      <pre class="idl" id="gettertest">
+        interface GetterTest {
+          getter GetterPass ();
+          getter GetterNamedPass named ();
+        };
+      </pre>
+      <pre class="idl" id="settertest">
+        interface SetterTest {
+          setter SetterPass ();
+          setter SetterNamedPass named ();
+        };
+      </pre>
+      <p data-dfn-for="MethBasic">
+        <dfn>performance()</dfn> method.
+      </p>
       <pre id='meth-basic' class='idl'>
         interface MethBasic {
           // 1
@@ -330,7 +419,7 @@
           // 2
           [Something] void ext();
           // 3
-          unsigned long long ull(short s);
+          unsigned long long ull(short s, short n);
           // 3.5
           SuperStar? ull();
           // 5
@@ -341,11 +430,65 @@
           setter void ();
           // 8
           setter void named ();
-<!--        ... and other special operations
-     -->};
+          // 9
+          static Promise&lt;RTCCertificate>  generateCertificate(AlgorithmIdentifier keygenAlgorithm);
+          // 10
+          stringifier DOMString identifier();
+          // 11
+          stringifier DOMString ();
+          // 12
+          stringifier;
+          Promise&lt;void> complete(optional PaymentComplete result = "unknown");
+          Promise&lt;void> another(optional  /*trivia*/  PaymentComplete result = "unknown");
+          Performance performance();
+        };
       </pre>
       <p id="meth-basic-doc" data-dfn-for="MethBasic">
         <dfn>ull</dfn> is a method. Its <dfn data-lt="ull!overload-1">overloaded form</dfn> returns a <code>SuperStar/</code>
+      </p>
+    </section>
+    <section>
+      <h2>iterable/maplike/setlike declarations</h2>
+      <pre id='iterable-like' class='idl'>
+        interface Yukina {
+          iterable&lt;DOMString&gt;;
+        };
+
+        interface Sayo {
+          iterable&lt;DOMString, DOMString&gt;;
+        };
+
+        interface Kasumi {
+          maplike&lt;DOMString, DOMString&gt;;
+        };
+
+        interface Arisa {
+          setlike&lt;DOMString&gt;;
+        };
+      </pre>
+      <pre class="idl" id='map-set-readonly'>
+        interface MapLikeInterface {
+          maplike&lt;MapLikeInterface, MapLikeInterface&gt;;
+        };
+        interface ReadOnlyMapLike {
+          readonly maplike&lt;ReadOnlyMapLike, ReadOnlyMapLike&gt;;
+        };
+        interface SetLikeInterface {
+          setlike&lt;SetLikeInterface&gt;;
+        };
+        interface ReadOnlySetLike {
+          readonly setlike&lt;ReadOnlySetLike&gt;;
+        };
+      </pre>
+      <p>
+        <dfn>Yukina</dfn> interface
+        <dfn>Sayo</dfn> interface
+        <dfn>Kasumi</dfn> interface
+        <dfn>Arisa</dfn> interface
+        <dfn>MapLikeInterface</dfn> interface
+        <dfn>ReadOnlyMapLike</dfn> interface
+        <dfn>SetLikeInterface</dfn> interface
+        <dfn>ReadOnlySetLike</dfn> interface
       </p>
     </section>
     <section>
@@ -357,6 +500,7 @@
           /* This one
              has
              three. */
+          <!-- this is an HTML comment that will be ignored -->
         };
       </pre>
     </section>
@@ -413,6 +557,16 @@
           long undocField;
         };
       </pre>
+      <pre class="idl" id="multiple-dictionaries">
+        dictionary OneThing {
+          int x;
+        };
+
+
+        partial dictionary AnotherThing {
+          int y;
+        };
+      </pre>
       <p id='dict-doc-p'><dfn>DictDocTest</dfn> contains <dfn data-dfn-for="DictDocTest">dictDocField</dfn> and <dfn data-dfn-for="DictDocTest">otherField</dfn></p>
     </section>
     <section id="enumerations">
@@ -427,7 +581,7 @@
           // 2
           "two"
           // 3
-        , "three",
+          , "three",
 
           // 4
           "white space"
@@ -437,7 +591,9 @@
       <p data-dfn-for="EnumBasic"><dfn>one</dfn> is first.</p>
       <p data-link-for="EnumBasic"><a>one</a> is referenced with a <code>[link-for]</code> attribute.</p>
       <p id="enum-ref-without-link-for"><a>EnumBasic.one</a> may also be referenced with fully-qualified name.</p>
+      <p><dfn data-dfn-for="EnumBasic">white space</dfn></p>
       <section id="enum-empty-sec" data-dfn-for="EmptyEnum">
+        <h2>Enumeration with an empty string</h2>
         <pre class="idl no-link-warnings">
         enum EmptyEnum {
           "",
@@ -448,6 +604,19 @@
         <p><dfn>""</dfn></p>...
         <p><dfn>not empty</dfn>...</p>
       </section>
+    </section>
+    <section id="multipleEnums" data-dfn-for="Test2">
+      <h2>Multiple unique enums</h2>
+      <pre class="idl">
+        enum Test1 { "enum" };
+        enum Test2 { "enum" };
+      </pre>
+      <p>
+        <!-- Test1's enum -->
+        <dfn data-dfn-for="Test1">enum</dfn>
+        <!-- Test2's enum -->
+        <dfn>enum</dfn>
+      </p>
     </section>
     <section>
       <h2>Callbacks</h2>
@@ -489,20 +658,35 @@
         typedef unsigned long long? tdLessBasic;
       </pre>
       <p id='td-less-basic-doc'><dfn>tdLessBasic</dfn></p>
-    </section>
-    <section>
-      <h2>Implements</h2>
       <p>
-        Basic implements.
+        Typedef with an extended attribute.
       </p>
-      <pre id='impl-basic' class='idl'>
-        Window implements Breakable;
+      <pre id='td-extended-attribute' class='idl'>
+        typedef ([Clamp] unsigned long or ConstrainULongRange) ConstrainULong;
       </pre>
       <p>
-        Less basic implements.
+        Typedef with an extended attribute on union type.
       </p>
-      <pre id='impl-less-basic' class='idl'>
-        [Something]Window implements Breakable;
+      <pre id='td-union-extended-attribute' class='idl'>
+        typedef [Clamp] (unsigned long or ConstrainULongRange) ConstrainULong2;
+      </pre>
+      <pre id='td-trivia' class='idl'>
+        /* test1 */ typedef /* test2 */ [Clamp] /* test3 */ (/* test4 */ unsigned long /* test5 */ or /* test6 */ ConstrainULongRange /* test7 */ ) /* test8 */ ConstrainULong3 /* test9 */;
+      </pre>
+    </section>
+    <section>
+      <h2>Includes</h2>
+      <p>
+        Basic includes.
+      </p>
+      <pre id='incl-basic' class='idl'>
+        Window includes Breakable;
+      </pre>
+      <p>
+        Less basic includes.
+      </p>
+      <pre id='incl-less-basic' class='idl'>
+        [Something]Window includes Breakable;
       </pre>
     </section>
     <section id="documentation">
@@ -534,9 +718,10 @@
       </p>
     </section>
     <section>
+      <h2>IDL block with arbitrary CSS classes</h2>
       <pre id='retain-css-classes' class='idl a b c overlarge'>
         interface NotTested {};
-      </pre>      
+      </pre>
     </section>
     <section>
       <h2>Autolink to WebIDL spec for toJSON</h2>
@@ -552,13 +737,71 @@
         interface DefinedToJson {
           readonly attribute DOMString country;
           [Default] object toJSON();
-          void toWhatever(); 
+          void toWhatever();
         };
       </pre>
       <section>
       <h2><dfn>toJSON()</dfn> method</h2>
       <p>When <a>toJSON()</a> is called, run [[!WEBIDL]]'s <a data-cite="WEBIDL#default-tojson-operation">default toJSON operation</a>.</p>
       </section>
-    </section> 
+    </section>
+    <section>
+      <h2>Optionals and trivia</h2>
+      <pre class="idl" id="optional-trivia">
+        [Constructor(X x, optional Y y, /*trivia*/ Z y)]
+        interface Foo {
+          void foo(X x, optional Y y, /*trivia*/ optional Z z);
+        };
+        callback CallBack = Z? (X x, optional Y y, /*trivia*/ optional Z z);
+      </pre>
+    </section>
+    <section data-dfn-for="CodedThings">
+        <h2><dfn>CodedThings</dfn> interface</h2>
+        <pre class="idl">
+        interface CodedThings {
+          attribute DOMString definedElsewhere;
+          attribute Bar barBar;
+          void doTheFoo();
+        };
+        </pre>
+        <dfn>doTheFoo()</dfn>
+        <dfn>barBar</dfn>
+      </section>
+      <section data-link-for="CodedThings">
+        <h2>All these things surrounded by code elements</h2>
+        <ol id="coded-things">
+          <li><dfn>CodedThings.definedElsewhere</dfn>
+          <li><a>CodedThings.barBar</a>
+          <li><a>barBar</a>
+          <li><a>CodedThings.doTheFoo()</a>
+          <li><a>CodedThings.doTheFoo</a>
+          <li><a>doTheFoo()</a>
+          <li><a>doTheFoo</a>
+        </ol>
+      </section>
+      <section id="idl-dfn-types">
+        <h2>It gives definitions the right idl type</h2>
+        <pre class="idl">
+          interface InterfaceType {
+            readonly attribute DOMString attributeType;
+            void operationType();
+          };
+          dictionary DictionaryType {
+            DOMString fieldType;
+          };
+          enum EnumType {
+            "enumValueType"
+          };
+        </pre>
+        <p>
+          <dfn>InterfaceType</dfn>
+          <dfn data-dfn-for="InterfaceType">attributeType</dfn>
+          <dfn data-dfn-for="InterfaceType">operationType</dfn>
+          <dfn>DictionaryType</dfn>
+          <dfn data-dfn-for="DictionaryType">fieldType</dfn>
+          <dfn>EnumType</dfn>
+          <dfn data-dfn-for="EnumType">enumValueType</dfn>
+        </p>
+      </section>
   </body>
 </html>

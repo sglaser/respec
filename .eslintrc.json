@@ -1,6 +1,5 @@
 {
   "env": {
-    "jasmine": true,
     "browser": true,
     "es6": true,
     "node": true,
@@ -8,20 +7,29 @@
     "amd": true,
     "worker": true
   },
-  "extends": "eslint:recommended",
+  "extends": ["eslint:recommended", "plugin:prettier/recommended"],
   "parserOptions": {
     "sourceType": "module",
-    "ecmaVersion": 8,
-    "ecmaFeatures": {
-      "experimentalObjectRestSpread": true
-    }
+    "ecmaVersion": 2019
   },
   "rules": {
+    "prettier/prettier": ["error", { "endOfLine": "auto" }],
+    "dot-notation": "error",
+    "eol-last": ["error", "always"],
     "indent": 0,
-    "linebreak-style": ["error", "unix"],
-    "quotes": ["error", "double"],
+    "no-console": 0,
+    "no-duplicate-imports": 2,
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-unused-vars": 2,
+    "no-var": 2,
+    "object-shorthand": 2,
+    "one-var": ["error", "never"],
+    "prefer-arrow-callback": 2,
+    "prefer-const": 2,
+    "quotes": 0,
     "semi": ["error", "always"],
-    "no-console": 0
+    "sort-imports": 2
   },
   "globals": {
     "flushIframes": true,
@@ -33,5 +41,5 @@
     "pickRandomsFromList": true,
     "respecConfig": true
   },
-  "plugins": ["jasmine"]
+  "plugins": ["prettier"]
 }

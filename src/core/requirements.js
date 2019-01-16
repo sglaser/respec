@@ -9,33 +9,31 @@
 // 2.  It allows referencing requirements by their ID simply using an empty <a>
 //     element with its href pointing to the requirement it should be referencing
 //     and a class of "reqRef".
-import { pub } from "core/pubsubhub";
+import hyperHTML from "hyperhtml";
+import { pub } from "./pubsubhub";
+
 export const name = "core/requirements";
 
-export function run(conf, doc, cb) {
-  $(".req").each(function(i) {
-    i++;
-    var $req = $(this);
-    var title = "Req. " + i;
-    $req.prepend("<a href='#" + $req.attr("id") + "'>" + title + "</a>: ");
+export function run() {
+  document.querySelectorAll(".req").forEach((req, i) => {
+    const frag = `#${req.getAttribute("id")}`;
+    const el = hyperHTML`<a href="${frag}">Req. ${i + 1}</a>`;
+    req.prepend(el, ": ");
   });
 
-  $("a.reqRef").each(function() {
-    var $ref = $(this),
-      href = $ref.attr("href"),
-      id,
-      $req,
-      txt;
-    if (!href) return;
-    id = href.substring(1);
-    $req = $("#" + id);
-    if ($req.length) {
-      txt = $req.find("> a").text();
+  document.querySelectorAll("a.reqRef[href]").forEach(ref => {
+    const href = ref.getAttribute("href");
+    const id = href.substring(1); // href looks like `#id`
+    const req = document.getElementById(id);
+    let txt;
+    if (req) {
+      txt = req.querySelector("a:first-child").textContent;
     } else {
-      txt = "Req. not found '" + id + "'";
-      pub("error", "Requirement not found in element `a.reqRef`: " + id);
+      txt = `Req. not found '${id}'`;
+      const msg = "Requirement not found in element `a.reqRef`: " + id;
+      pub("error", msg);
+      console.warn(msg, ref);
     }
-    $ref.text(txt);
+    ref.textContent = txt;
   });
-  cb();
 }

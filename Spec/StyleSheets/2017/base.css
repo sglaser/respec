@@ -965,18 +965,42 @@ g line.regBitNumLine_Hide {
   stroke-width: 1px;
 }
 
-g rect.regFieldBox {
+g.regFieldSmallText text.regFieldName {
+  font-size: 8pt;
+  font-weight: light;
+}
+
+g.regFieldReservedText rect.regFieldBox,
+g.regFieldReservedText path.regFieldBox {
+  fill: #e8e8e8;
+  font-size: 8pt;
+  font-weight: light;
+}
+
+g.regFieldReservedText text.regFieldName {
+  font-style: italic;
+}
+
+g rect.regFieldBox,
+g path.regFieldBox {
   fill: white;
   stroke: black;
   stroke-width: 1.5px;
 }
 
 g.regAttr_rsvd rect.regFieldBox,
+g.regAttr_rsvd path.regFieldBox,
 g.regAttr_rsvdp rect.regFieldBox,
+g.regAttr_rsvdp path.regFieldBox,
 g.regAttr_rsvdz rect.regFieldBox,
+g.regAttr_rsvdz path.regFieldBox,
 g.regAttr_reserved rect.regFieldBox,
-g.regAttr_unused rect.regFieldBox {
-  fill: white;
+g.regAttr_reserved path.regFieldBox,
+g.regAttr_unused rect.regFieldBox,
+g.regAttr_unused path.regFieldBox,
+g.regFieldUnused rect.regFieldBox,
+g.regFieldUnused path.regFieldBox {
+  fill: #e8e8e8;
 }
 
 g.regFieldExternal line.regFieldBox,
@@ -999,6 +1023,7 @@ g.regFieldHidden path.regBitLine,
 g.regFieldHidden path.regBitBracket,
 g.regFieldHidden line.regFieldBox,
 g.regFieldHidden rect.regFieldBox,
+g.regFieldHidden path.regFieldBox,
 g.regFieldHidden line.regBitNumLine,
 g.regFieldHidden line.regBitNumLine_Hide,
 g.regFieldHidden text.regBitNumStart,
@@ -1073,7 +1098,9 @@ figure pre.json {
 
 @media screen {
   g.regLink:hover rect.regFieldBox,
-  g.regLink:focus rect.regFieldBox {
+  g.regLink:focus rect.regFieldBox,
+  g.regLink:hover path.regFieldBox,
+  g.regLink:focus path.regFieldBox {
     fill: #ffa;
     stroke: blue;
   }
@@ -1885,7 +1912,7 @@ span.respec-error {
   }
 
   /* general statements which perhaps should be part of the UA style sheet? */
-  h1, h2, h3, h4, h5, h6, dt {
+  h1, h2, h3, h4, h5, h6, dt, .marker {
     font-family: "Source Sans Pro", "DejaVu Sans", "Arial Unicode MS", Tahoma, "Lucinda Grande", Arial, Helvetica, sans-serif;
     page-break-after: avoid;
   }
@@ -2093,7 +2120,7 @@ span.respec-error {
   }
 
   th {
-    font-size: larger;
+    font-size: medium;
     font-weight: normal;
   }
 

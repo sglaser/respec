@@ -124,10 +124,16 @@ export function run(conf, doc, cb) {
     case "PUB-NOTE":
       styleFile = "NOTE";
       break;
+    case "ED":
+    case "ED-CWG":
+    case "ED-MEM":
+    case "ED-FINAL":
+      styleFile += "ED";
+      break;
     case "WD":
     case "WD-CWG":
     case "WD-MEM":
-    case "WC-FINAL":
+    case "WD-FINAL":
       styleFile += "WD";
       break;
     case "RC":
@@ -156,7 +162,7 @@ export function run(conf, doc, cb) {
       styleFile = "base";
       break;
     default:
-      styleFile += conf.specStatus;
+      styleFile = "base";
   }
 
   // Select between released styles and experimental style.

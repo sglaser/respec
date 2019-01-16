@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module core/data-tests
  *
@@ -8,36 +9,76 @@
  *
  * Docs: https://github.com/w3c/respec/wiki/data-tests
  */
-import { pub } from "core/pubsubhub";
-import { lang as defaultLang } from "core/l10n";
+import { lang as defaultLang } from "./l10n";
+import hyperHTML from "hyperhtml";
+import { pub } from "./pubsubhub";
 const l10n = {
   en: {
-    missing_test_suite_uri: "Found tests in your spec, but missing '" +
+    missing_test_suite_uri:
+      "Found tests in your spec, but missing '" +
       "[`testSuiteURI`](https://github.com/w3c/respec/wiki/testSuiteURI)' in your ReSpec config.",
     tests: "tests",
     test: "test",
   },
 };
+
 export const name = "core/data-tests";
 
 const lang = defaultLang in l10n ? defaultLang : "en";
 
 function toListItem(href) {
-  return hyperHTML.bind(document.createElement("li"))`
+  const emojiList = [];
+  const [testFile] = new URL(href).pathname.split("/").reverse();
+  const testParts = testFile.split(".");
+  let [testFileName] = testParts;
+
+  const isSecureTest = testParts.find(part => part === "https");
+  if (isSecureTest) {
+    const requiresConnectionEmoji = document.createElement("span");
+    requiresConnectionEmoji.innerHTML = "🔒";
+    requiresConnectionEmoji.setAttribute(
+      "aria-label",
+      "requires a secure connection"
+    );
+    requiresConnectionEmoji.setAttribute("title", "Test requires HTTPS");
+    testFileName = testFileName.replace(".https", "");
+    emojiList.push(requiresConnectionEmoji);
+  }
+
+  const isManualTest = testFileName
+    .split(".")
+    .join("-")
+    .split("-")
+    .find(part => part === "manual");
+  if (isManualTest) {
+    const manualPerformEmoji = document.createElement("span");
+    manualPerformEmoji.innerHTML = "💪";
+    manualPerformEmoji.setAttribute(
+      "aria-label",
+      "the test must be run manually"
+    );
+    manualPerformEmoji.setAttribute("title", "Manual test");
+    testFileName = testFileName.replace("-manual", "");
+    emojiList.push(manualPerformEmoji);
+  }
+
+  const testList = hyperHTML.bind(document.createElement("li"))`
     <a href="${href}">
-      ${href.split("/").pop()}
-    </a>
+      ${testFileName}
+    </a> ${emojiList}
   `;
+  return testList;
 }
 
-export function run(conf, doc, cb) {
-  const testables = doc.querySelectorAll("[data-tests]");
+export function run(conf) {
+  /** @type {NodeListOf<HTMLElement>} */
+  const testables = document.querySelectorAll("[data-tests]");
   if (!testables.length) {
-    return cb();
+    return;
   }
   if (!conf.testSuiteURI) {
     pub("error", l10n[lang].missing_test_suite_uri);
-    return cb();
+    return;
   }
   Array.from(testables)
     .filter(elem => elem.dataset.tests)
@@ -68,7 +109,6 @@ export function run(conf, doc, cb) {
     })
     .forEach(({ elem, details }) => {
       delete elem.dataset.tests;
-      elem.insertAdjacentElement("beforeend", details);
+      elem.append(details);
     });
-  cb();
 }

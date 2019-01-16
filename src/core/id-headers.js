@@ -3,14 +3,31 @@
 // This is currently in core though it comes from a W3C rule. It may move in the future.
 
 export const name = "core/id-headers";
+import { addId } from "./utils";
+import hyperHTML from "hyperhtml";
 
-export function run(conf, doc, cb) {
-  Array.from(
-    document.querySelectorAll(
-      "h2:not([id]), h3:not([id]), h4:not([id]), h5:not([id]), h6:not([id])"
+export function run(conf) {
+  document
+    .querySelectorAll(
+      `
+      section:not(.introductory) h2,
+      section:not(.introductory) h3,
+      section:not(.introductory) h4,
+      section:not(.introductory) h5,
+      section:not(.introductory) h6`
     )
-  ).forEach(elem => {
-    $(elem).makeID();
-  });
-  cb();
+    .forEach(elem => {
+      addId(elem);
+      if (conf.addSectionLinks) {
+        addSectionLink(elem);
+      }
+    });
+}
+
+function addSectionLink(h) {
+  const section = h.closest("section[id]");
+  const id = section ? section.id : h.id;
+  h.appendChild(hyperHTML`
+    <a href="${"#" + id}" class="self-link" aria-label="§"></a>
+  `);
 }

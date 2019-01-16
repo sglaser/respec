@@ -1,0 +1,16 @@
+env:
+  jasmine: true
+  node: false
+extends:
+  - 'plugin:jasmine/recommended'
+parserOptions:
+  sourceType: script
+rules:
+  no-console: 1
+  no-sparse-arrays: 0
+  jasmine/new-line-before-expect: 0
+  jasmine/new-line-between-declarations: 0
+  jasmine/no-spec-dupes: ["error", "branch"]
+  jasmine/prefer-jasmine-matcher: 2
+plugins:
+  - jasmine

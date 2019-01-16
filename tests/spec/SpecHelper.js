@@ -1,24 +1,23 @@
 /*exported pickRandomsFromList, makeRSDoc, flushIframes,
  makeStandardOps, makeDefaultBody, makeBasicConfig*/
 "use strict";
-var iframes = [];
+const iframes = [];
 
-function makeRSDoc(
-  opts = {},
-  cb = () => {},
-  src = "about-blank.html",
-  style = ""
-) {
-  return new Promise(function(resove, reject) {
-    var ifr = document.createElement("iframe");
+function makeRSDoc(opts = {}, src = "about-blank.html", style = "") {
+  return new Promise((resolve, reject) => {
+    const ifr = document.createElement("iframe");
     opts = opts || {};
     // reject when DEFAULT_TIMEOUT_INTERVAL passes
-    var timeoutId = setTimeout(function() {
+    const timeoutId = setTimeout(() => {
       reject(new Error("Timed out waiting on " + src));
     }, jasmine.DEFAULT_TIMEOUT_INTERVAL);
-    ifr.addEventListener("load", function() {
-      var doc = this.contentDocument;
+    ifr.addEventListener("load", async () => {
+      const doc = ifr.contentDocument;
       decorateDocument(doc, opts);
+      if (doc.respecIsReady) {
+        await doc.respecIsReady;
+        resolve(doc);
+      }
       window.addEventListener("message", function msgHandler(ev) {
         if (
           !doc ||
@@ -29,8 +28,7 @@ function makeRSDoc(
           return;
         }
         window.removeEventListener("message", msgHandler);
-        cb(doc);
-        resove(doc);
+        resolve(doc);
         clearTimeout(timeoutId);
       });
     });
@@ -39,6 +37,7 @@ function makeRSDoc(
       try {
         ifr.style = style;
       } catch ({ message }) {
+        // eslint-disable-next-line no-console
         console.warn(`Could not override iframe style: ${style} (${message})`);
       }
     }
@@ -57,49 +56,40 @@ function decorateDocument(doc, opts) {
     return element;
   }
 
-  function decorateHead(opts) {
-    var path = opts.jsPath || "../js/";
-    var loader = this.ownerDocument.createElement("script");
-    var config = this.ownerDocument.createElement("script");
-    switch (Math.round(Math.random() * 2)) {
-      case 2:
-        loader.defer = true;
-        break;
-      case 1:
-        loader.async = true;
-        break;
-    }
-    var configText = "";
-    if (opts.config) {
-      configText =
-        "var respecConfig = " + JSON.stringify(opts.config || {}) + ";";
-    }
-    config.classList.add("remove");
-    config.innerText = configText;
-    var isKarma = !!window.__karma__;
-    var loadAttr = {
+  function addRespecLoader({ jsPath = "../js/" }) {
+    const loader = doc.createElement("script");
+    const isKarma = !!window.__karma__;
+    const loadAttr = {
       src: isKarma
         ? new URL("/base/builds/respec-w3c-common.js", location).href
         : "/js/deps/require.js",
-      "data-main": isKarma ? "" : path + (opts.profile || "profile-w3c-common"),
+      "data-main": isKarma
+        ? ""
+        : jsPath + (opts.profile || "profile-w3c-common"),
     };
     Object.keys(loadAttr)
       .reduce(intoAttributes.bind(loadAttr), loader)
       .classList.add("remove");
-    this.appendChild(config);
-    this.appendChild(loader);
+    doc.head.appendChild(loader);
   }
 
-  function decorateBody(opts) {
-    var bodyText = `
-      <section id='abstract'>
-        ${opts.abstract === undefined ? "<p>test abstract</p>" : opts.abstract}
-      </section>
-    `;
-    if (opts.body) {
-      bodyText = bodyText.concat(opts.body);
+  function addRespecConfig(opts) {
+    const config = doc.createElement("script");
+    const configText = opts.config
+      ? `var respecConfig = ${JSON.stringify(opts.config || {})};`
+      : "";
+    config.classList.add("remove");
+    config.textContent = configText;
+    doc.head.appendChild(config);
+    // "preProcess" gets destroyed by JSON.stringify above... so we need to recreate it
+    if (opts.config && Array.isArray(opts.config.preProcess)) {
+      const window = config.ownerDocument.defaultView;
+      window.respecConfig.preProcess = opts.config.preProcess;
     }
-    this.innerHTML = this.innerHTML.concat(bodyText);
+  }
+
+  function decorateBody({ abstract = "<p>test abstract</p>", body = "" }) {
+    doc.body.innerHTML += `<section id='abstract'>${abstract}</section>` + body;
   }
 
   if (opts.htmlAttrs) {
@@ -111,8 +101,11 @@ function decorateDocument(doc, opts) {
   if (opts.title) {
     doc.title = opts.title;
   }
-  decorateBody.call(doc.body, opts);
-  decorateHead.call(doc.head, opts);
+  decorateBody(opts);
+  addRespecConfig(opts);
+  if (!doc.querySelector("script[src]")) {
+    addRespecLoader(opts);
+  }
 }
 
 function flushIframes() {
@@ -129,20 +122,20 @@ function pickRandomsFromList(list, howMany) {
   }
   if (howMany > list.length) {
     // Return a new list, but randomized.
-    return list.slice().sort(function randomSort() {
+    return list.slice().sort(() => {
       return Math.round(Math.random() * (1 - -1) + -1);
     });
   }
-  var collectedValues = [];
+  const collectedValues = [];
   // collect a unique set based on howMany we need.
   while (collectedValues.length < howMany) {
-    var potentialValue = Math.floor(Math.random() * list.length);
+    const potentialValue = Math.floor(Math.random() * list.length);
     if (collectedValues.indexOf(potentialValue) === -1) {
       collectedValues.push(potentialValue);
     }
   }
   // Reduce the collectedValues into a new list
-  return collectedValues.reduce(function(randList, next) {
+  return collectedValues.reduce((randList, next) => {
     randList.push(list[next]);
     return randList;
   }, []);
@@ -164,6 +157,7 @@ function makeBasicConfig() {
     implementationReportURI: "https://example.com/implementationReportURI",
     perEnd: "1999-01-01",
     lint: false,
+    definitionMap: {},
   };
 }
 
@@ -171,9 +165,16 @@ function makeDefaultBody() {
   return "<section id='sotd'><p>foo</p></section><section id='toc'></section>";
 }
 
-function makeStandardOps() {
+/**
+ *
+ * @param configParams
+ * @param bodyParams
+ * @returns {{config: {editors, specStatus, edDraftURI, shortName, previousMaturity, previousPublishDate, errata, implementationReportURI, perEnd, lint} & any, body: string}}
+ */
+
+function makeStandardOps(config = {}, body = makeDefaultBody()) {
   return {
-    config: makeBasicConfig(),
-    body: makeDefaultBody(),
+    body,
+    config: { ...makeBasicConfig(), ...config },
   };
 }
