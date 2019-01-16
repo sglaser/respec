@@ -1,3 +1,5 @@
+import { expose } from "./expose-modules";
+
 /**
  * Module core/pubsubhub
  *
@@ -12,12 +14,22 @@ export function pub(topic, ...data) {
   if (!subscriptions.has(topic)) {
     return; // Nothing to do...
   }
-  Array.from(subscriptions.get(topic)).forEach(cb => cb.apply(undefined, data));
+  Array.from(subscriptions.get(topic)).forEach(cb => {
+    try {
+      cb.apply(undefined, data);
+    } catch (err) {
+      pub(
+        "error",
+        `Error when calling function ${cb.name}. See developer console.`
+      );
+      console.error(err);
+    }
+  });
   if (window.parent === window.self) {
     return;
   }
   // If this is an iframe, postMessage parent (used in testing).
-  var args = data
+  const args = data
     // to structured clonable
     .map(arg => String(JSON.stringify(arg.stack || arg)));
   window.parent.postMessage({ topic, args }, window.parent.location.origin);
@@ -67,3 +79,5 @@ sub("error", err => {
 sub("warn", str => {
   console.warn(str);
 });
+
+expose(name, { sub });

@@ -3,7 +3,8 @@
  *
  * Core linter module. Exports a linter object.
  */
-import { pub } from "core/pubsubhub";
+import { pub } from "./pubsubhub";
+import { showInlineWarning } from "./utils";
 export const name = "core/linter";
 const privates = new WeakMap();
 
@@ -41,39 +42,37 @@ const baseResult = {
 
 async function toLinterWarning(promiseToLint) {
   const results = await promiseToLint;
-  results
-    .map(async resultPromise => {
-      const result = await resultPromise;
-      const output = { ...baseResult, ...result };
-      const {
-        description,
-        help,
-        howToFix,
-        name,
-        occurrences,
-        offendingElements,
-      } = output;
-      const msg = `${description} ${howToFix} ${help} ("${name}" x ${occurrences})`;
-      offendingElements.forEach(elem => {
-        elem.classList.add("respec-offending-element");
-      });
-      console.warn(`Linter (${name}):`, description, ...offendingElements);
-      return msg;
-    })
-    .forEach(async msgPromise => {
-      pub("warn", await msgPromise);
-    });
+  results.forEach(async resultPromise => {
+    const result = await resultPromise;
+    const output = { ...baseResult, ...result };
+    const {
+      description,
+      help,
+      howToFix,
+      name,
+      occurrences,
+      offendingElements,
+    } = output;
+    const message = `Linter (${name}): ${description} ${howToFix} ${help}`;
+    if (offendingElements.length) {
+      showInlineWarning(offendingElements, `${message} Occured`);
+    } else {
+      pub("warn", `${message} (Count: ${occurrences})`);
+    }
+  });
 }
 
-export async function run(conf, doc, cb) {
-  cb(); // return early, continue processing other things
+export function run(conf) {
   if (conf.lint === false) {
     return; // nothing to do
   }
-  await document.respecReady;
-  try {
-    await linter.lint(conf, doc);
-  } catch (err) {
-    console.error("Error ocurred while running the linter", err);
-  }
+  // return early, continue processing other things
+  (async () => {
+    await document.respecIsReady;
+    try {
+      await linter.lint(conf, document);
+    } catch (err) {
+      console.error("Error ocurred while running the linter", err);
+    }
+  })();
 }

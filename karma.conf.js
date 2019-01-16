@@ -3,7 +3,7 @@
 /*globals module, require, process*/
 "use strict";
 module.exports = function(config) {
-  var options = {
+  const options = {
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: "./",
 
@@ -13,7 +13,7 @@ module.exports = function(config) {
 
     // configuration
     detectBrowsers: {
-      enabled: true,
+      enabled: !config.browsers.length,
       usePhantomJS: false,
       postDetection(browsers) {
         return (
@@ -27,6 +27,16 @@ module.exports = function(config) {
     // list of files / patterns to load in the browser
     files: [
       "js/deps/jquery.js",
+      {
+        pattern: "assets/**/*.*",
+        included: false,
+        served: true,
+      },
+      {
+        pattern: "tests/support-files/**/*",
+        included: false,
+        served: true,
+      },
       {
         pattern: "builds/**/*.*",
         included: false,
@@ -44,6 +54,11 @@ module.exports = function(config) {
       },
       {
         pattern: "tests/**/*-spec.js",
+        included: false,
+        served: true,
+      },
+      {
+        pattern: "tests/data/**/*",
         included: false,
         served: true,
       },
@@ -71,14 +86,17 @@ module.exports = function(config) {
 
     proxies: {
       "/about-blank.html": "/base/tests/about-blank.html",
+      "/assets/": "/base/assets/",
       "/js/": "/base/js/",
+      "/builds/": "/base/builds/",
       "/tests/": "/base/tests/",
       "/spec/": "/base/tests/spec/",
       "/deps/": "/base/js/deps/",
       "/js/deps/": "/base/js/deps/",
       "/base/deps/": "/base/js/deps/",
-      "/base/deps/marked.js": "/base/js/deps/marked.js",
       "/worker/respec-worker.js": "/base/worker/respec-worker.js",
+      "/support-files/hljs-testlang.js":
+        "/base/tests/support-files/hljs-testlang.js",
     },
 
     // preprocess matching files before serving them to the browser
@@ -91,7 +109,7 @@ module.exports = function(config) {
     reporters: ["mocha"],
 
     // web server port
-    port: 9876,
+    port: config.port || 9876,
 
     // enable / disable colors in the output (reporters and logs)
     colors: true,
@@ -115,14 +133,19 @@ module.exports = function(config) {
     concurrency: 1,
 
     browserNoActivityTimeout: 100000,
+
+    client: {
+      args: ["--grep", config.grep || ""],
+    },
   };
   if (process.env.TRAVIS) {
+    process.env.CHROME_BIN = require("puppeteer").executablePath();
     options.detectBrowsers.enabled = false;
     options.autoWatch = false;
     options.singleRun = true;
     options.concurrency = 1;
     options.reporters = ["mocha"];
-    options.browsers = ["Chrome"]; //"Firefox"
+    options.browsers = ["ChromeHeadless"];
   }
   config.set(options);
 };

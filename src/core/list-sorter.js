@@ -1,4 +1,5 @@
-import { pub } from "core/pubsubhub";
+import { children } from "./utils";
+import { pub } from "./pubsubhub";
 export const name = "core/list-sorter";
 
 function makeSorter(direction) {
@@ -13,32 +14,12 @@ function makeSorter(direction) {
  * @returns {DocumentFragment}
  */
 export function sortListItems(elem, dir) {
-  const elements = getDirectDescendents(elem, "li");
+  const elements = [...children(elem, "li")];
   const sortedElements = elements.sort(makeSorter(dir)).reduce((frag, elem) => {
     frag.appendChild(elem);
     return frag;
   }, document.createDocumentFragment());
   return sortedElements;
-}
-
-function getDirectDescendents(elem, wantedDescendentName) {
-  let elements;
-  try {
-    elements = elem.querySelectorAll(`:scope > ${wantedDescendentName}`);
-  } catch (err) {
-    let tempId = "";
-    // We give a temporary id, to overcome lack of ":scope" support in Edge.
-    if (!elem.id) {
-      tempId = `temp-${Math.random()}`;
-      elem.id = tempId;
-    }
-    const query = `#${elem.id} > ${wantedDescendentName}`;
-    elements = elem.parentElement.querySelectorAll(query);
-    if (tempId) {
-      elem.id = "";
-    }
-  }
-  return [...elements];
 }
 
 /**
@@ -48,7 +29,7 @@ function getDirectDescendents(elem, wantedDescendentName) {
  * @returns {DocumentFragment}
  */
 export function sortDefinitionTerms(dl, dir) {
-  const elements = getDirectDescendents(dl, "dt");
+  const elements = [...children(dl, "dt")];
   const sortedElements = elements.sort(makeSorter(dir)).reduce((frag, elem) => {
     const { nodeType, nodeName } = elem;
     const children = document.createDocumentFragment();
@@ -72,7 +53,7 @@ export function sortDefinitionTerms(dl, dir) {
   return sortedElements;
 }
 
-export function run(conf, doc, cb) {
+export function run() {
   for (const elem of document.querySelectorAll("[data-sort]")) {
     let sortedElems;
     const dir = elem.dataset.sort || "ascending";
@@ -94,5 +75,4 @@ export function run(conf, doc, cb) {
       elem.appendChild(sortedElems);
     }
   }
-  cb();
 }

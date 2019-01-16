@@ -5,30 +5,24 @@
 
 export const name = "core/seo";
 
-export async function run(conf, doc, cb) {
+export function run() {
   // This is not critical, so let's continue other processing first
-  cb();
-  await doc.respecIsReady;
-  const firstParagraph = doc.querySelector("#abstract p:first-of-type");
-  if (!firstParagraph) {
-    return; // no abstract, so nothing to do
-  }
-  const insertMetaDescription = makeDescriptionInserter(firstParagraph);
-  if (window.requestIdleCallback) {
-    window.requestIdleCallback(insertMetaDescription);
-  } else {
-    insertMetaDescription();
-  }
+  (async () => {
+    await document.respecIsReady;
+    const firstParagraph = document.querySelector("#abstract p:first-of-type");
+    if (!firstParagraph) {
+      return; // no abstract, so nothing to do
+    }
+    insertMetaDescription(firstParagraph);
+  })();
 }
 
-function makeDescriptionInserter(firstParagraph) {
-  return () => {
-    // Normalize whitespace: trim, remove new lines, tabs, etc.
-    const doc = firstParagraph.ownerDocument;
-    const content = firstParagraph.textContent.replace(/\s+/, " ").trim();
-    const metaElem = doc.createElement("meta");
-    metaElem.name = "description";
-    metaElem.content = content;
-    doc.head.appendChild(metaElem);
-  };
+function insertMetaDescription(firstParagraph) {
+  // Normalize whitespace: trim, remove new lines, tabs, etc.
+  const doc = firstParagraph.ownerDocument;
+  const content = firstParagraph.textContent.replace(/\s+/, " ").trim();
+  const metaElem = doc.createElement("meta");
+  metaElem.name = "description";
+  metaElem.content = content;
+  doc.head.appendChild(metaElem);
 }

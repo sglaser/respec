@@ -8,7 +8,7 @@
  *
  */
 /*globals IDBKeyRange, DOMException, console */
-import { pub } from "core/pubsubhub";
+import { pub } from "./pubsubhub";
 export const name = "core/biblio-db";
 
 const ALLOWED_TYPES = new Set(["alias", "reference"]);
@@ -96,9 +96,9 @@ export const biblioDB = {
     }
     const db = await this.ready;
     return new Promise((resolve, reject) => {
-      var objectStore = db.transaction([type], "readonly").objectStore(type);
-      var range = IDBKeyRange.only(id);
-      var request = objectStore.openCursor(range);
+      const objectStore = db.transaction([type], "readonly").objectStore(type);
+      const range = IDBKeyRange.only(id);
+      const request = objectStore.openCursor(range);
       request.onsuccess = () => {
         resolve(!!request.result);
       };
@@ -119,11 +119,11 @@ export const biblioDB = {
     }
     const db = await this.ready;
     return new Promise((resolve, reject) => {
-      var objectStore = db
+      const objectStore = db
         .transaction(["alias"], "readonly")
         .objectStore("alias");
-      var range = IDBKeyRange.only(id);
-      var request = objectStore.openCursor(range);
+      const range = IDBKeyRange.only(id);
+      const request = objectStore.openCursor(range);
       request.onsuccess = () => {
         resolve(!!request.result);
       };
@@ -144,11 +144,11 @@ export const biblioDB = {
     }
     const db = await this.ready;
     return new Promise((resolve, reject) => {
-      var objectStore = db
+      const objectStore = db
         .transaction("alias", "readonly")
         .objectStore("alias");
-      var range = IDBKeyRange.only(id);
-      var request = objectStore.openCursor(range);
+      const range = IDBKeyRange.only(id);
+      const request = objectStore.openCursor(range);
       request.onsuccess = () => {
         if (request.result === null) {
           return resolve(null);
@@ -176,9 +176,9 @@ export const biblioDB = {
     }
     const db = await this.ready;
     return new Promise((resolve, reject) => {
-      var objectStore = db.transaction([type], "readonly").objectStore(type);
-      var range = IDBKeyRange.only(id);
-      var request = objectStore.openCursor(range);
+      const objectStore = db.transaction([type], "readonly").objectStore(type);
+      const range = IDBKeyRange.only(id);
+      const request = objectStore.openCursor(range);
       request.onsuccess = () => {
         if (request.result === null) {
           return resolve(null);
@@ -254,7 +254,7 @@ export const biblioDB = {
     return new Promise((resolve, reject) => {
       const store = db.transaction([type], "readwrite").objectStore(type);
       // update or add, depending of already having it in db
-      var request = isInDB ? store.put(details) : store.add(details);
+      const request = isInDB ? store.put(details) : store.add(details);
       request.onsuccess = resolve;
       request.onerror = () => {
         reject(new DOMException(request.error.message, request.error.name));
@@ -269,5 +269,29 @@ export const biblioDB = {
   async close() {
     const db = await this.ready;
     db.close();
+  },
+
+  /**
+   * Clears the underlying database
+   */
+  async clear() {
+    const db = await this.ready;
+    const storeNames = [...ALLOWED_TYPES];
+    const stores = await new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeNames, "readwrite");
+      transaction.onerror = () => {
+        reject(
+          new DOMException(transaction.error.message, transaction.error.name)
+        );
+      };
+      resolve(transaction);
+    });
+    const clearStorePromises = storeNames.map(name => {
+      return new Promise(resolve => {
+        const request = stores.objectStore(name).clear();
+        request.onsuccess = resolve;
+      });
+    });
+    Promise.all(clearStorePromises);
   },
 };
