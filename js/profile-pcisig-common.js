@@ -69,7 +69,7 @@ define(
     "pcisig/pre-dfn",
     "core/dfn",
     "core/data-cite",
-    //"core/biblio",
+    "core/biblio",
     "pcisig/link-to-dfn",
     "core/contrib",
     "core/fix-headers",

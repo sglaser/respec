@@ -67,7 +67,7 @@ body {
   padding: 1.6em 1em 2em calc(26px + 2em); /* leave space for status flag    */
 
   /* Typography */
-  line-height: 1.5;
+  line-height: 1.25;
   font-family: "Source Sans Pro", "DejaVu Sans", "Arial Unicode MS", Tahoma, "Lucinda Grande", Arial, Helvetica, sans-serif;
   widows: 2;
   orphans: 2;
@@ -343,7 +343,7 @@ h1, h2, h3, h4, h5, h6, dt {
 }
 
 h2, h3, h4, h5, h6 {
-  margin-top: 3em;
+  margin-top: 1.5em;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -414,7 +414,7 @@ h5 + h6 {
 /******************************************************************************/
 
 p {
-  margin: 1em 0;
+  margin: 0.75em 0;
 }
 
 dd > p:first-child,
@@ -1207,7 +1207,7 @@ table.def td.footnote::before {
 
 table.data,
 table.index {
-  margin: 1em auto;
+  margin: 0.5em auto;
   border-collapse: collapse;
   width: 100%;
   border: hidden;
@@ -1244,8 +1244,8 @@ table.index thead th[scope="row"] {
 
 table.data,
 table.complex.data {
-  border-top: 2px solid;
-  border-bottom: 2px solid;
+  border-top: 1.5px solid;
+  border-bottom: 1.5px solid;
 }
 
 table.complex.data thead,
@@ -1255,12 +1255,12 @@ table.index thead,
 table.data tbody,
 table.index tbody {
   color: inherit;
-  border-bottom: 2px solid;
+  border-bottom: 1.5px solid;
 }
 
 table.data colgroup,
 table.index colgroup {
-  border-left: 2px solid;
+  border-left: 1.5px solid;
 }
 
 table.data thead th.solid-right,
@@ -1296,6 +1296,21 @@ table.complex.data td {
 }
 
 table.data.longlastcol td:last-child,
+table.data.longallcol td,
+table.data.longallcol th,
+table.data.longcol1 td:first-child,
+table.data.longcol1 th:first-child,
+table.data.longcol2 td:first-child + td,
+table.data.longcol3 td:first-child + td + td,
+table.data.longcol4 td:first-child + td + td + td,
+table.data.longcol5 td:first-child + td + td + td + td,
+table.data.longcol6 td:first-child + td + td + td + td + td,
+table.data.longcol7 td:first-child + td + td + td + td + td + td,
+table.data.longcol8 td:first-child + td + td + td + td + td + td + td,
+table.data.longcol9 td:first-child + td + td + td + td + td + td + td + td,
+table.data.longcol10 td:first-child + td + td + td + td + td + td + td + td + td,
+table.data.longcol11 td:first-child + td + td + td + td + td + td + td + td + td + td,
+table.data.longcol12 td:first-child + td + td + td + td + td + td + td + td + td + td + td,
 table.data tbody.notes td,
 table.data td.long,
 table.pcisig_reg tbody.notes td,
@@ -1434,7 +1449,7 @@ table.data img {
 
 :not(li) > .tof,
 :not(li) > .tot {
-  margin-left: 5em;
+  margin-left: 6em;
 }
 
 :not(li) > .toe {
@@ -1468,8 +1483,8 @@ table.data img {
 .tof .figno,
 .tot .tblno {
   float: left;
-  width: 5em;
-  margin-left: -5em;
+  width: 6em;
+  margin-left: -6em;
 }
 
 .toe .eqnno {
@@ -1482,10 +1497,9 @@ table.data img {
 .tof .fig-figno-decoration,
 .toe .eqn-eqnno-decoration,
 .tot .tbl-tblno-decoration,
-.tof .figdecoration,
-.toe .eqndecoration,
-.tot .tbldecoration,
-.toc .secdecoration {
+.tof .fig-title-decoration,
+.toe .eqn-title-decoration,
+.tot .tbl-title-decoration {
   display: none;
 }
 
@@ -1610,7 +1624,7 @@ table.pcisig_reg {
   border: hidden;
   text-align: left;
   border-top: 1px solid silver;
-  border-bottom: 2px solid silver;
+  border-bottom: 1.5px solid silver;
   font-size: 95%;
 }
 
@@ -1653,22 +1667,22 @@ table.pcisig_reg thead th[scope="row"] {
 table.pcisig_reg thead,
 table.pcisig_reg tbody {
   color: inherit;
-  border-bottom: 2px solid;
+  border-bottom: 1.5px solid;
 }
 
 table.pcisig_reg thead {
-  border-top: 2px solid;
+  border-top: 1.5px solid;
 }
 
 table.pcisig_reg colgroup {
-  border-left: 2px solid;
+  border-left: 1.5px solid;
 }
 
 table.pcisig_reg tbody th:last-of-type,
 table.pcisig_reg tbody th:first-child {
   text-align: right;
   color: inherit;
-  border-right: 2px solid;
+  border-right: 1.5px solid;
   border-top: 1px solid silver;
   padding-right: 1em;
 }
@@ -1755,9 +1769,10 @@ span.respec-error {
     margin: 0;
   }
 
-  /* Serif for print. */
+  /* Sanserif for print. */
   body {
-    font-family: Garamond, "DejaVu Serif", "Source Serif Pro", Times, serif;
+    margin: 0;
+    font-family: "Source Sans Pro", Calibri, Tahoma, "Lucinda Grande", Arial, Helvetica, sans-serif;
   }
 
   span.footnote {
@@ -1765,12 +1780,12 @@ span.respec-error {
     font-size: 12px;
     font-weight: normal;
     font-style: normal;
-    font-family: Garamond, "DejaVu Serif", "Source Serif Pro", Times, serif;
+    font-family: "Source Sans Pro", Calibri, Tahoma, "Lucinda Grande", Arial, Helvetica, sans-serif;
     text-align: left;
     text-decoration: none;
   }
 
-  /* Camoflage links; they're inactivatable anyway. */
+  /* Camouflage links; they're inactivatable anyway. */
   a {
     color: inherit !important;
     text-decoration: none !important;
@@ -1778,7 +1793,7 @@ span.respec-error {
 }
 
 @page {
-  margin: 1.5cm 1.1cm;
+  margin: 1cm 0.75cm;
 }
 
 /******************************************************************************/
@@ -1805,14 +1820,16 @@ span.respec-error {
   input#show-all-footnotes:checked  ~ section span.footnote-contents {
     display: inline;
   }
+}
 
+@media print {
   a.sec-ref span.sec-title,
-  a.sec-ref span.sec-decoration,
-  a.tocxref span.sec-decoration,
+  a.sec-ref span.sec-title-decoration,
+  a.tocxref span.sec-title-decoration,
   a.fig-ref span.fig-title-decoration,
   a.fig-ref span.fig-title,
   a.eqn-ref span.eqn-title-decoration,
-  a.eqn-ref span.eqntitle,
+  a.eqn-ref span.eqn-title,
   a.tbl-ref span.tbl-title-decoration,
   a.tbl-ref span.tbl-title {
     display: none;
@@ -1822,8 +1839,8 @@ span.respec-error {
 @media print {
   @page {
     size: US-Letter portrait;
-    margin: 20mm;
-    padding: 5mm 0;
+    margin: 10mm 2.5mm;
+    padding: 2.5mm 0;
     /*border-top: thin solid black;*/
     border-bottom: thin solid #0060A9;
     @top-left {
@@ -2108,7 +2125,7 @@ span.respec-error {
   }
 
   html, body {
-    font-size: 12pt;
+    font-size: 10pt;
     /*padding: 0;*/
     /*margin: 0;*/
   }
@@ -2120,7 +2137,7 @@ span.respec-error {
   }
 
   th {
-    font-size: medium;
+    font-size: 9pt;
     font-weight: normal;
   }
 
