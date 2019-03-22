@@ -1263,7 +1263,6 @@ table.index colgroup {
   border-left: 1.5px solid;
 }
 
-table.data thead th.solid-right,
 table.data > tbody > tr > th:last-of-type,
 table.data > tbody > tr > th:last-of-type,
 table.index > tbody > tr > th:first-child,
@@ -1290,8 +1289,8 @@ table.index tbody td[rowspan]:first-child {
   border-right: 1px solid silver;
 }
 
-table.complex.data th,
-table.complex.data td {
+table.complex.data th:not(:last-child):not(.solid-right),
+table.complex.data td:not(:last-child):not(.solid-right) {
   border: 1px solid silver;
 }
 
@@ -1321,6 +1320,21 @@ table.pcisig_reg td.long {
 
 table.data img {
   vertical-align: middle;
+}
+
+table.data thead th.solid-right,
+table.data thead td.solid-right,
+table.data tbody th.solid-right,
+table.data tbody td.solid-right,
+table.data thead th[rowspan].solid-right,
+table.data thead td[rowspan].solid-right,
+table.data tbody th[rowspan].solid-right,
+table.data tbody td[rowspan].solid-right {
+  text-align: right;
+  color: inherit;
+  border-right: 2px solid;
+  border-top: 1px solid silver;
+  padding-right: 1em;
 }
 
 /******************************************************************************/
