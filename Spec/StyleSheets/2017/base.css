@@ -608,7 +608,7 @@ pre {
 /** General Hyperlinks ********************************************************/
 
 /* We hyperlink a lot, so make it less intrusive */
-a[href] {
+a[href]:not(.footnote) {
   color: inherit;
   text-decoration: none;
   border-bottom: 0.1em solid silver;
@@ -617,7 +617,7 @@ a[href] {
 }
 
 
-a[href]:not(.tocxref):empty::before {
+a[href]:not(.tocxref):not(.footnote):empty::before {
   color: red;
   font-size: 9pt;
   font-weight: bold;
@@ -1789,9 +1789,15 @@ span.respec-error {
     font-family: "Source Sans Pro", Calibri, Tahoma, "Lucinda Grande", Arial, Helvetica, sans-serif;
   }
 
+  /* Camouflage links; they're inactivatable anyway. */
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
   span.footnote {
     font: 100% serif; /* Reset all font styling to clear out UA styles */
-    font-size: 12px;
+    font-size: 10px;
     font-weight: normal;
     font-style: normal;
     font-family: "Source Sans Pro", Calibri, Tahoma, "Lucinda Grande", Arial, Helvetica, sans-serif;
@@ -1799,10 +1805,15 @@ span.respec-error {
     text-decoration: none;
   }
 
-  /* Camouflage links; they're inactivatable anyway. */
-  a {
-    color: inherit !important;
-    text-decoration: none !important;
+  /* Reference to a duplicate footnote. <a class="footnote" href="#footnote-id"></apan> */
+  /* Formatting is Prince default for *::footnote-call */
+  a .footnote {
+    color: inherit;
+    text-decoration: none;
+    content: target-counter(attr(href), footnote);
+    vertical-align: super;
+    line-height: none;
+    font-size: 83%;
   }
 }
 
@@ -1880,7 +1891,6 @@ span.respec-error {
       background-color: white;
       color: #0060A9;
     }
-
   }
 
   #respec-banner {
@@ -2163,6 +2173,14 @@ span.respec-error {
     /*noinspection CssInvalidElement*/
     float: footnote;
     text-align: left;
+    padding: 0 7.5mm 0 0;
+  }
+
+  @page {
+    @footnote {
+      border-top: 1px solid silver;
+      padding: 2.5mm 15mm 0.25mm 15mm;
+    }
   }
 
   span.footnote > input {
