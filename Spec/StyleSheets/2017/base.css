@@ -1686,13 +1686,13 @@ table.pcisig_reg thead th[scope="row"] {
   color: inherit;
 }
 
-table.pcisig_reg thead,
-table.pcisig_reg tbody {
+table.pcisig_reg > thead,
+table.pcisig_reg > tbody {
   color: inherit;
   border-bottom: 1.5px solid;
 }
 
-table.pcisig_reg thead {
+table.pcisig_reg > thead {
   border-top: 1.5px solid;
 }
 
@@ -1700,8 +1700,8 @@ table.pcisig_reg colgroup {
   border-left: 1.5px solid;
 }
 
-table.pcisig_reg tbody th:last-of-type,
-table.pcisig_reg tbody th:first-child {
+table.pcisig_reg > tbody > tr > th:last-of-type,
+table.pcisig_reg > tbody > tr > th:first-child {
   text-align: right;
   color: inherit;
   border-right: 1.5px solid;
@@ -1709,8 +1709,8 @@ table.pcisig_reg tbody th:first-child {
   padding-right: 1em;
 }
 
-table.pcisig_reg tbody th[rowspan],
-table.pcisig_reg tbody td[rowspan] {
+table.pcisig_reg > tbody > tr > th[rowspan],
+table.pcisig_reg > tbody > tr > td[rowspan] {
   border-left: 1px solid silver;
 }
 
@@ -1725,16 +1725,16 @@ table.pcisig_reg td {
   border: 1px solid silver;
 }
 
-table.pcisig_reg th:nth-child(2),
-table.pcisig_reg td:nth-child(2) {
+table.pcisig_reg > thead > tr > th:nth-child(2),
+table.pcisig_reg > tbody > tr > td:nth-child(2) {
   width: 100%;
   text-align: left;
 }
 
-table.pcisig_reg th:first-child,
-table.pcisig_reg td:first-child,
-table.pcisig_reg th:nth-child(3),
-table.pcisig_reg td:nth-child(3) {
+table.pcisig_reg > thead > tr > th:first-child,
+table.pcisig_reg > tbody > tr > td:first-child,
+table.pcisig_reg > thead > tr > th:nth-child(3),
+table.pcisig_reg > tbody > tr > td:nth-child(3) {
   text-align: center;
 }
 
