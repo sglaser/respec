@@ -1369,22 +1369,48 @@ table.data tbody td[rowspan].solid-right {
 /* ToC not indented until third level, but font style & margins show hierarchy */
 .toc > li {
   margin: 1.2em 0;
-  font-weight: bold;
+  font-weight: normal;
+  color: #0060A9;
 }
+
 
 .toc > li li {
   margin: 0;
   font-weight: normal;
+  color: black;
 }
 
 .toc > li li li {
   margin-left: 2em;
-  font-style: italic;
+  font-style: normal;
+  color: #0060A9;
 }
 
 .toc > li li li li {
-  margin-left: 0;
+  margin-left: 2em;
   font-style: normal;
+  color: black;
+}
+
+.toc > li li li li li{
+  display: inherit;
+  margin-left: 2em;
+  font-style: normal;
+  color: #0060A9;
+}
+
+.toc > li li li li li li{
+  display: inherit;
+  margin-left: 2em;
+  font-style: normal;
+  color: black;
+}
+
+.toc > li li li li li li li{
+  display: inherit;
+  margin-left: 2em;
+  font-style: normal;
+  color: #0060A9;
 }
 
 .tof > li {
@@ -1392,59 +1418,14 @@ table.data tbody td[rowspan].solid-right {
   font-weight: normal;
 }
 
-.tof > li li {
-  margin: 0;
-  font-weight: normal;
-}
-
-.tof > li li li {
-  margin-left: 2em;
-  font-style: italic;
-}
-
-.tof > li li li li {
-  font-size: 0.9em;
-  font-style: normal;
-}
-
 .toe > li {
   margin: 0;
   font-weight: normal;
 }
 
-.toe > li li {
-  margin: 0;
-  font-weight: normal;
-}
-
-.toe > li li li {
-  margin-left: 2em;
-  font-style: italic;
-}
-
-.toe > li li li li {
-  font-size: 0.9em;
-  font-style: normal;
-}
-
 .tot > li {
   margin: 0;
   font-weight: normal;
-}
-
-.tot > li li {
-  margin: 0;
-  font-weight: normal;
-}
-
-.tot > li li li {
-  margin-left: 2em;
-  font-style: italic;
-}
-
-.tot > li li li li {
-  font-size: 0.9em;
-  font-style: normal;
 }
 
 .tof a,
@@ -1470,14 +1451,11 @@ table.data tbody td[rowspan].solid-right {
 
 /* Section numbers in a column of their own */
 :not(li) > .toc {
-  margin-left: 4em;
+  margin-left: 2em;
 }
 
 :not(li) > .tof,
-:not(li) > .tot {
-  margin-left: 6em;
-}
-
+:not(li) > .tot,
 :not(li) > .toe {
   margin-left: 6em;
 }
@@ -1490,35 +1468,60 @@ table.data tbody td[rowspan].solid-right {
 
 .toc .secno {
   float: left;
-  width: 4em;
-  margin-left: -4em;
+  width: 2em;
+  margin-left: -2em;
+  color: black;
+}
+
+.toc > li .secno {
+  float: left;
+  width: 2em;
+  margin-left: -2em;
+  color: #0060A9;
+}
+
+.toc >li li .secno {
+  float: left;
+  width: 2em;
+  margin-left: -2em;
+  color: black;
 }
 
 .toc > li li li .secno {
   float: left;
-  width: 6em;
-  margin-left: -6em;
+  width: 3em;
+  margin-left: -3em;
+  color: #0060A9;
+}
+
+.toc > li li li li .secno {
+  float: left;
+  width: 4em;
+  margin-left: -4em;
+  color: black;
+}
+
+.toc > li li li li li .secno {
+  float: left;
+  width: 5em;
+  margin-left: -5em;
+  color: #0060A9;
 }
 
 .toc > li li li li li li .secno {
   float: left;
-  width: 8em;
-  margin-left: -8em;
+  width: 6em;
+  margin-left: -6em;
+  color: black;
 }
 
 .tof .figno,
-.tot .tblno {
+.tot .tblno,
+.toe .eqnno  {
   float: left;
   width: 6em;
   margin-left: -6em;
 }
-
-.toe .eqnno {
-  float: left;
-  width: 6em;
-  margin-left: -6em;
-}
-
 
 .tof .fig-figno-decoration,
 .toe .eqn-eqnno-decoration,
@@ -1539,13 +1542,6 @@ table.data tbody td[rowspan].solid-right {
 
 .toe .eqnno::before {
   content: "Equation ";
-}
-
-.tof > li li li .figno,
-.toe > li li li .eqnno,
-.tot > li li li .tblno,
-.toc > li li li .secno {
-  margin-left: -7em;
 }
 
 .tof li,
@@ -1819,7 +1815,7 @@ span.respec-error {
 
   /* Reference to a duplicate footnote. <a class="footnote" href="#footnote-id"></apan> */
   /* Formatting is Prince default for *::footnote-call */
-  a .footnote {
+  a[href] .footnote {
     color: inherit;
     text-decoration: none;
     content: target-counter(attr(href), footnote);
@@ -2134,10 +2130,10 @@ span.respec-error {
     margin-left: 0;
   }
 
-  ol.toc ol.toc {
+  /*ol.toc ol.toc {
     font-weight: normal;
     margin-left: 2em;
-  }
+  }*/
 
   ul.tot a::after,
   ul.tof a::after,
