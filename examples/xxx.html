@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8"/>
+  <title>PCISIG ReSpec Example</title>
+  <script src='../js/deps/require.js' data-main='../js/profile-pcisig-common' async class='remove'></script>
+  <!-- <script src='../js/deps/require.js' data-main='../js/profile-pcisig-common' async class='remove'></script> -->
+  <!-- <script src='../builds/respec-pcisig-common.js' async class='remove'></script> -->
+  <!--<script src="respec-debug.js" async="async" class="remove"></script>-->
+  <!-- <script src='//www.w3.org/Tools/respec/respec-w3c-common' async class='remove'></script> -->
+  <!-- <script src='http://darobin.github.com/respec/builds/respec-w3c-common.js' async class='remove'></script> -->
+  <!--<script src='http://sglaser.github.io/respec/builds/respec-pcisig-common.js' async class='remove'></script>-->
+  <style>
+
+    /* --- REGPICT --- */
+    text.regBitNumMiddle {
+      text-anchor: middle;
+      fill: grey;
+      font-family: "Source Sans Pro", Calibri, Tahoma, "Lucinda Grande", Arial, Helvetica, sans-serif;
+      font-size: 8pt;
+    }
+
+    text.regBitNumEnd {
+      text-anchor: end;
+      fill: grey;
+      font-family: "Source Sans Pro", Calibri, Tahoma, "Lucinda Grande", Arial, Helvetica, sans-serif;
+      font-size: 8pt;
+    }
+
+    text.regBitNumStart {
+      text-anchor: start;
+      fill: grey;
+      font-family: "Source Sans Pro", Calibri, Tahoma, "Lucinda Grande", Arial, Helvetica, sans-serif;
+      font-size: 8pt;
+    }
+
+    text.regBitWidth {
+      text-anchor: middle;
+      fill: none;
+      font-family: "Source Sans Pro", Calibri, Tahoma, "Lucinda Grande", Arial, Helvetica, sans-serif;
+      font-weight: bold;
+      font-size: 11pt;
+    }
+
+    g line.regBitNumLine {
+      stroke: grey;
+      stroke-width: 1px;
+    }
+
+    g line.regBitNumLine_Hide {
+      stroke: none;
+      stroke-width: 1px;
+    }
+
+    g rect.regFieldBox {
+      fill: white;
+      stroke: black;
+      stroke-width: 1.5px;
+    }
+
+    g.regAttr_rsvd rect.regFieldBox,
+    g.regAttr_rsvdp rect.regFieldBox,
+    g.regAttr_rsvdz rect.regFieldBox,
+    g.regAttr_reserved rect.regFieldBox,
+    g.regAttr_unused rect.regFieldBox {
+      fill: white;
+    }
+
+    g.regFieldExternal line.regFieldBox,
+    g.regFieldInternal line.regFieldBox {
+      stroke: black;
+    }
+
+    g.regFieldUnused line.regFieldBox {
+      stroke: grey;
+    }
+
+    g.regFieldUnused text.regFieldName,
+    g.regFieldUnused text.regFieldValue {
+      fill: grey;
+    }
+
+    g.regFieldHidden text.regFieldName,
+    g.regFieldHidden text.regFieldValue,
+    g.regFieldHidden path.regBitLine,
+    g.regFieldHidden path.regBitBracket,
+    g.regFieldHidden line.regFieldBox,
+    g.regFieldHidden rect.regFieldBox,
+    g.regFieldHidden line.regBitNumLine,
+    g.regFieldHidden line.regBitNumLine_Hide,
+    g.regFieldHidden text.regBitNumStart,
+    g.regFieldHidden text.regBitNumMiddle,
+    g.regFieldHidden text.regBitNumEnd,
+    g.regFieldHidden text.regFieldExtendsLeft,
+    g.regFieldHidden text.regFieldExtendsRight {
+      fill: none;
+      stroke: none;
+    }
+
+    g text.regFieldValue,
+    g.regFieldInternal text.regFieldName {
+      text-anchor: middle;
+    }
+
+    g.regFieldOverflowLSB text.regBitNumEnd,
+    g text.regFieldExtendsRight {
+      text-anchor: start;
+    }
+
+    g.regFieldOverflowMSB text.regBitNumStart,
+    g text.regFieldExtendsLeft {
+      text-anchor: end;
+    }
+
+    g text.regFieldName,
+    g text.regFieldValue {
+      font-size: 11pt;
+      font-family: "Source Sans Pro", Calibri, Tahoma, "Lucinda Grande", Arial, Helvetica, sans-serif;
+    }
+
+    g.regFieldExternal1 path.regBitLine,
+    g.regFieldExternal1 path.regBitBracket {
+      stroke: black;
+      stroke-width: 1px;
+    }
+
+    g.regFieldExternal0 path.regBitLine {
+      stroke: green;
+      stroke-dasharray: 4, 2;
+      stroke-width: 1px;
+    }
+
+    g.regFieldExternal0 path.regBitBracket {
+      stroke: green;
+      stroke-width: 1px;
+    }
+
+    svg text.regFieldValue {
+      fill: #0060A9;
+      font-family: monospace;
+    }
+
+    svg.regpict {
+      color: green;
+    }
+
+    svg *.svg_error text:not(.regBitWidth),
+    svg *.svg_error text:not(.regBitNumMiddle),
+    svg *.svg_error text:not(.regBitNumEnd),
+    svg *.svg_error text:not(.regBitNumStart) {
+      fill: red;
+      font-size: 12pt;
+      font-weight: bold;
+      font-style: normal;
+      font-family: monospace;
+    }
+
+    figure div.json,
+    figure pre.json {
+      color: rgb(0, 90, 156);
+      display: inherit;
+    }
+
+    @media screen {
+      g.regLink:hover rect.regFieldBox,
+      g.regLink:focus rect.regFieldBox {
+        fill: #ffa;
+        stroke: blue;
+      }
+
+      g.regLink:hover line.regBitNumLine,
+      g.regLink:focus line.regBitNumLine,
+      g.regLink:hover line.regBitNumLine_Hide,
+      g.regLink:focus line.regBitNumLine_Hide,
+      g.regLink:hover line.regFieldBox,
+      g.regLink:focus line.regFieldBox,
+      g.regLink:hover path.regBitLine,
+      g.regLink:focus path.regBitLine,
+      g.regLink.regFieldExternal:hover path.regBitBracket,
+      g.regLink.regFieldExternal:focus path.regBitBracket {
+        stroke: blue;
+      }
+
+      g.regLink:hover text.regFieldName,
+      g.regLink:focus text.regFieldName,
+      g.regLink.regFieldExternal:hover text.regFieldValue,
+      g.regLink.regFieldExternal:focus text.regFieldValue {
+        fill: blue;
+        font-weight: bold;
+      }
+
+      g.regLink:hover text.regBitNumMiddle,
+      g.regLink:focus text.regBitNumMiddle,
+      g.regLink:hover text.regBitNumStart,
+      g.regLink:focus text.regBitNumStart,
+      g.regLink:hover text.regBitNumEnd,
+      g.regLink:focus text.regBitNumEnd {
+        fill: blue;
+        font-weight: bold;
+        font-size: 9pt;
+      }
+
+      g.regLink:hover text.regBitWidth,
+      g.regLink:focus text.regBitWidth {
+        fill: blue;
+      }
+    }
+
+    table.pcisig_reg {
+      margin: 1em auto;
+      border-collapse: collapse;
+      width: 100%;
+      border: hidden;
+      text-align: left;
+      border-top: 1px solid silver;
+      border-bottom: 2px solid silver;
+      font-size: 95%;
+    }
+
+    table.pcisig_reg caption {
+      width: 100%;
+    }
+
+    table.pcisig_reg td p, table.pcisig_reg th p {
+      margin-bottom: 0.5em;
+      margin-top: 0.5em;
+    }
+
+    table.pcisig_reg td p:last-child, table.pcisig_reg th p:last-child {
+      margin-bottom: 0;
+    }
+
+    table.pcisig_reg td p:first-child, table.pcisig_reg th p:first-child {
+      margin-top: 0;
+    }
+
+    table.pcisig_reg td, table.pcisig_reg th {
+      vertical-align: baseline;
+      padding: 0.5em;
+      border-width: 1px;
+      border-color: silver;
+      border-top-style: solid;
+    }
+
+    table.pcisig_reg thead td:empty {
+      padding: 0;
+      border: 0;
+    }
+
+    table.pcisig_reg thead th[scope="row"] {
+      vertical-align: baseline;
+      text-align: left;
+      color: inherit;
+    }
+
+    table.pcisig_reg thead,
+    table.pcisig_reg tbody {
+      color: inherit;
+      border-bottom: 2px solid;
+    }
+
+    table.pcisig_reg colgroup {
+      border-left: 2px solid;
+    }
+
+    table.pcisig_reg tbody th:first-child {
+      text-align: right;
+      color: inherit;
+      border-right: 2px solid;
+      border-top: 1px solid silver;
+      padding-right: 1em;
+    }
+
+    table.pcisig_reg tbody th[rowspan],
+    table.pcisig_reg tbody td[rowspan] {
+      border-left: 1px solid silver;
+    }
+
+    table.pcisig_reg tbody th[rowspan]:first-child,
+    table.pcisig_reg tbody td[rowspan]:first-child {
+      border-left: 0;
+      border-right: 1px solid silver;
+    }
+
+    table.pcisig_reg th,
+    table.pcisig_reg td {
+      border: 1px solid silver;
+    }
+
+    table.pcisig_reg th:nth-child(2),
+    table.pcisig_reg td:nth-child(2) {
+      width: 100%;
+      text-align: left;
+    }
+
+    table.pcisig_reg th:first-child,
+    table.pcisig_reg td:first-child,
+    table.pcisig_reg th:nth-child(3),
+    table.pcisig_reg td:nth-child(3) {
+      text-align: center;
+    }
+
+    #respec-banner {
+      position: fixed;
+      top: -15px;
+      height: 20px;
+      left: -695px;
+      width: 700px;
+      margin: 0 0 0 0;
+      text-align: right;
+      z-index: 2;
+      padding: 4px 4px 4px 4px;
+      /* Safari, Chrome */
+      -webkit-transform: rotate(270deg);
+      -webkit-transform-origin: right center;
+      /* Mozilla */
+      -moz-transform: rotate(270deg);
+      -moz-transform-origin: right center;
+      /* Opera */
+      -o-transform: rotate(270deg);
+      -o-transform-origin: right center;
+      /* IE */
+      -ms-transform: rotate(270deg);
+      -ms-transform-origin: right center;
+      /* W3C */
+      transform: rotate(270deg);
+      transform-origin: right center;
+    }
+
+    #respec-banner {
+      font-family: sans-serif;
+      font-size: 17px;
+      color: white;
+      background-color: #0060A9;
+      /*#38197a; /* PCIe Logo Blue */
+    }
+  </style>
+  <script class="remove">
+    var respecConfig = {
+      specStatus: "WD/Author-Review/0.1"
+      , shortName: "pcisig-example"
+      , editors: [{name: "Steve Glaser"}]
+      , wg: "Protocol Working Group"
+      , wgURI: "http://pcisig.com/"
+      , edDraftURI: "http://sglaser.github.io/respec/examples/xxx.html"
+      , localBiblio: {
+        "MEMES": "<a href='http://w3cmemes.tumblr.com/'>W3C Memes</a>"
+        , "REX": "<strong>Overridden!</strong>"
+      }
+      , trace: true
+      , includePermalinks: true
+      , figFmt: "%1Figure %(%c-%#%): %t"
+      , tblFmt: "%1Table %(%c-%#%): %t"
+      , ajaxIsLocal: true
+      , cssOverride: "base.css"
+      , addDefinitionMap: true
+      , addXrefMap: true
+      , numberByChapter: true
+    };
+  </script>
+</head>
+<body>
+<section id="tof"></section>
+<section id="tot"></section>
+<section id="toe"></section>
+<section id="abstract">
+  <p> This is just a very basic document. The following items automatically generate references in the
+    <a href="#references">References</a> Appendix. [[!REX]] Yeah for memes [[MEMES]].
+    [[DOM4]], [[XML10]], [[\WHATEVER]] </p>
+  <p>Note that this example document turns on the <code>addDefinitionMap</code> flag in the
+    <code>respecConfig</code>. This inserts the <a href="#definition-map">Definition Map</a> Appendix.</p>
+  <p>There are a number of areas that still need work. Some of them are visible in this document and some of them are
+    background issues. The main html that users would write is pretty solid. Work areas include:</p>
+  <ol>
+    <li>
+      <del>Copyright needs to be updated</del>
+      <b>Done</b></li>
+    <li>
+      <del>Move styles into an external css file</del>
+      <b>Done</b></li>
+    <li>Validate external figure last modified date against the corresponding raw source file last modified date.</li>
+    <li>
+      <del>Better build process independent of w3c usage</del>
+      <b>Done</b></li>
+    <li>
+      <del>Banner at left needs to be populated automatically</del>
+      <b>Done</b></li>
+    <li>
+      <del>Populate cross reference content automatically (the "See Section 1.2.3.4" stuff)</del>
+      <b>Done</b></li>
+    <li>MathML doesn't work on most browsers (exception: Firefox, Safari). Switch to
+      <a href="http://www.mathjax.org">http://www.mathjax.org/</a></li>
+    <li>
+      <del>Link field names and field in the automatically generated figure</del>
+      <b>Done</b></li>
+    <li>Make Table of Contents, Table of Figures, Table of Tables into sidebars that can expand and collapse</li>
+    <li>Support breaking large documents into a set of html files for faster loading</li>
+    <li>
+      <del>Provide diff / changebar support. This would automatically create a derived document with &lt;ins&gt; and
+        &lt;del&gt; tags inserted to reflect differences between two commits.
+      </del>
+      <b>Done -- needs more automation</b></li>
+    <li>PDF output:
+      <del>Perhaps u</del>
+      <ins>U</ins>
+      sing Prince XML
+      <a href="http://www.princexml.com">http://www.princexml.com</a> <b>Done</b>
+      <i>Note: The princexml tool works on a spec snapshot. It can't handle the raw spec input because it doesn't
+        implement the setTimeout function (defined for browsers, but not part of ECMAScript).</i></li>
+  </ol>
+  <!--      <p> [[NO-EXIST]] </p>-->
+</section>
+<section id="sotd"></section>
+<nav id="toc">
+  <section id="sect-toc"></section>
+  <section id="tof"></section>
+  <section id="tot"></section>
+</nav>
+<section class="informative">
+  <h2>Informative section</h2>
+  <p>blah</p>
+
+  <section>
+    <h2>Inner section</h2>
+    <p>blahblah</p>
+  </section>
+  <section>
+    <h2>Other inner section</h2>
+    <p>blahblah</p>
+  </section>
+</section>
+<section>
+  <h2>Terms and Acronyms</h2>
+  <p>Support has been added to automatically detect, format, and link terms and associated definitions.</p>
+  <p>
+    Terms are defined using the <code>&lt;dfn class="xxx"&gt;</code> tag.
+    Term namespaces are independent for each class (e.g. it's OK to have
+    <code>&lt;dfn&nbsp;class="pin"&gt;foo&lt;/dfn&gt;</code> and
+    <code>&lt;dfn&nbsp;class="signal"&gt;foo&lt;/dfn&gt;</code>.
+    Valid class values are:
+  </p>
+  <ul>
+    <li>class="argument"</li>
+    <li>class="command"</li>
+    <li>class="dfn" <i>&nbsp; &mdash; &nbsp; the default</i></li>
+    <li>class="field"</li>
+    <li>class="message"</li>
+    <li>class="msg"</li>
+    <li>class="op"</li>
+    <li>class="opcode"</li>
+    <li>class="operation"</li>
+    <li>class="parameter"</li>
+    <li>class="pin"</li>
+    <li>class="register"</li>
+    <li>class="regpict"</li>
+    <li>class="reply"</li>
+    <li>class="request"</li>
+    <li>class="signal"</li>
+    <li>class="state"</li>
+    <li>class="term"</li>
+    <li>class="value"</li>
+  </ul>
+  <p>
+    Term references use the &lt;a&gt; tag with no href attribute.<span class="footnote">This is a footnote.</span>
+    The class is OPTIONAL and is only needed to resolve ambiguity (e.g.
+    <code>&lt;a&nbsp;class="pin"&gt;foo&lt;/a&gt;</code> vs <code>&lt;a&nbsp;class="signal"&gt;foo&lt;/a&gt;</code>).
+    When the contents of a term definition contains HTML tags (e.g. &lt;sub&gt;, &lt;abbr&gt;), this HTML is remembered
+    and is copied to the references.
+    This makes subscripts and abbreviations more convenient since
+    <code>&lt;a&gt;D0active&lt;/a&gt;</code> could expand to
+    <code>&lt;a href="#state-D0-active" class="state"&gt;D0&lt;sub&gt;active&lt;/sub&gt;</code> D0<sub>active</sub>The
+    &lt;a&gt; references the text of the in &lt;dfn&gt; the &lt;a&gt; is the text after removing HTML tags.
+    The contents of the &lt;dfn&gt; tag is copied into these references.
+    The term contains subscripts, these are automatically copied into the reference.
+  </p>
+  <dl>
+    <dt><dfn title="tErM1">Term1</dfn></dt>
+    <dd>This is the definition for Term #1. It uses no markup.</dd>
+    <dt><dfn class="pin">PIN2#</dfn></dt>
+    <dt><dfn class="pin">PIN2a#</dfn></dt>
+    <dd>This is the definition for PIN2# and PIN2a#. It uses two &lt;dt&gt; tags, containing
+      &lt;dfn class="pin"&gt;PIN2#&lt;/dfn&gt; and
+      &lt;dfn class="pin"&gt;PIN2a#&lt;/dfn&gt;.
+    </dd>
+    <dt><dfn><abbr title="Term number 3">TERM3</abbr></dfn></dt>
+    <dd>This is the definition for Term #3. It uses &lt;dfn&gt;&lt;abbr title="Term number 3"&gt;TERM3&lt;abbr&gt;&lt;/dfn&gt;</dd>
+    <dt><dfn>Term number 4</dfn></dt>
+    <dt><dfn title="term4"><abbr title="Term number 4">Term4</abbr></dfn></dt>
+    <dd>This is the definition for Term #4. It uses &lt;dfn&gt;&lt;abbr title="Term number 4"&gt;Term4&lt;/abbr&gt;&lt;/dfn&gt;</dd>
+    <dt><dfn class="state">D3<sub>cold</sub></dfn></dt>
+    <dd>This is the definition for D3<sub>cold</sub>. It &lt;dfn class="state"&gt;D3&lt;sub&gt;cold&lt;/sub&gt;&lt;/dfn&gt;.
+    </dd>
+    <dt><dfn class="state">Detect.Quiet</dfn></dt>
+    <dd>This is &lt;dfn class="state"&gt;Detect.Quiet&lt;/dfn&gt;</dd>
+    <dt><dfn>Term<sub>6</sub></dfn></dt>
+    <dd>This is the definition for Term<sub>6</sub>. It &lt;dfn&gt;Term&lt;sub&gt;6&lt;/sub&gt;&lt;/dfn&gt;.</dd>
+    <dt><dfn><abbr>Term<sub>7</sub></abbr></dfn></dt>
+    <dd>This is the definition for Term<sub>7</sub>. It &lt;dfn&gt;&lt;abbr&gt;Term&lt;sub&gt;7&lt;/sub&gt;&lt;/abbr&gt;&lt;/dfn&gt;.
+    </dd>
+    <dt><dfn>Term number 8</dfn></dt>
+    <dt><dfn title="term8"><abbr title="Term number 8">Term<sub>8</sub></abbr></dfn></dt>
+    <dd>This is the definition for Term<sub>8</sub>. It &lt;dfn&gt;&lt;abbr title="Term number 8"&gt;Term&lt;sub&gt;8&lt;/sub&gt;&lt;/abbr&gt;&lt;/dfn&gt;.
+    </dd>
+    <dt><dfn class="pin">Term9</dfn></dt>
+    <dd>This is the definition for Term #9. It uses &lt;dfn class="pin"&gt;.</dd>
+    <dt><dfn class="signal">Term9</dfn></dt>
+    <dd>This is the definition for Term #9. It uses &lt;dfn class="signal"&gt;.</dd>
+    <dt><dfn class="term">Term9</dfn></dt>
+    <dd>This is the definition for Term #9. It uses &lt;dfn class="term"&gt;.</dd>
+    <dt><dfn class="term">Term9</dfn></dt>
+    <dd>This is the definition for Term #9. It uses &lt;dfn class="term"&gt;.</dd>
+    <dt><dfn class="term">Term 9</dfn></dt>
+    <dd>This is the definition for Term #9. It uses &lt;dfn class="term"&gt;.</dd>
+  </dl>
+  <section>
+    <h2>References:</h2>
+    <ul>
+      <li>Term1 <a>Term1</a></li>
+      <li>tErM1 <a>tErM1</a></li>
+      <li>PIN2# <a>PIN2#</a></li>
+      <li>PIN2a# <a>PIN2a#</a></li>
+      <li>TERM3 <a>TERM3</a></li>
+      <li>term number 3 <a>term number 3</a></li>
+      <li>title="term number 3" <a title="term number 3">This is term number 3</a></li>
+      <li>TERM3 <a title="term number 3">xxx</a></li>
+      <li>Term number 4 <a>Term<sub>4</sub></a></li>
+      <li>D3cold <a>D3cold</a></li>
+      <li>d3cold <a>d3cold</a></li>
+      <li>D3<sub>cold</sub> <a>D3<sub>cold</sub></a></li>
+      <li>xyzzy title="d3cold" <a title="d3cold">xyzzy</a></li>
+      <li>Term<sub>6</sub> <a>Term<sub>6</sub></a></li>
+      <li>Term<sub>7</sub> <a>Term<sub>7</sub></a></li>
+      <li>term number 8 <a>term number 8</a></li>
+      <li>Term9 class="pin" <a class="pin">Term9</a></li>
+      <li>Term9 class="signal" <a class="signal">Term9</a></li>
+      <li>Term9 class="term" <a class="term">Term9</a></li>
+      <li>Term9 no class (ambiguous) <a>Term9</a></li>
+      <li>Term9 class="externalDFN" <a class="externalDFN">Term9</a></li>
+      <li>Term 9 (with space before the '9') <a>Term 9</a></li>
+      <li>Detect.Quiet <a>Detect.Quiet</a></li>
+      <li>first <a>first</a></li>
+      <li>Z <a>z</a></li>
+      <li>bit13 <a class="field">bit13</a></li>
+    </ul>
+  </section>
+</section>
+<section>
+  <h2>MathML Test</h2>
+  <p>This is a simple MathML equation.</p>
+  <figure class="equation">
+    <math>
+      <mi>&pi;<!-- &#x03C0; π --></mi>
+      <mo>&times;<!-- &it; &#x02062; &#8290; &InvisibleTimes; --></mo>
+      <msup>
+        <mi>r</mi>
+        <mn>2</mn>
+      </msup>
+    </math>
+    <figcaption>pi times r squared</figcaption>
+  </figure>
+
+
+</section>
+<section>
+  <h2>JSON Example Register Figure</h2>
+  <figure id="json-register" class="register">
+        <pre class="json">
+           { "width" : 48,
+              "defaultUnused" : "Bogus",
+              "fields": [
+                {   "msb": 4,
+                    "lsb": 0,
+                    "name": "field 4:0",
+                    "attr": "ro"
+                }, {
+                    "msb": 7,
+                    "lsb": 6,
+                    "name": "Very long name that will never fit"
+                }, {
+                    "msb": 9,
+                    "name": "bit9"
+                }, {
+                    "lsb": 10,
+                    "name": "bit10",
+                    "addClass": "svg_error"
+                }, {
+                    "lsb": 11,
+                    "name": "bit11"
+                }, {
+                    "lsb": 12,
+                    "name": "bit12",
+                    "value": "1"
+                }, {
+                    "lsb": 13,
+                    "name": "bit13",
+                    "href": "field-bit13"
+                }, {
+                    "lsb": 14,
+                    "msb": 24,
+                    "name": "bit 20:14",
+                    "value": "value"
+                }, {
+                    "lsb": 25,
+                    "msb": 32,
+                    "name": "byte",
+                    "value": [ "A", "B", "C", "D", "E", "F", "G", "H"]
+                } ] }
+        </pre>
+    <figcaption>Graph for JSON Defined Register Example</figcaption>
+  </figure>
+  <p>These are references to fields that were defined as terms in this JSON example.</p>
+  <ul>
+    <li><a class="field">field 4:0</a>&nbsp;&nbsp;&nbsp;&lt;a class="field"&gt;field 4:0&lt;/a&gt;</li>
+    <li>
+      <a class="field">Very long name that will never fit</a>&nbsp;&nbsp;&nbsp;&lt;a class="field"&gt;Very long name
+      that will never fit&lt;/a&gt;
+    </li>
+    <li><a class="field">bit9</a>&nbsp;&nbsp;&nbsp;&lt;a class="field"&gt;bit9&lt;/a&gt;</li>
+    <li><a class="field">bit10</a>&nbsp;&nbsp;&nbsp;&lt;a class="field"&gt;bit10&lt;/a&gt;</li>
+    <li><a class="field">bit11</a>&nbsp;&nbsp;&nbsp;&lt;a class="field"&gt;bit11&lt;/a&gt;</li>
+    <li><a class="field">bit12</a>&nbsp;&nbsp;&nbsp;&lt;a class="field"&gt;bit12&lt;/a&gt;</li>
+    <li><a class="field">bit13</a>&nbsp;&nbsp;&nbsp;&lt;a class="field"&gt;bit13&lt;/a&gt;</li>
+    <li><a>bit13</a>&nbsp;&nbsp;&nbsp;&lt;a&gt;bit13&lt;/a&gt;</li>
+    <li><a href="#field-bit13">Bit 13</a>&nbsp;&nbsp;&nbsp;&lt;a href="#field-bit13"&gt;Bit 13&lt;/a&gt;</li>
+  </ul>
+
+</section>
+<section>
+  <h2>PCISIG style Registers</h2>
+  <figure class="register pcisig_reg" data-table="#tbl-pcisig-style-register-1">
+    <figcaption>PCISIG-Style Register #1</figcaption>
+  </figure>
+  <table class="pcisig_reg">
+    <caption>PCISIG-Style Register #1</caption>
+    <thead>
+    <tr>
+      <th>Bit&nbsp;Location</th>
+      <th>Register&nbsp;Description</th>
+      <th>Attributes</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td>0</td>
+      <td>
+        <p>
+          <dfn class="field">Z</dfn>
+          &ndash; This field is a very special field.
+        </p>
+        <p>This is the middle paragraph.</p>
+        <p>This is the last paragraph.</p>
+      </td>
+      <td>RO</td>
+    </tr>
+    <tr>
+      <td>2:1</td>
+      <td>
+        <p>
+          <dfn class="field">bit1_2</dfn>
+          &ndash; Bits 1 &amp; 2
+        </p>
+      </td>
+      <td>RW</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><dfn class="field">bit3</dfn> &ndash; three</td>
+      <td>RW</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>
+        <p>
+          <dfn class="field">Ab</dfn>
+          &ndash; four
+        </p>
+      </td>
+      <td>RW</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>bit5 &ndash; five</td>
+      <td>RW</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>
+        <p>
+          <dfn class="field">bit 6a</dfn>
+          &ndash; six a
+        </p>
+        <p>
+          <dfn class="field">bit 6b</dfn>
+          &ndash; six b
+        </p>
+        <p>bit 6c six c</p>
+      </td>
+      <td>RW</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><dfn class="field">bit7</dfn></td>
+      <td>RW</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td><dfn class="field">bit8</dfn> - eight</td>
+      <td>RW</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>
+        <dfn class="field">bit9</dfn>
+      </td>
+      <td>RW</td>
+    </tr>
+    <tr>
+      <td>14</td>
+      <td>
+        <dfn class="field">bit 14a</dfn>
+        <table class="pcisig_reg">
+          <thead>
+          <tr>
+            <th>Col&nbsp;1</th>
+            <th>Col&nbsp;2</th>
+            <th>Col&nbsp;3</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td>
+              <dfn class="field">first</dfn>
+            </td>
+            <td>
+              <dfn class="field">second</dfn>
+            </td>
+            <td>
+              <dfn class="field">third</dfn>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="3">second row</td>
+          </tr>
+          </tbody>
+        </table>
+        <p>
+          <dfn class="field">fourth</dfn>
+        </p>
+      </td>
+      <td>RW</td>
+    </tr>
+    </tbody>
+  </table>
+</section>
+<section>
+  <h2>Device Capabilities 2 Register (Offset 24h)</h2>
+  <figure class="register pcisig_reg" data-table="#tbl-device-capabilities-2-register">
+    <figcaption>Device Capabilities 2 Register</figcaption>
+  </figure>
+  <table class="pcisig_reg" id="tbl-device-capabilities-2-register">
+    <caption>Device Capabilities 2 Register</caption>
+    <thead>
+    <tr>
+      <th>Bit&nbsp;Location</th>
+      <th>Register&nbsp;Description</th>
+      <th>Attributes</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td>3:0</td>
+      <td>
+        <p>
+          <dfn class="field">Completion Timeout Ranges Supported</dfn> – This field indicates device Function support
+          for the optional Completion Timeout programmability mechanism. This mechanism allows system software to modify
+          the Completion Timeout value.
+        </p>
+        <p>
+          This field is applicable only to Root Ports, Endpoints that issue Requests on their own behalf, and PCI
+          Express to PCI/PCI-X Bridges that take ownership of Requests issued on PCI Express. For all other Functions
+          this field is Reserved and MUST be hardwired to 0000b.</p>
+        <p>
+          Four time value ranges are defined:</p>
+        <dl>
+          <dt>Range A</dt>
+          <dd>50 &mu;s to 10 ms</dd>
+          <dt>Range B</dt>
+          <dd>10 ms to 250 ms</dd>
+          <dt>Range C</dt>
+          <dd>250 ms to 4 s</dd>
+          <dt>Range D</dt>
+          <dd>4 s to 64 s</dd>
+        </dl>
+        <p>Bits are set according to the table below to show timeout value ranges supported.</p>
+        <dl>
+          <dt>0000b</dt>
+          <dd>Completion Timeout programming not supported – the Function MUST implement a timeout value in the range 50
+            &mu;s to 50 ms.
+          </dd>
+          <dt>0001b</dt>
+          <dd>Range A</dd>
+          <dt>0010b</dt>
+          <dd>Range B</dd>
+          <dt>0011b</dt>
+          <dd>Ranges A and B</dd>
+          <dt>0110b</dt>
+          <dd>Ranges B and C</dd>
+          <dt>0111b</dt>
+          <dd>Ranges A, B, and C</dd>
+          <dt>1110b</dt>
+          <dd>Ranges B, C, and D</dd>
+          <dt>1111b</dt>
+          <dd>Ranges A, B, C, and D</dd>
+        </dl>
+        <p>All other values are Reserved.</p>
+        <p>It is STRONGLY RECOMMENDED that the Completion Timeout mechanism not expire in less than 10 ms.</p>
+      </td>
+      <td>HwInit</td>
+    </tr>
+
+    <tr>
+      <td>4</td>
+      <td>
+        <p>
+          <dfn class="field">Completion Timeout Disable Supported</dfn> – A value of 1b indicates support for the
+          Completion Timeout Disable mechanism.
+        </p>
+        <p>The Completion Timeout Disable mechanism is REQUIRED for Endpoints that issue Requests on their own behalf
+          and PCI Express to PCI/PCI-X Bridges that take ownership of Requests issued on PCI Express.
+        </p>
+        <p>This mechanism is OPTIONAL for Root Ports.</p>
+        <p>For all other Functions this field is Reserved and MUST be hardwired to 0b.</p>
+      </td>
+      <td>RO</td>
+    </tr>
+
+    <tr>
+      <td>5</td>
+      <td>
+        <p>
+          <dfn class="field">ARI Forwarding Supported</dfn> – Applicable only to Switch Downstream Ports and Root Ports;
+          MUST be 0b for other Function types. This bit MUST be set to 1b if a Switch Downstream Port or Root Port
+          supports this optional capability. See Section 6.13 for additional details.
+        </p>
+      </td>
+      <td>RO</td>
+    </tr>
+
+    <tr>
+      <td>6</td>
+      <td>
+        <p>
+          <dfn class="field">AtomicOp Routing Supported</dfn> – Applicable only to Switch Upstream Ports, Switch
+          Downstream Ports, and Root Ports; MUST be 0b for other Function types. This bit MUST be set to 1b if the Port
+          supports this optional capability. See Section 6.15 for additional details.
+        </p>
+      </td>
+      <td>RO</td>
+    </tr>
+
+
+    <tr>
+      <td>7</td>
+      <td>
+        <p>
+          <dfn class="field">32-bit AtomicOp Completer Supported</dfn> – Applicable to Functions with Memory Space BARs
+          as well as all Root Ports; MUST be 0b otherwise. Includes FetchAdd, Swap, and CAS AtomicOps. This bit MUST be
+          set to 1b if the Function supports this optional capability. See Section 6.15.3.1 for additional RC
+          requirements.
+        </p>
+      </td>
+      <td>RO</td>
+    </tr>
+
+
+    <tr>
+      <td>8</td>
+      <td>
+        <p>
+          <dfn class="field">64-bit AtomicOp Completer Supported</dfn> – Applicable to Functions with Memory Space BARs
+          as well as all Root Ports; MUST be 0b otherwise. Includes FetchAdd, Swap, and CAS AtomicOps. This bit MUST be
+          set to 1b if the Function supports this optional capability. See Section 6.15.3.1 for additional RC
+          requirements.
+        </p>
+      </td>
+      <td>RO</td>
+    </tr>
+
+
+    <tr>
+      <td>9</td>
+      <td>
+        <p>
+          <dfn class="field">128-bit CAS Completer Supported</dfn> – Applicable to Functions with Memory Space BARs as
+          well as all Root Ports; MUST be 0b otherwise. This bit MUST be set to 1b if the Function supports this
+          optional capability. See Section 6.15 for additional details.
+        </p>
+      </td>
+      <td>RO</td>
+    </tr>
+
+    <tr>
+      <td>10</td>
+      <td>
+        <p>
+          <dfn class="field">No RO-enabled PR-PR Passing</dfn> – If this bit is Set, the routing element never carries
+          out the passing permitted by Table 2-39 entry A2b that is associated with the Relaxed Ordering Attribute field
+          being Set.
+        </p>
+        <p>
+          This bit applies only for Switches and RCs that support peer-to-peer traffic between Root Ports. This bit
+          applies only to Posted Requests being forwarded through the Switch or RC and does not apply to traffic
+          originating or terminating within the Switch or RC itself. All Ports on a Switch or RC MUST report the same
+          value for this bit.</p>
+        <p class="issue" title="This is an issue">Clearly this applies when both requests are forwarded. What about when
+          only one of the requests is forwarded?</p>
+        <p>
+          For all other functions, this bit MUST be 0b
+        </p>
+      </td>
+      <td>HwInit</td>
+    </tr>
+
+    <tr>
+      <td>11</td>
+      <td>
+        <p>
+          <dfn class="field">LTR Mechanism Supported</dfn> – A value of 1b indicates support for the optional Latency
+          Tolerance Reporting (LTR) mechanism.
+        </p>
+        <p>Root Ports, Switches and Endpoints are PERMITTED to implement this capability.</p>
+        <p>For a multi-Function device associated with an Upstream Port, each Function MUST report the same value for
+          this bit.</p>
+        <p>For Bridges and other Functions that do not implement this capability, this bit MUST be hardwired to 0b.
+        </p>
+      </td>
+      <td>RO</td>
+    </tr>
+
+
+    <tr>
+      <td>13:12</td>
+      <td>
+        <p>
+          <dfn class="field">TPH Completer Supported</dfn> – Value indicates Completer support for TPH or Extended TPH.
+          Applicable only to Root Ports and Endpoints. For all other Functions, this field is Reserved.
+        </p>
+        <p>Defined Encodings are:</p>
+        <dl>
+          <dt>00b</dt>
+          <dd>TPH and Extended TPH Completer not supported.</dd>
+          <dt>01b</dt>
+          <dd>TPH Completer supported; Extended TPH Completer not supported.</dd>
+          <dt>10b</dt>
+          <dd>Reserved.</dd>
+          <dt>11b</dt>
+          <dd>Both TPH and Extended TPH Completer supported.</dd>
+        </dl>
+        <p>See Section 6.17 for details.</p>
+      </td>
+      <td>RO</td>
+    </tr>
+
+    <tr>
+      <td>15:14</td>
+      <td>
+        <p>
+          <dfn class="field">LN System CLS</dfn> – Applicable only to Root Ports and RCRBs; MUST be 00b for all other
+          Function types. This field indicates if the Root Port or RCRB supports LN protocol as an LN Completer, and if
+          so, what cacheline size is in effect.
+        </p>
+        <p>Encodings are:</p>
+        <dl>
+          <dt>00b</dt>
+          <dd>LN Completer either not supported or not in effect</dd>
+          <dt>01b</dt>
+          <dd>LN Completer with 64-byte cachelines in effect</dd>
+          <dt>10b</dt>
+          <dd>LN Completer with 128-byte cachelines in effect</dd>
+          <dt>11b</dt>
+          <dd>Reserved</dd>
+        </dl>
+      </td>
+      <td>HWInit</td>
+    </tr>
+
+    <tr>
+      <td>19:18</td>
+      <td>
+        <p>
+          <dfn class="field">OBFF Supported</dfn> – This field indicates if OBFF is supported and, if so, what signaling
+          mechanism is used.
+        </p>
+        <dl>
+          <dt>00b</dt>
+          <dd>OBFF Not Supported</dd>
+          <dt>01b</dt>
+          <dd>OBFF supported using Message signaling only</dd>
+          <dt>10b</dt>
+          <dd>OBFF supported using WAKE# signaling only</dd>
+          <dt>11b</dt>
+          <dd>OBFF supported using WAKE# and Message signaling</dd>
+        </dl>
+        <p>The value reported in this field MUST indicate support for WAKE# signaling only if:</p>
+        <ul>
+          <li>for a Downstream Port, driving the WAKE# signal for OBFF is supported and the connector or component
+            connected Downstream is known to receive that same WAKE# signal
+          </li>
+          <li>for an Upstream Port, receiving the WAKE# signal for OBFF is supported and, if the component is on an
+            add-in-card, that the component is connected to the WAKE# signal on the connector.
+          </li>
+        </ul>
+        <p>Root Ports, Switch Ports, and Endpoints are PERMITTED to implement this capability.</p>
+        <p>For a multi-Function device associated with an Upstream Port, each Function MUST report the same value for
+          this field.</p>
+        <p>For Bridges and Ports that do not implement this capability, this field MUST be hardwired to 00b.</p>
+      </td>
+      <td>Hwinit</td>
+    </tr>
+
+    <tr>
+      <td>20</td>
+      <td>
+        <p>
+          <dfn class="field">Extended Fmt Field Supported</dfn> – If Set, the Function supports the 3-bit definition of
+          the Fmt field. If Clear, the Function supports a 2-bit definition of the Fmt field. See Section 2.2.
+        </p>
+        <p>MUST be Set for Functions that support End-End TLP Prefixes. All Functions in an Upstream Port MUST have the
+          same value for this bit. Each Downstream Port of a component
+          <del>MAY</del>
+          <ins>is PERMITTED to</ins>
+          have a different value for this bit.
+        </p>
+        <p>It is STRONGLY RECOMMENDED that Functions support the 3-bit definition of the Fmt field.
+        </p>
+      </td>
+      <td>RO</td>
+    </tr>
+
+
+    <tr>
+      <td>21</td>
+      <td>
+        <p>
+          <dfn class="field">End-End TLP Prefix Supported</dfn> – Indicates whether End-End TLP Prefix support is
+          offered by a Function. Values are:
+        </p>
+        <dl>
+          <dt>0b</dt>
+          <dd>No Support</dd>
+          <dt>1b</dt>
+          <dd>Support is provided to receive TLPs containing End-End TLP Prefixes.</dd>
+        </dl>
+        <p>All Ports of a Switch MUST have the same value for this bit.
+        </p>
+      </td>
+      <td>HwInit</td>
+    </tr>
+
+
+    <tr>
+      <td>23:22</td>
+      <td>
+        <p>
+          <dfn class="field">Max End-End TLP Prefixes</dfn> – Indicates the maximum number of End-End TLP Prefixes
+          supported by this Function. See Section 2.2.10.2 for important details. Values are:
+        </p>
+        <dl>
+          <dt>01b</dt>
+          <dd>1 End-End TLP Prefix</dd>
+          <dt>10b</dt>
+          <dd>2 End-End TLP Prefixes</dd>
+          <dt>11b</dt>
+          <dd>3 End-End TLP Prefixes</dd>
+          <dt>00b</dt>
+          <dd>4 End-End TLP Prefixes</dd>
+        </dl>
+        <p>If End-End TLP Prefix Supported is Clear, this field is RsvdP.</p>
+        <p>Different Root Ports that have the End-End TLP Prefix Supported bit Set
+          <del>MAY</del>
+          <ins>are PERMITTED to</ins>
+          report different values for this field.
+        </p>
+        <p>For Switches where End-End TLP Prefix Supported is Set, this field MUST be 00b indicating support for up to
+          four End-End TLP Prefixes.
+        </p>
+      </td>
+      <td>HwInit</td>
+    </tr>
+
+    <tr>
+      <td>31</td>
+      <td>
+        <p>
+          <dfn class="field">FRS Supported</dfn> – When Set, indicates support for the optional Function Readiness
+          Status (FRS) capability. MUST be Set for all Functions that support generation or receipt capabilities of FRS
+          Messages. MUST NOT be Set by Switch Functions that do not generate FRS Messages on their own behalf.
+        </p>
+      </td>
+      <td>HwInit</td>
+    </tr>
+    </tbody>
+  </table>
+  <p class="impnote" title="Use of the No RO-enabled PR-PR Passing Bit">
+    The No RO-enabled PR-PR Passing bit allows platforms to utilize PCI Express switching elements on the path between a
+    requester and completer for requesters that could benefit from a slightly less 5 relaxed ordering model. An example
+    is a device that cannot ensure that multiple overlapping posted writes to the same address are outstanding at the
+    same time. The method by which such a device is enabled to utilize this mode is beyond the scope of this
+    specification.</p>
+
+  <section><h2>Field referenced</h2>
+    <ul>
+      <li><a>Completion Timeout Ranges Supported</a></li>
+      <li><a>Completion Timeout Disable Supported</a></li>
+      <li><a>ARI Forwarding Supported</a></li>
+      <li><a>AtomicOp Routing Supported</a></li>
+      <li><a>32-bit AtomicOp Completer Supported</a></li>
+      <li><a>64-bit AtomicOp Completer Supported</a></li>
+      <li><a>128-bit CAS Completer Supported</a></li>
+      <li><a>No RO-enabled PR-PR Passing</a></li>
+      <li><a>LTR Mechanism Supported</a></li>
+      <li><a>TPH Completer Supported</a></li>
+      <li><a>LN System CLS</a></li>
+      <li><a>OBFF Supported</a></li>
+      <li><a>Extended Fmt Field Supported</a></li>
+      <li><a>End-End TLP Prefix Supported</a></li>
+      <li><a>Max End-End TLP Prefixes</a></li>
+      <li><a>FRS Supported</a></li>
+    </ul>
+  </section>
+</section>
+<section>
+  <h2>Name <a href="http://berjon.com/">clashes</a> after <span>and <a href="http://w3.org/"
+  >deep</a> stuff</span></h2>
+  <p> Something MUST happen. </p>
+  <p> Something MUST NOT happen. </p>
+  <p> Something SHOULD happen. </p>
+  <p> Something SHOULD NOT happen. </p>
+  <p> Something SHALL happen. </p>
+  <p> Something SHALL NOT happen. </p>
+  <p> Something is REQUIRED to happen. </p>
+  <p> Something is NOT REQUIRED to happen. </p>
+  <p> Something is RECOMMENDED to happen. </p>
+  <p> Something is NOT RECOMMENDED to happen. </p>
+  <p> Something is STRONGLY RECOMMENDED to happen. </p>
+  <p> Something is STRONGLY NOT RECOMMENDED to happen. </p>
+  <p> Something is OPTIONAL. </p>
+  <p> Something is INDEPENDENTLY OPTIONAL. </p>
+  <p> Something is PERMITTED to happen. </p>
+  <p> Something is NOT PERMITTED to happen. </p>
+  <p class="issue" title="A real problem"> This is a problem </p>
+  <p class="issue atrisk" title="A REAL problem"> This is a problem </p>
+  <p class="note" title="About this"> Just a note </p>
+  <p class="impnote" title="Imp Note Text"> Body of the implementation note </p>
+  <p class="impnote"> Body of the implementation note </p>
+  <p class="advisement"><span class="marker">Advisement Text</span> Body of the advisement</p>
+  <p class="annoying-warning"> Body of the annoying-warning note </p>
+  <p>This is a paragraph <span class="issue"> with an inline</span> issue.</p>
+  <p class="issue" title="A real problem"> This is a problem </p>
+  <p>This is a paragraph <span class="note"> with an inline</span> note.</p>
+  <p class="note" title="About this"> Just a note </p>
+  <p>This is a paragraph <span class="impnote"> with an inline</span> impnote.</p>
+  <p class="impnote" title="About this"> Just an impnote </p>
+</section>
+</body>
+</html>

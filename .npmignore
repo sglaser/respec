@@ -27,6 +27,7 @@ js/core/*.js
 js/deps/*
 js/templates.js
 js/ui/*.js
+js/pcisig/*.js
 js/w3c/*.js
 js/w3c/templates/*
 node_modules/

@@ -177,6 +177,17 @@ export function makeBasicConfig(profile = "w3c") {
         edDraftURI: "https://foo.com",
         shortName: "Foo",
       };
+    case "pcisig":
+      return {
+        editors: [
+          {
+            name: "Person Name",
+          },
+        ],
+        specStatus: "ED",
+        edDraftURI: "https://foo.com",
+        shortName: "Foo",
+      };
   }
 }
 
@@ -202,5 +213,12 @@ export function makeStandardGeoOps(config = {}, body = makeDefaultBody()) {
   return {
     body,
     config: { ...makeBasicConfig("geonovum"), ...config },
+  };
+}
+
+export function makeStandardPcisigOps(config = {}, body = makeDefaultBody()) {
+  return {
+    body,
+    config: { ...makeBasicConfig("pcisig"), ...config },
   };
 }
