@@ -1,0 +1,1 @@
+define(["deps/_domReady"], dep => { console.warn("The dependency `deps/domReady` is deprecated. Use standard DOMContentLoaded and document.readyState instead."); return dep; });
