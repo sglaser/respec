@@ -1,0 +1,60 @@
+{
+	"folders": [
+		{
+			"path": "src "
+		},
+		{
+			"path": "js"
+		},
+		{
+			"path": "examples"
+		},
+		{
+			"path": "builds"
+		},
+		{
+			"path": "tests"
+		},
+		{
+			"path": "tools"
+		},
+		{
+		   	"path": "Spec"
+		}
+	],
+	"settings": {
+		"editor.wordWrap": "on",
+		"tidyHtml.optionsTidy": {
+			"markup": true,
+			"output-xml": false,
+			"input-xml": false,
+			"show-warnings": true,
+			"show-errors": 6,
+			"numeric-entities": false,
+			"quote-marks": false,
+			"quote-nbsp": true,
+			"quote-ampersand": false,
+			"break-before-br": false,
+			"preserve-entities": true,
+			"uppercase-tags": false,
+			"uppercase-attributes": false,
+			"indent": "yes",
+			"indent-attributes": true,
+			"indent-spaces": 2,
+			"sort-attributes": "alpha",
+			"wrap": 0,
+			"tidy-mark": false,
+			"new-inline-tags": "insx, delx",
+			"output-encoding": "utf8",
+			"input-encoding": "utf8",
+			"doctype": "html5"
+		},
+		"tidyHtml.stopOnWarning": true,
+		"tidyHtml.formatOnSave": true,
+		"tidyHtml.warningNotification": "message",
+		"tidyHtml.errorNotification": "message"
+	},
+	"extensions": {
+		"recommendations": ["anweber.vscode-tidyhtml", "eamodio.gitlens"]
+	}
+}
