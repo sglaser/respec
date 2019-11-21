@@ -22,6 +22,7 @@
   ],
   "devDependencies": {
     "@babel/core": "^7.7.7",
+    "@svgdotjs/svg.js": "^3.0.0",
     "@types/clipboard": "^2.0.1",
     "@types/pluralize": "0.0.29",
     "babel-eslint": "^10.0.3",
@@ -68,7 +69,6 @@
     "serve": "^11.2.0",
     "typescript": "^3.7.4",
     "webidl2": "^23.10.1"
-    "svg.js": "^2.7.0",
   },
   "scripts": {
     "build:geonovum-debug": "npm run build:geonovum -- --debug",
@@ -80,7 +80,6 @@
     "build:pcisig-with-jquery": "node ./tools/builder.js --profile=pcisig-common",
     "build:pcisig": "node ./tools/builder.js --profile=pcisig",
     "build": "snyk protect && npm run build:components",
-    "copydeps": "node ./tools/copydeps.js",
     "builddeps": "rollup -c js/deps/rollup.config.js",
     "karma": "karma start --single-run",
     "lint": "tsc -p src/jsconfig.json && eslint .",
@@ -96,6 +95,7 @@
     "postinstall": "opencollective-postinstall"
   },
   "dependencies": {
+    "@svgdotjs/svg.js": "^3.0.16",
     "colors": "^1.4.0",
     "command-line-args": "^5.1.1",
     "command-line-usage": "^6.1.0",
@@ -105,7 +105,7 @@
     "opencollective-postinstall": "^2.0.2",
     "prompt": "^1.0.0",
     "puppeteer": "2.0.0",
-    "snyk": "^1.267.0"
+    "snyk": "^1.242.1"
   },
   "prettier": {
     "trailingComma": "es5"
