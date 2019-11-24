@@ -1,6 +1,6 @@
 {
   "name": "respec",
-  "version": "25.0.2",
+  "version": "24.34.1",
   "license": "W3C",
   "description": "A technical specification pre-processor.",
   "engines": {
@@ -79,7 +79,7 @@
     "build:pcisig-debug": "npm run build:pcisig -- --debug",
     "build:pcisig-with-jquery": "node ./tools/builder.js --profile=pcisig-common",
     "build:pcisig": "node ./tools/builder.js --profile=pcisig",
-    "build": "snyk protect && npm run build:components",
+    "build": "snyk protect",
     "builddeps": "rollup -c js/deps/rollup.config.js",
     "karma": "karma start --single-run",
     "lint": "tsc -p src/jsconfig.json && eslint .",
