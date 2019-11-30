@@ -98,7 +98,7 @@ function createResourceHints(conf) {
 
 function insertInitialElements(conf) {
   // Collect elements for insertion (document fragment)
-  const elements = createResourceHints();
+  const elements = createResourceHints(conf);
 
   // Opportunistically apply base style unless overridden
   if (!conf.cssOverride) elements.appendChild(createBaseStyle());
