@@ -4,23 +4,13 @@
     <meta charset="utf-8">
     <title>
       Basic ReSpec Evolution Example
-    </title><!--<script src="../js/deps/jquery.js"></script>-->
-    <!--<script src="../js/deps/jquery.svg.js"></script>-->
-    <!--<script src="../js/deps/require.js"-->
-    <!--data-main="../js/profile-pcisig-common"-->
-    <!--async-->
-    <!--class="remove"></script>-->
-    <!--<script src="https://sglaser.github.io/respec/builds/respec-pcisig-common.js"-->
-    <!--async-->
-    <!--class="remove"></script>-->
+    </title>
     <link href="../Spec/StyleSheets/2019/base.css"
           rel="stylesheet">
-    <script async="async"
+    <!--<script async="async"
           class="remove"
-          src="../builds/respec-pcisig.js"></script><!-- <script async
-        class='remove'
-        data-main='../js/profile-pcisig-common'
-        src='../js/deps/require.js'></script> -->
+          src="../builds/respec-pcisig.js"></script>-->
+    <script src='../js/profile-pcisig.js' async class='remove'></script>
 
     <script class="remove">
     var respecConfig = {
@@ -969,7 +959,7 @@
       </table>
       <section id="sect-device-capabilities-2-register">
         <h2>
-          Device Capabilities 2 Register (Offset 24h)
+          <dfn class="register">Device Capabilities 2 Register</dfn> (Offset 24h)
         </h2>
         <table class="pcisig_reg register"
                data-json='{"debug": false, "preClass": "hide"}'
