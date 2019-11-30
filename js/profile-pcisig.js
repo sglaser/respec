@@ -67,7 +67,6 @@ const modules = [
   import("../src/core/algorithms.js"),
   import("../src/core/anchor-expander.js"),
   import("../src/pcisig/include-final-config.js"),
-  import("../src/pcisig/empty-references.js"),
   /* Linter must be the last thing to run */
   import("../src/core/linter.js"),
 ];
