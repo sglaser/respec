@@ -70,7 +70,6 @@ const modules = [
   Promise.resolve().then(function () { return algorithms; }),
   Promise.resolve().then(function () { return anchorExpander; }),
   Promise.resolve().then(function () { return includeFinalConfig; }),
-  Promise.resolve().then(function () { return emptyReferences; }),
   /* Linter must be the last thing to run */
   Promise.resolve().then(function () { return linter$1; }),
 ];
@@ -576,7 +575,7 @@ const fetchDestinations = new Set([
 
 // CSS selector for matching elements that are non-normative
 const nonNormativeSelector =
-  ".informative, .note, .issue, .example, .ednote, .practice, .introductory";
+  ".informative, .note, .issue, .impnote, .example, .ednote, .practice, .introductory";
 /**
  * Creates a link element that represents a resource hint.
  *
@@ -7852,7 +7851,7 @@ function run$5(conf) {
     "\\bSHOULD(?:\\s+NOT)?(?:@64|@32|@16|@8)?\\b",
     "\\bSHALL(?:\\s+NOT)?(?:@64|@32|@16|@8)?\\b",
     "\\bMAY\\b",
-    "\\bIS\\s+(?NOT\\s+)PERMITTED\\s+TO\\b",
+    "\\bIS\\s+(?:NOT\\s+)PERMITTED\\s+TO\\b",
     "\\b(?:NOT\\s+)?REQUIRED\\b",
     "\\b(?:STRONGLY\\s+)?(?:NOT\\s+)?RECOMMENDED\\b",
     "\\b(?INDEPENDENTLY\\s+)?OPTIONAL\\b",
@@ -8013,7 +8012,7 @@ function createResourceHints(conf) {
 
 function insertInitialElements(conf) {
   // Collect elements for insertion (document fragment)
-  const elements = createResourceHints();
+  const elements = createResourceHints(conf);
 
   // Opportunistically apply base style unless overridden
   if (!conf.cssOverride) elements.appendChild(createBaseStyle());
@@ -9295,7 +9294,6 @@ var sotdTmpl = (conf, opts) => {
                 }
                 ${conf.sotdAfterWGinfo ? opts.additionalContent : ""}
                 ${conf.notRec ? renderNotRec(conf) : ""}
-                ${conf.isRec ? renderIsRec() : ""} ${renderDeliverer(conf)}
                 <p>
                   This document is governed by the
                   <a
@@ -9393,94 +9391,6 @@ function renderNotRec(conf) {
       PCI-SIG Membership. This is a draft document and may be updated, replaced or
       obsoleted by other documents at any time. It is inappropriate to cite this
       document as other than work in progress.
-    </p>
-  `;
-}
-
-function renderIsRec() {
-  hyperHTML$2`
-    <p>
-      This document has been reviewed by PCI-SIG Members, by software developers,
-      and by other PCI-SIG groups and interested parties, and is endorsed by the
-      Director as a PCI-SIG Recommendation. It is a stable document and may be used
-      as reference material or cited from another document. PCI-SIG's role in making
-      the Recommendation is to draw attention to the specification and to
-      promote its widespread deployment. This enhances the functionality and
-      interoperability of the Web.
-    </p>
-  `;
-}
-
-function renderDeliverer(conf) {
-  const {
-    isNote,
-    wgId,
-    isIGNote,
-    multipleWGs,
-    recNotExpected,
-    wgPatentHTML,
-    wgPatentURI,
-    charterDisclosureURI,
-  } = conf;
-
-  const producers = !isIGNote
-    ? hyperHTML$2`
-        This document was produced by ${multipleWGs ? "groups" : "a group"}
-        operating under the
-        <a href="https://www.pcisig.com/Consortium/Patent-Policy/"
-          >PCI-SIG Patent Policy</a
-        >.
-      `
-    : "";
-  const wontBeRec = recNotExpected
-    ? "The group does not expect this document to become a PCI-SIG Recommendation."
-    : "";
-  return hyperHTML$2`
-    <p data-deliverer="${isNote ? wgId : null}">
-      ${producers} ${wontBeRec}
-      ${
-        !isNote && !isIGNote
-          ? hyperHTML$2`
-            ${
-              multipleWGs
-                ? hyperHTML$2`
-                  PCI-SIG maintains ${[wgPatentHTML]}
-                `
-                : hyperHTML$2`
-                  PCI-SIG maintains a
-                  <a href="${[wgPatentURI]}" rel="disclosure"
-                    >public list of any patent disclosures</a
-                  >
-                `
-            }
-            made in connection with the deliverables of
-            ${
-              multipleWGs
-                ? "each group; these pages also include"
-                : "the group; that page also includes"
-            }
-            instructions for disclosing a patent. An individual who has actual
-            knowledge of a patent which the individual believes contains
-            <a href="https://www.pcisig.com/Consortium/Patent-Policy/#def-essential"
-              >Essential Claim(s)</a
-            >
-            must disclose the information in accordance with
-            <a
-              href="https://www.pcisig.com/Consortium/Patent-Policy/#sec-Disclosure"
-              >section 6 of the PCI-SIG Patent Policy</a
-            >.
-          `
-          : ""
-      }
-      ${
-        isIGNote
-          ? hyperHTML$2`
-            The disclosure obligations of the Participants of this group are
-            described in the
-            <a href="${charterDisclosureURI}">charter</a>.
-          `
-          : ""
-      }
     </p>
   `;
 }
@@ -9615,9 +9525,98 @@ function linkToCommunity(conf, opts) {
   `;
 }
 
+/*
+<h2>{{l10n.sotd}}</h2>
+{{#if isPreview}}
+  <details class="annoying-warning" open="">
+    <summary>This is a preview</summary>
+    <p>
+      Do not attempt to implement this version of the specification. Do not reference this
+      version as authoritative in any way.
+    </p>
+  </details>
+{{/if}}
+{{#if isUnofficial}}
+  <p>
+    This document is draft of a potential specification. It has no official standing of
+    any kind and does not represent the support or consensus of any standards organisation.
+  </p>
+  {{{additionalContent}}}
+{{else}}
+  {{#if isNoTrack}}
+    <p>
+      This document is a PCISIG internal document. It has no official standing of any kind and does not represent
+      consensus of the PCISIG Membership.
+    </p>
+    {{{additionalContent}}}
+  {{else}}
+    {{#unless overrideStatus}}
+      {{#if isFinal}}
+        <p>
+          This specification is an official publication of the PCISIG. The PCISIG
+          may publish errata to this specification and may develop future revisions to this
+          specification.
+        </p>
+      {{else}}
+        <p>
+          This specification is intended to become a PCISIG Standard.
+          This particular document is a <strong>{{specStatusLong}}</strong>
+          {{#if specLevelLong}}
+            of the <strong>{{specLevelLong}}</strong> document
+            {{#if specReviewLong}}
+              for <strong>{{specReviewLong}}</strong>
+            {{/if}}
+          {{/if}}.
+          {{#if specReviewLong}}
+            {{#if humanReviewEndDate}}
+              The {{specReviewLong}} period ends 5:00 PM US Pacific Time on <b>{{humanReviewEndDate}}</b>.
+            {{/if}}
+          {{/if}}
+        </p>
+        {{#if is09}}
+          <p>PCISIG publishes a 0.9 maturity level specification to indicate that the document is believed to be
+            stable and to encourage implementation by the developer community.</p>
+        {{/if}}
+        {{#if is07}}
+          <p>
+            PCISIG publishes a 0.7 maturity level specification to indicate that the ...
+          </p>
+        {{/if}}
+        {{#if is05}}
+          <p>PCISIG publishes a 0.5 maturity level specification to indicate that the ...</p>
+        {{/if}}
+        {{#if is03}}
+          <p>PCISIG publishes a 0.3 maturity level specification to indicate that the ...</p>
+        {{/if}}
+      {{/if}}
+    {{/unless}}
+  {{/if}}
+  {{#if isSubmission}}
+    {{{additionalContent}}}
+    <p>PCISIG acknowledges that the Submitting Member have made a formal Submission request to PCISIG for
+      discussion. Publication of this document by PCISIG indicates no endorsement of its content by PCISIG, nor that
+      PCISIG has, is, or will be allocating any resources to the issues addressed by it. This document is not the
+      product of a chartered PCISIG Workgroup. </p>
+  {{else}}
+    {{#unless sotdAfterWGinfo}}
+      {{{additionalContent}}}
+    {{/unless}}
+    {{#if notRec}}
+      <p>
+        Publication as {{anOrA}} {{textStatus}} does not imply endorsement by the PCISIG. This is a draft document and
+        may be updated, replaced or obsoleted by other documents at any time. It is inappropriate to cite this document
+        as other than work in progress.
+      </p>
+    {{/if}}
+    {{#if addPatentNote}}<p>{{{addPatentNote}}}</p>{{/if}}
+  {{/if}}
+{{/if}}
+{{{additionalSections}}}
+ */
+
 // @ts-check
 
-const name$l = "pcisig/headers";
+const name$l = "pcisig/pcisig-headers";
 
 const PCISIGDate = new Intl.DateTimeFormat(["en-AU"], {
   timeZone: "UTC",
@@ -14879,27 +14878,27 @@ function renumberItems(selector, map) {
 function run$A(conf) {
   if (conf.numberByChapter) {
     const chapterSecnos = document.querySelectorAll(
-      "body > section:not(.introductory) h1:first-child bdi.secno"
+      "body > section:not(.introductory) h2:first-child bdi.secno"
     );
     const figNumMap = new Map();
     const tblNumMap = new Map();
     const eqnNumMap = new Map();
     for (const bdi of chapterSecnos) {
-      const chapter = bdi.attr("secno").replace(/\..*$/, "");
+      const chapter = bdi.textContent.replace(/\..*$/, "");
       const section = bdi.closest("section");
       // Process Figure Captions, populating figNumMap
       numberItems(section, chapter, figNumMap, "figcaption bdi.figno");
       // Process Table Captions, populating tblNumMap
       numberItems(section, chapter, tblNumMap, "caption bdi.tblno");
       // Process Eqnure Captions, populating eqnNumMap
-      numberItems(section, chapter, tblNumMap, "figcaption bdi.eqnno");
+      numberItems(section, chapter, eqnNumMap, "figcaption bdi.eqnno");
     }
     // Convert all Figure references using figNumMap
     renumberItems("bdi.figno", figNumMap);
     // Convert all Table references using tblNumMap
-    renumberItems("bdp.tblno", tblNumMap);
+    renumberItems("bdi.tblno", tblNumMap);
     // Convert all Equation references using eqnNumMap
-    renumberItems("bdp.eqnno", eqnNumMap);
+    renumberItems("bdi.eqnno", eqnNumMap);
   }
 }
 
@@ -16503,36 +16502,6 @@ var includeFinalConfig = /*#__PURE__*/Object.freeze({
   __proto__: null,
   name: name$_,
   run: run$O
-});
-
-// Module pcisig/empty-references
-// Find references with empty content and invent content.
-// This must run AFTER structure.js
-
-const name$$ = "pcisig/empty-references";
-
-function run$P() {
-  // Update all anchors with empty content that are not in a table of contents
-  document
-    .querySelectorAll("a[href^='#']:empty():not(.tocxref)")
-    .forEach(empty => {
-      const href = empty.attr("href");
-      const was = empty.attr("data-was");
-      if (href) {
-        empty.addclass("respec-error");
-        empty.appendChild(
-          document.createTextNode(
-            `[[${href}${was ? ` data-was="${was}"` : ""}]]`
-          )
-        );
-      }
-    });
-}
-
-var emptyReferences = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  name: name$$,
-  run: run$P
 });
 
 var ui$2 = "#respec-ui {\n  position: fixed;\n  display: flex;\n  flex-direction: row-reverse;\n  top: 20px;\n  right: 20px;\n  width: 202px;\n  text-align: right;\n  z-index: 9000;\n}\n\n#respec-pill,\n.respec-info-button {\n  background: #fff;\n  height: 2.5em;\n  color: rgb(120, 120, 120);\n  border: 1px solid #ccc;\n  box-shadow: 1px 1px 8px 0 rgba(100, 100, 100, 0.5);\n}\n\n.respec-info-button {\n  border: none;\n  opacity: 0.75;\n  border-radius: 2em;\n  margin-right: 1em;\n  min-width: 3.5em;\n}\n\n.respec-info-button:focus,\n.respec-info-button:hover {\n  opacity: 1;\n  transition: opacity 0.2s;\n}\n\n#respec-pill:disabled {\n  font-size: 2.8px;\n  text-indent: -9999em;\n  border-top: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-right: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-bottom: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-left: 1.1em solid #ffffff;\n  transform: translateZ(0);\n  animation: respec-spin 0.5s infinite linear;\n  box-shadow: none;\n}\n\n#respec-pill:disabled,\n#respec-pill:disabled:after {\n  border-radius: 50%;\n  width: 10em;\n  height: 10em;\n}\n\n@keyframes respec-spin {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n\n.respec-hidden {\n  visibility: hidden;\n  opacity: 0;\n  transition: visibility 0s 0.2s, opacity 0.2s linear;\n}\n\n.respec-visible {\n  visibility: visible;\n  opacity: 1;\n  transition: opacity 0.2s linear;\n}\n\n#respec-pill:hover,\n#respec-pill:focus {\n  color: rgb(0, 0, 0);\n  background-color: rgb(245, 245, 245);\n  transition: color 0.2s;\n}\n\n#respec-menu {\n  position: absolute;\n  margin: 0;\n  padding: 0;\n  font-family: sans-serif;\n  background: #fff;\n  box-shadow: 1px 1px 8px 0 rgba(100, 100, 100, 0.5);\n  width: 200px;\n  display: none;\n  text-align: left;\n  margin-top: 32px;\n  font-size: 0.8em;\n}\n\n#respec-menu:not([hidden]) {\n  display: block;\n}\n\n#respec-menu li {\n  list-style-type: none;\n  margin: 0;\n  padding: 0;\n}\n\n.respec-save-buttons {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(47%, 2fr));\n  grid-gap: 0.5cm;\n  padding: 0.5cm;\n}\n\n.respec-save-button:link {\n  padding-top: 16px;\n  color: rgb(240, 240, 240);\n  background: rgb(42, 90, 168);\n  justify-self: stretch;\n  height: 1cm;\n  text-decoration: none;\n  text-align: center;\n  font-size: inherit;\n  border: none;\n  border-radius: 0.2cm;\n}\n\n.respec-save-button:link:hover {\n  color: white;\n  background: rgb(42, 90, 168);\n  padding: 0;\n  margin: 0;\n  border: 0;\n  padding-top: 16px;\n}\n\n#respec-ui button:focus,\n#respec-pill:focus,\n.respec-option:focus {\n  outline: 0;\n  outline-style: none;\n}\n\n#respec-pill-error {\n  background-color: red;\n  color: white;\n}\n\n#respec-pill-warning {\n  background-color: orange;\n  color: white;\n}\n\n.respec-warning-list,\n.respec-error-list {\n  margin: 0;\n  padding: 0;\n  list-style: none;\n  font-family: sans-serif;\n  background-color: rgb(255, 251, 230);\n  font-size: 0.85em;\n}\n\n.respec-warning-list > li,\n.respec-error-list > li {\n  padding: 0.4em 0.7em;\n}\n\n.respec-warning-list > li::before {\n  content: \"⚠️\";\n  padding-right: 0.5em;\n}\n.respec-warning-list p,\n.respec-error-list p {\n  padding: 0;\n  margin: 0;\n}\n\n.respec-warning-list li {\n  color: rgb(92, 59, 0);\n  border-bottom: thin solid rgb(255, 245, 194);\n}\n\n.respec-error-list,\n.respec-error-list li {\n  background-color: rgb(255, 240, 240);\n}\n\n.respec-error-list li::before {\n  content: \"💥\";\n  padding-right: 0.5em;\n}\n\n.respec-error-list li {\n  padding: 0.4em 0.7em;\n  color: rgb(92, 59, 0);\n  border-bottom: thin solid rgb(255, 215, 215);\n}\n\n.respec-error-list li > p {\n  margin: 0;\n  padding: 0;\n  display: inline-block;\n}\n\n#respec-overlay {\n  display: block;\n  position: fixed;\n  z-index: 10000;\n  top: 0px;\n  left: 0px;\n  height: 100%;\n  width: 100%;\n  background: #000;\n}\n\n.respec-show-overlay {\n  transition: opacity 0.2s linear;\n  opacity: 0.5;\n}\n\n.respec-hide-overlay {\n  transition: opacity 0.2s linear;\n  opacity: 0;\n}\n\n.respec-modal {\n  display: block;\n  position: fixed;\n  z-index: 11000;\n  margin: auto;\n  top: 10%;\n  background: #fff;\n  border: 5px solid #666;\n  min-width: 20%;\n  width: 79%;\n  padding: 0;\n  max-height: 80%;\n  overflow-y: auto;\n  margin: 0 -0.5cm;\n}\n\n@media screen and (min-width: 78em) {\n  .respec-modal {\n    width: 62%;\n  }\n}\n\n.respec-modal h3 {\n  margin: 0;\n  padding: 0.2em;\n  text-align: center;\n  color: black;\n  background: linear-gradient(\n    to bottom,\n    rgba(238, 238, 238, 1) 0%,\n    rgba(238, 238, 238, 1) 50%,\n    rgba(204, 204, 204, 1) 100%\n  );\n  font-size: 1em;\n}\n\n.respec-modal .inside div p {\n  padding-left: 1cm;\n}\n\n#respec-menu button.respec-option {\n  background: white;\n  padding: 0 0.2cm;\n  border: none;\n  width: 100%;\n  text-align: left;\n  font-size: inherit;\n  padding: 1.2em 1.2em;\n}\n\n#respec-menu button.respec-option:hover,\n#respec-menu button:focus {\n  background-color: #eeeeee;\n}\n\n.respec-cmd-icon {\n  padding-right: 0.5em;\n}\n\n#respec-ui button.respec-option:last-child {\n  border: none;\n  border-radius: inherit;\n}\n\n.respec-button-copy-paste {\n  position: absolute;\n  height: 28px;\n  width: 40px;\n  cursor: pointer;\n  background-image: linear-gradient(#fcfcfc, #eee);\n  border: 1px solid rgb(144, 184, 222);\n  border-left: 0;\n  border-radius: 0px 0px 3px 0;\n  -webkit-user-select: none;\n  user-select: none;\n  -webkit-appearance: none;\n  top: 0;\n  left: 127px;\n}\n\n#specref-ui {\n  margin: 0 2%;\n  margin-bottom: 0.5cm;\n}\n\n#specref-ui header {\n  font-size: 0.7em;\n  background-color: #eee;\n  text-align: center;\n  padding: 0.2cm;\n  margin-bottom: 0.5cm;\n  border-radius: 0 0 0.2cm 0.2cm;\n}\n\n#specref-ui header h1 {\n  padding: 0;\n  margin: 0;\n  color: black;\n}\n\n#specref-ui p {\n  padding: 0;\n  margin: 0;\n  font-size: 0.8em;\n  text-align: center;\n}\n\n#specref-ui p.state {\n  margin: 1cm;\n}\n\n#specref-ui .searchcomponent {\n  font-size: 16px;\n  display: grid;\n  grid-template-columns: auto 2cm;\n}\n#specref-ui .searchcomponent:focus {\n}\n\n#specref-ui input,\n#specref-ui button {\n  border: 0;\n  padding: 6px 12px;\n}\n\n#specref-ui label {\n  font-size: 0.6em;\n  grid-column-end: 3;\n  text-align: right;\n  grid-column-start: 1;\n}\n\n#specref-ui input[type=\"search\"] {\n  -webkit-appearance: none;\n  font-size: 16px;\n  border-radius: 0.1cm 0 0 0.1cm;\n  border: 1px solid rgb(204, 204, 204);\n}\n\n#specref-ui button[type=\"submit\"] {\n  color: white;\n  border-radius: 0 0.1cm 0.1cm 0;\n  background-color: rgb(51, 122, 183);\n}\n\n#specref-ui button[type=\"submit\"]:hover {\n  background-color: #286090;\n  border-color: #204d74;\n}\n\n#specref-ui .result-stats {\n  margin: 0;\n  padding: 0;\n  color: rgb(128, 128, 128);\n  font-size: 0.7em;\n  font-weight: bold;\n}\n\n#specref-ui .specref-results {\n  font-size: 0.8em;\n}\n\n#specref-ui .specref-results dd + dt {\n  margin-top: 0.51cm;\n}\n\n#specref-ui .specref-results a {\n  text-transform: capitalize;\n}\n#specref-ui .specref-results .authors {\n  display: block;\n  color: #006621;\n}\n\n@media print {\n  #respec-ui {\n    display: none;\n  }\n}\n\n#xref-ui {\n  width: 100%;\n  min-height: 550px;\n  height: 100%;\n  overflow: hidden;\n  padding: 0;\n  margin: 0;\n  border: 0;\n}\n\n#xref-ui:not(.ready) {\n  background: url(\"https://respec.org/xref/loader.gif\") no-repeat center;\n}\n";
