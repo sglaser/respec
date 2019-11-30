@@ -20,7 +20,7 @@ const pcisigDefaults = {
   logos: [
     {
       src:
-        "https://sglaser.github.io/respec/Spec/StyleSheets/2017/logos/pci_express_PMS.svg",
+        "https://sglaser.github.io/respec/Spec/StyleSheets/2019/logos/pci_express_PMS.svg",
       alt: "pcisig",
       height: 40,
       width: 105,
