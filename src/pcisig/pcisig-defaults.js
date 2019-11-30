@@ -35,7 +35,7 @@ export function run(conf) {
     "\\bSHOULD(?:\\s+NOT)?(?:@64|@32|@16|@8)?\\b",
     "\\bSHALL(?:\\s+NOT)?(?:@64|@32|@16|@8)?\\b",
     "\\bMAY\\b",
-    "\\bIS\\s+(?NOT\\s+)PERMITTED\\s+TO\\b",
+    "\\bIS\\s+(?:NOT\\s+)PERMITTED\\s+TO\\b",
     "\\b(?:NOT\\s+)?REQUIRED\\b",
     "\\b(?:STRONGLY\\s+)?(?:NOT\\s+)?RECOMMENDED\\b",
     "\\b(?INDEPENDENTLY\\s+)?OPTIONAL\\b",
