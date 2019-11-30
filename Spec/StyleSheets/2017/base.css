@@ -631,7 +631,7 @@ a[href]:not(.footnote):not(.respec-offending-element) {
 }
 
 
-a[href]:not(.tocxref):not(.footnote):empty::before {
+a[href]:not(.tocxref):not(.self-link):not(.footnote):empty::before {
   color: red;
   font-size: 9pt;
   font-weight: bold;
