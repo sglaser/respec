@@ -1,13 +1,11 @@
-import {pub} from "../core/pubsubhub";
+// @ts-check
 
 export const name = "pcisig/include-final-config";
 
-export function run(conf, doc, cb) {
-
-  const script = doc.createElement("script");
+export function run(conf) {
+  const script = document.createElement("script");
   script.id = "finalUserConfig";
   script.type = "application/json";
   script.innerHTML = JSON.stringify(conf, null, 2);
-  doc.head.appendChild(script);
-  cb();
+  document.head.appendChild(script);
 }

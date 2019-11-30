@@ -849,6 +849,10 @@ export function makeSafeCopy(node) {
   const clone = node.cloneNode(true);
   clone.querySelectorAll("[id]").forEach(elem => elem.removeAttribute("id"));
   clone.querySelectorAll("dfn").forEach(dfn => renameElement(dfn, "span"));
+  clone
+    .querySelectorAll("span.footnote")
+    .forEach(footnote => footnote.remove());
+  clone.querySelectorAll("span.issue").forEach(issue => issue.remove());
   if (clone.hasAttribute("id")) clone.removeAttribute("id");
   removeCommentNodes(clone);
   return clone;

@@ -2,23 +2,22 @@
 // Find references with empty content and invent content.
 // This must run AFTER structure.js
 
-import {pub} from "../core/pubsubhub";
-
 export const name = "pcisig/empty-references";
 
-export function run(conf, doc, cb) {
+export function run() {
   // Update all anchors with empty content that are not in a table of contents
-  $("a[href^='#']:empty():not(.tocxref)", doc).each(function() {
-    let $a = $(this),
-      id = $a.attr("href"),
-      was = $a.attr("data-was");
-    if (id) {
-      $a.addclass('respec-error');
-      $a.append("[["+ id);
-      if (was) $a.append(" data-was=\"" + was + "\"");
-      $a.append("]]");
-    }
-  });
-
-  cb();
+  document
+    .querySelectorAll("a[href^='#']:empty():not(.tocxref)")
+    .forEach(empty => {
+      const href = empty.attr("href");
+      const was = empty.attr("data-was");
+      if (href) {
+        empty.addclass("respec-error");
+        empty.appendChild(
+          document.createTextNode(
+            `[[${href}${was ? ` data-was="${was}"` : ""}]]`
+          )
+        );
+      }
+    });
 }

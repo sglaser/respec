@@ -29,16 +29,26 @@ const pcisigDefaults = {
 };
 
 export function run(conf) {
+  conf.respecRFC2119Keywords = conf.respecRFC2119Keywords || [
+    "\\bMUST(?:\\s+NOT)?(?:@64|@32|@16|@8)?\\b",
+    "\\bSHOULD(?:\\s+NOT)?(?:@64|@32|@16|@8)?\\b",
+    "\\bSHALL(?:\\s+NOT)?(?:@64|@32|@16|@8)?\\b",
+    "\\bMAY\\b",
+    "\\bIS\\s+(?NOT\\s+)PERMITTED\\s+TO\\b",
+    "\\b(?:NOT\\s+)?REQUIRED\\b",
+    "\\b(?:STRONGLY\\s+)?(?:NOT\\s+)?RECOMMENDED\\b",
+    "\\b(?INDEPENDENTLY\\s+)?OPTIONAL\\b",
+  ];
   if (conf.specStatus === "unofficial") return;
   // assign the defaults
   const lint =
     conf.lint === false
       ? false
       : {
-        ...coreDefaults.lint,
-        ...pcisigDefaults.lint,
-        ...conf.lint,
-      };
+          ...coreDefaults.lint,
+          ...pcisigDefaults.lint,
+          ...conf.lint,
+        };
   Object.assign(conf, {
     ...coreDefaults,
     ...pcisigDefaults,

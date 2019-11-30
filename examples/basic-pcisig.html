@@ -17,9 +17,9 @@
           rel="stylesheet">
     <script async="async"
           class="remove"
-          src="../builds/respec-pcisig-common.js"></script><!-- <script async
+          src="../builds/respec-pcisig.js"></script><!-- <script async
         class='remove'
-        data-main='../js/profile-pcisig-common'   
+        data-main='../js/profile-pcisig-common'
         src='../js/deps/require.js'></script> -->
 
     <script class="remove">
@@ -27,6 +27,10 @@
       specStatus: "WD",
       specRevision: "1.0",
       specDraftLevel: "0.3",
+      editors: [{
+        name: "Steve Glaser",
+        url: "https://sglaser.com",
+      }],
       wg: ["Protocol Workgroup (PWG)", "Electrical Workgroup (EWG)", "Serial Enabling Workgroup (SEG)"],
       shortName: "dahut",
       numberByChapter: "true",
@@ -37,53 +41,37 @@
   </head>
   <body>
     <nav id="toc">
-      <section class="introductory section-level-1"
-               id="sect-toc"></section>
     </nav>
     <nav id="tof">
-      <section class="introductory section-level-1"
-               id="sect-tof"></section>
     </nav>
     <nav id="toe">
-      <section class="introductory section-level-1"
-               id="sect-toe"></section>
     </nav>
     <nav id="tot">
-      <section class="introductory section-level-1"
-               id="sect-tot"></section>
     </nav>
     <section class="introductory"
              id="conformance">
-      CONFORMANCE SECTION
-    </section>
-    <section id="abstract">
-      <p>
-        This is just a very basic document. [[!REX]] [[DOM4]], [[XML10]], [[\WHATEVER]]
-      </p>
     </section>
     <section id="sotd">
-      <p>
-        CUSTOM PARAGRAPH
-      </p>
+      <h2>Status of this Document</h2>
     </section>
-    <section class="informative">
+    <section class="introductory" id="random-introductory-section">
       <h2>
-        Informative section
+        Random Introductory Section
       </h2>
       <p>
         blah
       </p>
-      <section>
+      <section id="inner-introductory-section">
         <h2>
-          Inner section
+          Inner Introductory Section
         </h2>
         <p>
           blahblah
         </p>
       </section>
-      <section>
+      <section id="other-inner-introductory-section">
         <h2>
-          Other inner section
+          Other Inner Introductory Section
         </h2>
         <p>
           blahblah
@@ -95,8 +83,7 @@
         Revision History
       </h1>
     </section>
-    <section>
-      <!-- id="sect-example-figures-equations-and-tables"> -->
+    <section id="sect-example-figures-equations-and-tables">
       <h2>
         Example Figures, Equations, and Tables
       </h2>
@@ -274,7 +261,7 @@
         </figcaption>
       </figure>
     </section>
-    <section>
+    <section id="sect-example-figures-equations-and-tables-2">
       <h2>
         Example Figures, Equations, and Tables #2
       </h2>
@@ -980,7 +967,7 @@
           </tr>
         </tbody>
       </table>
-      <section>
+      <section id="sect-device-capabilities-2-register">
         <h2>
           Device Capabilities 2 Register (Offset 24h)
         </h2>
@@ -1496,14 +1483,21 @@
             </tr>
           </tbody>
         </table>
-        <p class="impnote"
+        <p class="note"
+           id="note-use-of-the-no-ro-enabled-pr-pr-passing-bit"
            title="Use of the No RO-enabled PR-PR Passing Bit">
           The No RO-enabled PR-PR Passing bit allows platforms to utilize PCI Express switching elements on the path between a requester and completer for requesters that could benefit from a slightly less 5 relaxed ordering model. An example is a device that cannot ensure that multiple overlapping posted writes to the same address are outstanding at the same time. The method by which such a device is enabled to utilize this mode is beyond the scope of this specification.
         </p>
-        <section>
+        <p class="impnote"
+           id="impnote-use-of-the-no-ro-enabled-pr-pr-passing-bit"
+            title="Use of the No RO-enabled PR-PR Passing Bit">
+          The No RO-enabled PR-PR Passing bit allows platforms to utilize PCI Express switching elements on the path between a requester and completer for requesters that could benefit from a slightly less 5 relaxed ordering model. An example is a device that cannot ensure that multiple overlapping posted writes to the same address are outstanding at the same time. The method by which such a device is enabled to utilize this mode is beyond the scope of this specification.
+        </p>
+        <section id="field-References">
           <h2>
-            Field referenced
+            Field References
           </h2>
+          <p>Empty Reference to non-existent target '<a href="#bogus"></a>'.</p>
           <ul>
             <li>
               <a>Completion Timeout Ranges Supported</a>

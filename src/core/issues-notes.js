@@ -178,6 +178,7 @@ function getIssueType(inno, conf) {
   const isIssue = inno.classList.contains("issue");
   const isWarning = inno.classList.contains("warning");
   const isEdNote = inno.classList.contains("ednote");
+  const isImpNote = inno.classList.contains("impnote");
   const isFeatureAtRisk = inno.classList.contains("atrisk");
   const type = isIssue
     ? "issue"
@@ -185,6 +186,8 @@ function getIssueType(inno, conf) {
     ? "warning"
     : isEdNote
     ? "ednote"
+    : isImpNote
+    ? "impnote"
     : "note";
   const displayType = isIssue
     ? isFeatureAtRisk
@@ -194,6 +197,8 @@ function getIssueType(inno, conf) {
     ? conf.l10n.warning
     : isEdNote
     ? conf.l10n.editors_note
+    : isImpNote
+    ? conf.l10n.implementation_note
     : conf.l10n.note;
   return { type, displayType, isFeatureAtRisk };
 }
@@ -274,7 +279,7 @@ function createLabelsGroup(labels, title, repoURL) {
       class="issue-label"
       aria-label="${ariaLabel}">: ${title}${labelsGroup}</span>`;
   }
-  return hyperHTML`<span class="issue-label">: ${title}${labelsGroup}</span>`;
+  return hyperHTML`<span class="issue-label"><span class="issue-label-colon">: </span>${title}${labelsGroup}</span>`;
 }
 
 /**
@@ -329,7 +334,7 @@ async function fetchAndStoreGithubIssues(github) {
 }
 
 export async function run(conf) {
-  const query = ".issue, .note, .warning, .ednote";
+  const query = ".issue, .note, .warning, .ednote, .impnote";
   /** @type {NodeListOf<HTMLElement>} */
   const issuesAndNotes = document.querySelectorAll(query);
   if (!issuesAndNotes.length) {

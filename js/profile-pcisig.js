@@ -1,189 +1,94 @@
 "use strict";
 // In case everything else fails, we want the error
-window.addEventListener("error", function(ev) {
+window.addEventListener("error", ev => {
   console.error(ev.error, ev.message, ev);
 });
 
-// this is only set in a build, not at all in the dev environment
-require.config({
-  paths: {
-    hyperhtml: "deps/hyperhtml",
-    idb: "deps/idb",
-    marked: "deps/marked",
-    pluralize: "deps/pluralize",
-    text: "deps/text",
-    webidl2: "deps/webidl2",
-  },
-  shim: {
-    shortcut: {
-      exports: "shortcut"
-    },
-    idb: {
-      exports: "idb",
-    },
-    "jquery.svg": {
-      deps: ["jQuery"]
-    },
-    jquery: {
-      exports: "jQuery"
-    }
+const modules = [
+  // order is significant
+  import("../src/core/base-runner.js"),
+  import("../src/core/ui.js"),
+  import("../src/core/reindent.js"),
+  import("../src/core/location-hash.js"),
+  import("../src/core/l10n.js"),
+  import("../src/pcisig/pcisig-defaults.js"),
+  import("../src/core/style.js"),
+  import("../src/pcisig/pcisig-style.js"),
+  import("../src/pcisig/l10n.js"),
+  import("../src/core/github.js"),
+  import("../src/core/data-include.js"),
+  import("../src/core/markdown.js"),
+  import("../src/pcisig/pcisig-headers.js"),
+  import("../src/pcisig/footnotes.js"),
+  // import("../src/w3c/abstract.js"),
+  import("../src/core/data-transform.js"),
+  import("../src/core/data-abbr.js"),
+  import("../src/core/inlines.js"),
+  import("../src/pcisig/pcisig-conformance.js"),
+  import("../src/pcisig/pre-dfn.js"),
+  import("../src/core/dfn.js"),
+  import("../src/core/pluralize.js"),
+  import("../src/core/examples.js"),
+  import("../src/core/issues-notes.js"),
+  import("../src/core/requirements.js"),
+  import("../src/core/best-practices.js"),
+  // import("../src/pcisig/regpict.js"),
+  import("../src/core/figures.js"),
+  import("../src/core/equations.js"),
+  import("../src/core/tables.js"),
+  import("../src/core/webidl.js"),
+  import("../src/core/data-cite.js"),
+  import("../src/core/biblio.js"),
+  import("../src/core/webidl-index.js"),
+  import("../src/core/link-to-dfn.js"),
+  import("../src/core/render-biblio.js"),
+  import("../src/core/contrib.js"),
+  import("../src/core/fix-headers.js"),
+  import("../src/core/structure.js"),
+  // must run after structure
+  import("../src/core/fig-tbl-eqn-numbering.js"),
+  import("../src/core/informative.js"),
+  import("../src/core/id-headers.js"),
+  import("../src/core/caniuse.js"),
+  import("../src/core/mdn-annotation.js"),
+  import("../src/ui/save-html.js"),
+  // import("../src/ui/search-specref.js"),
+  // import("../src/ui/search-xref.js"),
+  import("../src/ui/dfn-list.js"),
+  import("../src/ui/about-respec.js"),
+  import("../src/core/seo.js"),
+  // import("../src/w3c/seo.js"),
+  import("../src/core/highlight.js"),
+  import("../src/core/webidl-clipboard.js"),
+  import("../src/core/data-tests.js"),
+  import("../src/core/list-sorter.js"),
+  import("../src/core/highlight-vars.js"),
+  import("../src/core/data-type.js"),
+  import("../src/core/algorithms.js"),
+  import("../src/core/anchor-expander.js"),
+  import("../src/pcisig/include-final-config.js"),
+  import("../src/pcisig/empty-references.js"),
+  /* Linter must be the last thing to run */
+  import("../src/core/linter.js"),
+];
 
-    //highlight: {
-    //  exports: "hljs",
-    //},
-    //beautify: {
-    //  exports: "beautify",
-    //},
-  },
-  paths: {
-    //"beautify-css": "deps/beautify-css",
-    //"beautify-html": "deps/beautify-html",
-    "handlebars.runtime": "deps/handlebars",
-    //"deps/highlight": "https://www.w3.org/Tools/respec/respec-highlight",
-  },
-  deps: ["deps/hyperhtml", "deps/url-search-params"],
-});
-
-define(
-  [
-    // order is significant
-    //"deps/domReady",
-    //"core/base-runner",
-    //"core/ui",
-    //"core/reindent",
-    //"core/location-hash",
-    //"core/l10n",
-    //"pcisig/pcisig-defaults",
-    //"core/aria",
-    //"core/style",
-    //"pcisig/pcisig-style",
-    //"w3c/l10n",
-    //"core/github",
-    //"core/data-include",
-    //"core/markdown",
-    //"pcisig/pcisig-headers",
-    //"pcisig/footnotes",
-    //"pcisig/pcisig-conformance",
-    //"core/data-transform",
-    //"core/inlines",
-    //"w3c/rfc2119",
-    //"core/examples",
-    //"core/issues-notes",
-    //"pcisig/impnote",
-    //"core/requirements",
-    //"core/best-practices",
-    //"pcisig/regpict",
-    //"core/figures",
-    //"pcisig/tables",
-    //"pcisig/equations",
-    //"pcisig/pre-dfn",
-    //"core/dfn",
-    //"core/data-cite",
-    //"core/biblio",
-    //"pcisig/link-to-dfn",
-    //"core/contrib",
-    //"core/fix-headers",
-    //"core/structure",
-    //"w3c/informative",
-    //"w3c/permalinks",
-    //"core/id-headers",
-    //"pcisig/fig-tbl-eqn-numbering",
-    //"core/rdfa",
-    //"pcisig/xref-map",
-    //"core/location-hash",
-    //"ui/about-respec",
-    //"ui/dfn-list",
-    //"ui/save-html",
-    //"ui/search-specref",
-    //"core/seo",
-    //"w3c/seo",
-    //"core/highlight",
-    //"core/data-tests",
-    //"pcisig/include-final-config",
-    //"pcisig/empty-references",
-
-    "./core/base-runner",
-    "./core/ui",
-    "./core/reindent",
-    "./core/location-hash",
-    "./core/l10n",
-    "./pcisig/pcisig-defaults",
-    "./core/style",
-    "./pcisig/pcisig-style",
-    "./pcisig/l10n",
-    "./core/github",
-    "./core/data-include",
-    "./core/markdown",
-    "./pcisig/pcisig-headers",
-    "./pcisig/abstract",
-    "./core/data-transform",
-    "./core/data-abbr",
-    "./core/inlines",
-    "./pcisig/pcisig-conformance",
-    "./pcisig/pre-dfn",
-    "./core/dfn",
-    "./core/pluralize",
-    "./core/examples",
-    "./core/issues-notes",
-    "./pcisig/impnote",
-    "./core/requirements",
-    "./core/best-practices",
-    "./core/figures",
-    "./pcisig/tables",
-    "./pcisig/equations",
-    //"./pcisig/regpict",
-    "./core/webidl",
-    "./core/data-cite",
-    "./core/biblio",
-    //"./pcisig/link-to-dfn",
-    "./core/webidl-index",
-    "./core/link-to-dfn",
-    "./core/render-biblio",
-    "./core/contrib",
-    "./core/fix-headers",
-    "./core/structure",
-    "./core/informative",
-    "./core/id-headers",
-    "./pcisig/fig-tbl-eqn-numbering",
-    "./core/caniuse",
-    "./pcisig/xref-map",
-    "./core/mdn-annotation",
-    "./ui/save-html",
-    "./ui/search-specref",
-    "./ui/search-xref",
-    "./ui/dfn-list",
-    "./ui/about-respec",
-    "./core/seo",
-    //"./pcisig/seo",
-    "./core/highlight",
-    "./core/webidl-clipboard",
-    "./core/data-tests",
-    "./core/list-sorter",
-    "./core/highlight-vars",
-    "./core/data-type",
-    "./core/algorithms",
-    "./core/anchor-expander",
-    /* Linter must be the last thing to run */
-    "./core/linter",
-  ],
-  function(domReady, runner, ui) {
-    ui = ui.ui;
-    var args = Array.from(arguments).filter(function(item) {
-      return item;
-    });
-    ui.show();
-    domReady(function() {
-      runner
-        .runAll(args)
-        .then(document.respecIsReady)
-        .then(function() {
-          ui.enable();
-        })
-        .catch(function(err) {
-          console.error(err);
-          // even if things go critically bad, we should still try to show the UI
-          ui.enable();
-        });
-    });
+async function domReady() {
+  if (document.readyState === "loading") {
+    await new Promise(resolve =>
+      document.addEventListener("DOMContentLoaded", resolve)
+    );
   }
-);
+}
+
+(async () => {
+  const [runner, { ui }, ...plugins] = await Promise.all(modules);
+  try {
+    ui.show();
+    await domReady();
+    await runner.runAll(plugins);
+  } finally {
+    ui.enable();
+  }
+})().catch(err => {
+  console.error(err);
+});

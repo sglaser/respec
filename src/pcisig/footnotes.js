@@ -1,28 +1,26 @@
-/*global define */
-
-/* jshint browser: true */
-
+// @ts-check
 // Module pcisig/footnotes
 //  Handles footnotes.
+//  Invents id for footnote (if none present)
 
-// CONFIGURATION:
-import {pub} from "../core/pubsubhub";
+import { addId } from "../core/utils.js";
 
 export const name = "pcisig/footnotes";
 
-export function run(conf, doc, cb) {
-
-  let $footnotes = $("span.footnote", doc);
-  if ($footnotes.length) {
-    $footnotes.each(function (index) {
-      $(this).prepend("<span class='footnote-online'> [Footnote: </span>")
-        .append("<span class='footnote-online'>] </span>");
-      let id = "footnote-" + (index + 1);
-      let span = "<span class='footnote-contents' id='" + id + "'></span>";
-      let input = "<input type='checkbox' name='" + id + "' value='#" + id + "'></input>";
-      $(this).wrapInner(span)
-        .prepend(input);
-    });
-  }
-  cb();
+export function run() {
+  document.querySelectorAll("span.footnote").forEach((footnote, index) => {
+    const id = addId(footnote, "footnote", `${index + 1}`);
+    footnote.insertAdjacentHTML(
+      "beforebegin",
+      hyperHTML`<label class="footnote-online"> Footnote: <input class="footnote-checkbox" type="checkbox" name="${id}" value="checked"/></label>`
+    );
+    footnote.insertAdjacentHTML(
+      "afterbegin",
+      hyperHTML`<span class='footnote-online'> [</span>`
+    );
+    footnote.insertAdjacentHTML(
+      "beforeend",
+      hyperHTML`<span class='footnote-online'>] </span>`
+    );
+  });
 }

@@ -23,7 +23,7 @@ export default [
     ...template
   },
   {
-    input: "js/deps/svg.js",
+    input: "js/deps/svg.esm.js",
     ...template
   }
 ]

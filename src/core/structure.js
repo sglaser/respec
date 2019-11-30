@@ -2,8 +2,6 @@
 // Module core/structure
 //  Handles producing the ToC and numbering sections across the document.
 
-// LIMITATION:
-//  At this point we don't support having more than 26 appendices.
 // CONFIGURATION:
 //  - noTOC: if set to true, no TOC is generated and sections are not numbered
 //  - tocIntroductory: if set to true, the introductory material is listed in the TOC
@@ -17,7 +15,6 @@ import { hyperHTML } from "./import-maps.js";
 const lowerHeaderTags = ["h2", "h3", "h4", "h5", "h6"];
 const headerTags = ["h1", ...lowerHeaderTags];
 
-const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 export const name = "core/structure";
 
 const localizationStrings = {
@@ -63,9 +60,9 @@ function scanSections(sections, maxTocLevel, { prefix = "" } = {}) {
     let secno = section.isIntro
       ? ""
       : appendixMode
-      ? alphabet.charAt(index - lastNonAppendix)
+      ? appendixNumber(index - lastNonAppendix)
       : prefix + index;
-    const level = Math.ceil(secno.length / 2);
+    const level = parents(section, "section").length + 1;
     if (level === 1) {
       secno += ".";
       // if this is a top level item, insert
@@ -149,6 +146,7 @@ function createTocListItem(header, id) {
 
 /**
  * Replaces any child <a> and <dfn> with <span>.
+ * Removes footnotes and issues
  * @param {HTMLElement} h
  */
 function filterHeader(h) {
@@ -161,6 +159,9 @@ function filterHeader(h) {
     const span = renameElement(dfn, "span");
     span.removeAttribute("id");
   });
+  h.querySelectorAll("span.footnote, span.issue").forEach(elem =>
+    elem.remove()
+  );
 }
 
 export function run(conf) {
@@ -191,10 +192,17 @@ function renameSectionHeaders() {
     return;
   }
   headers.forEach(header => {
-    const depth = Math.min(parents(header, "section").length + 1, 6);
-    const h = `h${depth}`;
+    const depth = parents(header, "section").length + 1;
+    const h = `h${Math.min(depth, 6)}`;
     if (header.localName !== h) {
       renameElement(header, h);
+    }
+    if (depth > 6) {
+      if (header.classList) {
+        header.classList.add(`h${depth}`);
+      } else {
+        header.className = `h${depth}`;
+      }
     }
   });
 }
@@ -233,4 +241,13 @@ function createTableOfContents(ol) {
 
   const link = hyperHTML`<p role='navigation' id='back-to-top'><a href='#title'><abbr title='Back to Top'>&uarr;</abbr></a></p>`;
   document.body.append(link);
+}
+
+function appendixNumber(index) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const lastChar = alphabet.charAt(index % alphabet.length);
+  if (index < alphabet.length) {
+    return lastChar;
+  }
+  return appendixNumber(Math.floor(index / alphabet.length)) + lastChar;
 }

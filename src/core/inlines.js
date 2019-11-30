@@ -205,15 +205,17 @@ export function run(conf) {
     wsNodes: false, // we don't want nodes with just whitespace
   });
   const keywords = new RegExp(
-    [
-      "\\bMUST(?:\\s+NOT)?\\b",
-      "\\bSHOULD(?:\\s+NOT)?\\b",
-      "\\bSHALL(?:\\s+NOT)?\\b",
-      "\\bMAY\\b",
-      "\\b(?:NOT\\s+)?REQUIRED\\b",
-      "\\b(?:NOT\\s+)?RECOMMENDED\\b",
-      "\\bOPTIONAL\\b",
-    ].join("|")
+    (
+      conf.respecRFC2119Keywords || [
+        "\\bMUST(?:\\s+NOT)?\\b",
+        "\\bSHOULD(?:\\s+NOT)?\\b",
+        "\\bSHALL(?:\\s+NOT)?\\b",
+        "\\bMAY\\b",
+        "\\b(?:NOT\\s+)?REQUIRED\\b",
+        "\\b(?:NOT\\s+)?RECOMMENDED\\b",
+        "\\bOPTIONAL\\b",
+      ]
+    ).join("|")
   );
   const rx = new RegExp(
     `(${[

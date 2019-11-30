@@ -77,7 +77,6 @@
     "build:w3c-with-jquery": "node ./tools/builder.js --profile=w3c-common",
     "build:w3c": "node ./tools/builder.js --profile=w3c",
     "build:pcisig-debug": "npm run build:pcisig -- --debug",
-    "build:pcisig-with-jquery": "node ./tools/builder.js --profile=pcisig-common",
     "build:pcisig": "node ./tools/builder.js --profile=pcisig",
     "build": "snyk protect",
     "builddeps": "rollup -c js/deps/rollup.config.js",
@@ -105,7 +104,7 @@
     "opencollective-postinstall": "^2.0.2",
     "prompt": "^1.0.0",
     "puppeteer": "2.0.0",
-    "snyk": "^1.251.0"
+    "snyk": "^1.251.1"
   },
   "prettier": {
     "trailingComma": "es5"

@@ -1,5 +1,4 @@
-/*jshint strict: true, browser:true, jquery: true*/
-/*globals define*/
+// @ts-check
 // Module pcisig/style
 // Inserts a link to the appropriate PCISIG style for the specification's maturity level.
 // CONFIGURATION
@@ -10,19 +9,20 @@ import { pub, sub } from "../core/pubsubhub.js";
 
 export const name = "pcisig/style";
 
-function attachFixupScript(doc, version) {
-  const script = doc.createElement("script");
+function attachFixupScript(document, version) {
+  const script = document.createElement("script");
   script.addEventListener(
     "load",
-    function () {
+    () => {
       if (window.location.hash) {
+        // eslint-disable-next-line no-self-assign
         window.location = window.location;
       }
     },
-    {once: true}
+    { once: true }
   );
   script.src = `https://sglaser.github.io/respec/Spec/scripts/${version}/fixup.js`;
-  doc.body.appendChild(script);
+  document.body.appendChild(script);
 }
 
 // Make a best effort to attach meta viewport at the top of the head.
@@ -38,7 +38,7 @@ function createMetaViewport() {
     "initial-scale": "1",
     "shrink-to-fit": "no",
   };
-  meta.content = toKeyValuePairs(contentProps).replace(/\"/g, "");
+  meta.content = toKeyValuePairs(contentProps).replace(/"/g, "");
   return meta;
 }
 
@@ -67,7 +67,7 @@ function selectStyleVersion(styleVersion) {
 
 function createResourceHints() {
   const resourceHints = [
-    {
+    /* {
       hint: "preconnect", // for PCISIG styles and scripts.
       href: "https://sglaser.github.io/respec/Spec",
     },
@@ -83,12 +83,13 @@ function createResourceHints() {
     },
     {
       hint: "preload", // all specs show the logo.
-      href: "https://sglaser.github.io/respec/Spec/StyleSheets/2017/logos/pci_express_PMS.svg",
+      href:
+        "https://sglaser.github.io/respec/Spec/StyleSheets/2017/logos/pci_express_PMS.svg",
       as: "image",
-    },
+    }, */
   ]
     .map(createResourceHint)
-    .reduce(function (frag, link) {
+    .reduce((frag, link) => {
       frag.appendChild(link);
       return frag;
     }, document.createDocumentFragment());
@@ -107,7 +108,7 @@ if (!document.head.querySelector("meta[name=viewport]")) {
 
 document.head.insertBefore(elements, document.head.firstChild);
 
-export function run(conf, doc, cb) {
+export function run(conf) {
   if (!conf.specStatus) {
     const warn = "`respecConfig.specStatus` missing. Defaulting to 'base'.";
     conf.specStatus = "base";
@@ -171,19 +172,18 @@ export function run(conf, doc, cb) {
   if (version && !conf.noToc) {
     sub(
       "end-all",
-      function () {
-        attachFixupScript(doc, version);
+      () => {
+        attachFixupScript(document, version);
       },
-      {once: true}
+      { once: true }
     );
   }
-  const finalVersionPath = version ? version + "/" : "";
+  const finalVersionPath = version ? `${version}/` : "";
   const finalStyleURL = `https://sglaser.github.io/respec/Spec/StyleSheets/${finalVersionPath}${styleFile}.css`;
 
   if (conf.cssOverride) {
-    linkCSS(doc, conf.cssOverride);
+    linkCSS(document, conf.cssOverride);
   } else {
-    linkCSS(doc, finalStyleURL);
+    linkCSS(document, finalStyleURL);
   }
-  cb();
 }

@@ -1,6 +1,13 @@
-import { humanDate, showInlineError, toShortIsoDate } from "../../core/utils";
+// @ts-check
+import {
+  humanDate,
+  showInlineError,
+  toShortIsoDate,
+} from "../../core/utils.js";
 import { lang as defaultLang } from "../../core/l10n.js";
-import html from "hyperhtml";
+import { hyperHTML } from "../../core/import-maps.js";
+
+const html = hyperHTML;
 
 const localizationStrings = {
   en: {

@@ -37,6 +37,10 @@ export function run() {
         processFigure(matchingElement, id, a);
         break;
       }
+      case "table": {
+        processTable(matchingElement, id, a);
+        break;
+      }
       case "aside":
       case "div": {
         processBox(matchingElement, id, a);
@@ -68,6 +72,9 @@ function processBox(matchingElement, id, a) {
 
 function processFigure(matchingElement, id, a) {
   const figcaption = matchingElement.querySelector("figcaption");
+  const figEqn =
+    !matchingElement.classList ||
+    (!matchingElement.classList.contains("equation") ? "fig" : "eqn");
   if (!figcaption) {
     a.textContent = a.getAttribute("href");
     const msg = `Found matching figure "${id}", but figure is lacking a \`<figcaption>\`.`;
@@ -76,15 +83,37 @@ function processFigure(matchingElement, id, a) {
   }
   // remove the figure's title
   const children = [...makeSafeCopy(figcaption).childNodes].filter(
-    node => !node.classList || !node.classList.contains("fig-title")
+    node => !node.classList || !node.classList.contains(`${figEqn}-title`)
   );
   // drop an empty space at the end.
   children.pop();
   a.append(...children);
-  a.classList.add("fig-ref");
-  const figTitle = figcaption.querySelector(".fig-title");
+  a.classList.add(`${figEqn}-ref`);
+  const figTitle = figcaption.querySelector(`.${figEqn}-title`);
   if (!a.hasAttribute("title") && figTitle) {
     a.title = norm(figTitle.textContent);
+  }
+}
+
+function processTable(matchingElement, id, a) {
+  const caption = matchingElement.querySelector("caption");
+  if (!caption) {
+    a.textContent = a.getAttribute("href");
+    const msg = `Found matching table "${id}", but table is lacking a \`<caption>\`.`;
+    showInlineError(a, msg, "Missing caption in referenced table.");
+    return;
+  }
+  // remove the table's title
+  const children = [...makeSafeCopy(caption).childNodes].filter(
+    node => !node.classList || !node.classList.contains("tbl-title")
+  );
+  // drop an empty space at the end.
+  children.pop();
+  a.append(...children);
+  a.classList.add("tbl-ref");
+  const tblTitle = caption.querySelector(".tbl-title");
+  if (!a.hasAttribute("title") && tblTitle) {
+    a.title = norm(tblTitle.textContent);
   }
 }
 

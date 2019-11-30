@@ -61,7 +61,7 @@ export function run() {
 function collectFigures() {
   /** @type {HTMLElement[]} */
   const tof = [];
-  document.querySelectorAll("figure").forEach((fig, i) => {
+  document.querySelectorAll("figure:not(.equation)").forEach((fig, i) => {
     const caption = fig.querySelector("figcaption");
 
     if (caption) {
@@ -97,6 +97,20 @@ function getTableOfFiguresListItem(figureId, caption) {
   tofCaption.querySelectorAll("a").forEach(anchor => {
     renameElement(anchor, "span").removeAttribute("href");
   });
+  tofCaption.querySelectorAll("dfn").forEach(dfn => {
+    renameElement(dfn, "span");
+  });
+  tofCaption.querySelectorAll("[id]").forEach(anchor => {
+    anchor.removeAttribute("id");
+  });
+  tofCaption
+    .querySelectorAll(
+      "span.footnote, span.issue, span.respec-error, span.noToc"
+    )
+    .forEach(anchor => {
+      // footnotes, issues, errors, and text explicitly marked noToC are not in a ToC
+      anchor.remove();
+    });
   return hyperHTML`<li class='tofline'>
     <a class='tocxref' href='${`#${figureId}`}'>${tofCaption.childNodes}</a>
   </li>`;

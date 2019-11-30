@@ -1,37 +1,45 @@
-import html from "hyperhtml";
+// @ts-check
+import { hyperHTML } from "../../core/import-maps.js";
 
 export default (conf, opts) => {
-  return html`
+  return hyperHTML`
     <h2>${conf.l10n.sotd}</h2>
     ${conf.isPreview ? renderPreview(conf) : ""}
-    ${conf.isUnofficial
-      ? renderIsUnofficial(opts)
-      : conf.isTagFinding
-      ? opts.additionalContent
-      : conf.isNoTrack
-      ? renderIsNoTrack(conf, opts)
-      : html`
+    ${
+      conf.isUnofficial
+        ? renderIsUnofficial(opts)
+        : conf.isTagFinding
+        ? opts.additionalContent
+        : conf.isNoTrack
+        ? renderIsNoTrack(conf, opts)
+        : hyperHTML`
           <p><em>${[conf.l10n.status_at_publication]}</em></p>
-          ${conf.isSubmission
-            ? noteForSubmission(conf, opts)
-            : html`
+          ${
+            conf.isSubmission
+              ? noteForSubmission(conf, opts)
+              : hyperHTML`
                 ${!conf.sotdAfterWGinfo ? opts.additionalContent : ""}
-                ${!conf.overrideStatus
-                  ? html`
+                ${
+                  !conf.overrideStatus
+                    ? hyperHTML`
                       ${linkToWorkingGroup(conf)} ${linkToCommunity(conf, opts)}
-                      ${conf.isCR || conf.isPER || conf.isPR
-                        ? html`
+                      ${
+                        conf.isCR || conf.isPER || conf.isPR
+                          ? hyperHTML`
                             <p>
-                              ${conf.isCR
-                                ? `
+                              ${
+                                conf.isCR
+                                  ? `
                   PCI-SIG publishes a Candidate Recommendation to indicate that the document is believed to be
                   stable and to encourage implementation by the developer community. This Candidate
                   Recommendation is expected to advance to Proposed Recommendation no earlier than
                   ${conf.humanCREnd}.
                 `
-                                : ""}
-                              ${conf.isPER
-                                ? html`
+                                  : ""
+                              }
+                              ${
+                                conf.isPER
+                                  ? hyperHTML`
                                     PCI-SIG Advisory Committee Members are invited
                                     to send formal review comments on this
                                     Proposed Edited Recommendation to the PCI-SIG
@@ -44,9 +52,11 @@ export default (conf, opts) => {
                                       >WBS questionnaires</a
                                     >.
                                   `
-                                : ""}
-                              ${conf.isPR
-                                ? html`
+                                  : ""
+                              }
+                              ${
+                                conf.isPR
+                                  ? hyperHTML`
                                     The PCI-SIG Membership and other interested
                                     parties are invited to review the document
                                     and send comments to
@@ -56,7 +66,9 @@ export default (conf, opts) => {
                                       >${conf.wgPublicList}@pcisig.com</a
                                     >
                                     (<a
-                                      href="${opts.mailToWGPublicListSubscription}"
+                                      href="${
+                                        opts.mailToWGPublicListSubscription
+                                      }"
                                       >subscribe</a
                                     >,
                                     <a
@@ -73,15 +85,20 @@ export default (conf, opts) => {
                                     Recommendation review period that ended
                                     ${conf.humanCREnd}.
                                   `
-                                : ""}
+                                  : ""
+                              }
                             </p>
                           `
-                        : ""}
+                          : ""
+                      }
                     `
-                  : ""}
-                ${conf.implementationReportURI
-                  ? renderImplementationReportURI(conf)
-                  : ""}
+                    : ""
+                }
+                ${
+                  conf.implementationReportURI
+                    ? renderImplementationReportURI(conf)
+                    : ""
+                }
                 ${conf.sotdAfterWGinfo ? opts.additionalContent : ""}
                 ${conf.notRec ? renderNotRec(conf) : ""}
                 ${conf.isRec ? renderIsRec() : ""} ${renderDeliverer(conf)}
@@ -93,39 +110,47 @@ export default (conf, opts) => {
                     >1 March 2019 PCI-SIG Process Document</a
                   >.
                 </p>
-                ${conf.addPatentNote
-                  ? html`
+                ${
+                  conf.addPatentNote
+                    ? hyperHTML`
                       <p>${[conf.addPatentNote]}</p>
                     `
-                  : ""}
-              `}
-        `}
+                    : ""
+                }
+              `
+          }
+        `
+    }
     ${opts.additionalSections}
   `;
 };
 
 function renderPreview(conf) {
   const { prUrl, prNumber, edDraftURI } = conf;
-  return html`
+  return hyperHTML`
     <details class="annoying-warning" open="">
       <summary
         >This is a
-        preview${prUrl && prNumber
-          ? html`
+        preview${
+          prUrl && prNumber
+            ? hyperHTML`
               of pull request
               <a href="${prUrl}">#${prNumber}</a>
             `
-          : ""}</summary
+            : ""
+        }</summary
       >
       <p>
         Do not attempt to implement this version of the specification. Do not
         reference this version as authoritative in any way.
-        ${edDraftURI
-          ? html`
+        ${
+          edDraftURI
+            ? hyperHTML`
               Instead, see
               <a href="${edDraftURI}">${edDraftURI}</a> for the Editor's draft.
             `
-          : ""}
+            : ""
+        }
       </p>
     </details>
   `;
@@ -133,7 +158,7 @@ function renderPreview(conf) {
 
 function renderIsUnofficial(opts) {
   const { additionalContent } = opts;
-  return html`
+  return hyperHTML`
     <p>
       This document is draft of a potential specification. It has no official
       standing of any kind and does not represent the support or consensus of
@@ -146,7 +171,7 @@ function renderIsUnofficial(opts) {
 function renderIsNoTrack(conf, opts) {
   const { isMO } = conf;
   const { additionalContent } = opts;
-  return html`
+  return hyperHTML`
     <p>
       This document is merely a PCI-SIG-internal
       ${isMO ? "member-confidential" : ""} document. It has no official standing
@@ -158,7 +183,7 @@ function renderIsNoTrack(conf, opts) {
 
 function renderImplementationReportURI(conf) {
   const { implementationReportURI } = conf;
-  return html`
+  return hyperHTML`
     <p>
       Please see the Working Group's
       <a href="${implementationReportURI}">implementation report</a>.
@@ -168,7 +193,7 @@ function renderImplementationReportURI(conf) {
 
 function renderNotRec(conf) {
   const { anOrA, textStatus } = conf;
-  return html`
+  return hyperHTML`
     <p>
       Publication as ${anOrA} ${textStatus} does not imply endorsement by the
       PCI-SIG Membership. This is a draft document and may be updated, replaced or
@@ -179,7 +204,7 @@ function renderNotRec(conf) {
 }
 
 function renderIsRec() {
-  html`
+  hyperHTML`
     <p>
       This document has been reviewed by PCI-SIG Members, by software developers,
       and by other PCI-SIG groups and interested parties, and is endorsed by the
@@ -205,7 +230,7 @@ function renderDeliverer(conf) {
   } = conf;
 
   const producers = !isIGNote
-    ? html`
+    ? hyperHTML`
         This document was produced by ${multipleWGs ? "groups" : "a group"}
         operating under the
         <a href="https://www.pcisig.com/Consortium/Patent-Policy/"
@@ -216,25 +241,30 @@ function renderDeliverer(conf) {
   const wontBeRec = recNotExpected
     ? "The group does not expect this document to become a PCI-SIG Recommendation."
     : "";
-  return html`
+  return hyperHTML`
     <p data-deliverer="${isNote ? wgId : null}">
       ${producers} ${wontBeRec}
-      ${!isNote && !isIGNote
-        ? html`
-            ${multipleWGs
-              ? html`
+      ${
+        !isNote && !isIGNote
+          ? hyperHTML`
+            ${
+              multipleWGs
+                ? hyperHTML`
                   PCI-SIG maintains ${[wgPatentHTML]}
                 `
-              : html`
+                : hyperHTML`
                   PCI-SIG maintains a
                   <a href="${[wgPatentURI]}" rel="disclosure"
                     >public list of any patent disclosures</a
                   >
-                `}
+                `
+            }
             made in connection with the deliverables of
-            ${multipleWGs
-              ? "each group; these pages also include"
-              : "the group; that page also includes"}
+            ${
+              multipleWGs
+                ? "each group; these pages also include"
+                : "the group; that page also includes"
+            }
             instructions for disclosing a patent. An individual who has actual
             knowledge of a patent which the individual believes contains
             <a href="https://www.pcisig.com/Consortium/Patent-Policy/#def-essential"
@@ -246,26 +276,31 @@ function renderDeliverer(conf) {
               >section 6 of the PCI-SIG Patent Policy</a
             >.
           `
-        : ""}
-      ${isIGNote
-        ? html`
+          : ""
+      }
+      ${
+        isIGNote
+          ? hyperHTML`
             The disclosure obligations of the Participants of this group are
             described in the
             <a href="${charterDisclosureURI}">charter</a>.
           `
-        : ""}
+          : ""
+      }
     </p>
   `;
 }
 
 function noteForSubmission(conf, opts) {
-  return html`
+  return hyperHTML`
     ${opts.additionalContent}
-    ${conf.isMemberSubmission
-      ? noteForMemberSubmission(conf)
-      : conf.isTeamSubmission
-      ? noteForTeamSubmission(conf, opts)
-      : ""}
+    ${
+      conf.isMemberSubmission
+        ? noteForMemberSubmission(conf)
+        : conf.isTeamSubmission
+        ? noteForTeamSubmission(conf, opts)
+        : ""
+    }
   `;
 }
 
@@ -273,7 +308,7 @@ function noteForMemberSubmission(conf) {
   const teamComment = `https://www.pcisig.com/Submission/${conf.publishDate.getUTCFullYear()}/${
     conf.submissionCommentNumber
   }/Comment/`;
-  return html`
+  return hyperHTML`
     <p>
       By publishing this document, PCI-SIG acknowledges that the
       <a href="${conf.thisVersion}">Submitting Members</a> have made a formal
@@ -300,7 +335,7 @@ function noteForMemberSubmission(conf) {
 }
 
 function noteForTeamSubmission(conf, opts) {
-  return html`
+  return hyperHTML`
     <p>
       If you wish to make comments regarding this document, please send them to
       <a href="${opts.mailToWGPublicListWithSubject}"
@@ -309,12 +344,14 @@ function noteForTeamSubmission(conf, opts) {
       (<a href="${opts.mailToWGPublicListSubscription}">subscribe</a>,
       <a href="${`https://lists.pcisig.com/Archives/Public/${conf.wgPublicList}/`}"
         >archives</a
-      >)${conf.subjectPrefix
-        ? html`
+      >)${
+        conf.subjectPrefix
+          ? hyperHTML`
             with <code>${conf.subjectPrefix}</code> at the start of your email's
             subject
           `
-        : ""}.
+          : ""
+      }.
     </p>
     <p>
       Please consult the complete
@@ -327,13 +364,15 @@ function linkToWorkingGroup(conf) {
   if (!conf.wg) {
     return;
   }
-  return html`
+  return hyperHTML`
     <p>
       This document was published by ${[conf.wgHTML]} as ${conf.anOrA}
       ${conf.longStatus}.
-      ${conf.notYetRec
-        ? "This document is intended to become a PCI-SIG Recommendation."
-        : ""}
+      ${
+        conf.notYetRec
+          ? "This document is intended to become a PCI-SIG Recommendation."
+          : ""
+      }
     </p>
   `;
 }
@@ -342,19 +381,24 @@ function linkToCommunity(conf, opts) {
   if (!conf.github && !conf.wgPublicList) {
     return;
   }
-  return html`
+  return hyperHTML`
     <p>
-      ${conf.github
-        ? html`
+      ${
+        conf.github
+          ? hyperHTML`
             <a href="${conf.issueBase}">GitHub Issues</a> are preferred for
             discussion of this specification.
           `
-        : ""}
-      ${conf.wgPublicList
-        ? html`
-            ${conf.github && conf.wgPublicList
-              ? "Alternatively, you can send comments to our mailing list."
-              : "Comments regarding this document are welcome."}
+          : ""
+      }
+      ${
+        conf.wgPublicList
+          ? hyperHTML`
+            ${
+              conf.github && conf.wgPublicList
+                ? "Alternatively, you can send comments to our mailing list."
+                : "Comments regarding this document are welcome."
+            }
             Please send them to
             <a href="${opts.mailToWGPublicListWithSubject}"
               >${conf.wgPublicList}@pcisig.com</a
@@ -362,14 +406,17 @@ function linkToCommunity(conf, opts) {
             (<a
               href="${`https://lists.pcisig.com/Archives/Public/${conf.wgPublicList}/`}"
               >archives</a
-            >)${conf.subjectPrefix
-              ? html`
+            >)${
+              conf.subjectPrefix
+                ? hyperHTML`
                   with <code>${conf.subjectPrefix}</code> at the start of your
                   email's subject
                 `
-              : ""}.
+                : ""
+            }.
           `
-        : ""}
+          : ""
+      }
     </p>
   `;
 }

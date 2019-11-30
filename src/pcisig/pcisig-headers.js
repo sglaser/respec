@@ -68,9 +68,9 @@
 //      - "cc0", an extremely permissive license. Only recommended for documents intended for use
 //            outside of PCISIG.
 import { ISODate, concatDate, joinAnd } from "../core/utils.js";
-import cgbgHeadersTmpl from "../w3c/templates/cgbg-headers";
+import cgbgHeadersTmpl from "../w3c/templates/cgbg-headers.js";
 import headersTmpl from "./templates/headers.js";
-import hyperHTML from "hyperhtml";
+import { hyperHTML } from "../core/import-maps.js";
 import { pub } from "../core/pubsubhub.js";
 import sotdTmpl from "./templates/sotd.js";
 
@@ -82,7 +82,6 @@ const PCISIGDate = new Intl.DateTimeFormat(["en-AU"], {
   month: "long",
   day: "2-digit",
 });
-
 
 const status2rdf = {
   "WG-NOTE": "pcisigp:NOTE",
@@ -109,7 +108,7 @@ const status2rdf = {
 
   RESCINDED: "pcisigp:RESCINDED",
   REPLACED: "pcisigp:REPLACED",
-  PRIVATE: "pcisigp:PRIVATE"
+  PRIVATE: "pcisigp:PRIVATE",
 };
 const status2text = {
   "WG-DRAFT-NOTE": "Draft Working Group Note",
@@ -164,23 +163,36 @@ const status2long = {
   "WD-FINAL": "Unpublished Final Working Draft",
   "ED-FINAL": "Unpublished Final Editor's Draft",
   "PUB-MEM": "Published Member Review Draft",
-  FINAL: "Published Final Specification"
+  FINAL: "Published Final Specification",
 };
 const specTrackStatus = [
-  "WD", "ED", "RC", "PUB", "FINAL",
-  "WD-CWG", "ED-CWG", "RC-CWG", "PUB-CWG",
-  "WD-MEM", "ED-MEM", "RC-MEM", "PUB-MEM",
-  "WD-FINAL", "ED-FINAL", "RC-FINAL", "PUB-FINAL"
+  "WD",
+  "ED",
+  "RC",
+  "PUB",
+  "FINAL",
+  "WD-CWG",
+  "ED-CWG",
+  "RC-CWG",
+  "PUB-CWG",
+  "WD-MEM",
+  "ED-MEM",
+  "RC-MEM",
+  "PUB-MEM",
+  "WD-FINAL",
+  "ED-FINAL",
+  "RC-FINAL",
+  "PUB-FINAL",
 ];
 
 // Chapters are never published standalone. if conf.specChapter is present,
 // this map is used to convert "final" specStatus values to equivalent "RC" values.
 const specFinal2Draft = {
-  "WD": "WD",
-  "ED": "ED",
-  "RC": "RC",
-  "PUB": "RC",
-  "FINAL": "RC",
+  WD: "WD",
+  ED: "ED",
+  RC: "RC",
+  PUB: "RC",
+  FINAL: "RC",
   "WD-CWG": "WD-CWG",
   "ED-CWG": "ED-CWG",
   "RC-CWG": "RC-CWG",
@@ -192,7 +204,7 @@ const specFinal2Draft = {
   "WD-FINAL": "WD-FINAL",
   "ED-FINAL": "ED-FINAL",
   "RC-FINAL": "RC-FINAL",
-  "PUB-FINAL": "RC-FINAL"
+  "PUB-FINAL": "RC-FINAL",
 };
 
 const noTrackStatus = [
@@ -204,30 +216,34 @@ const noTrackStatus = [
   "member-private",
   "member-submission",
   "team-private",
-  "team-submission"
+  "team-submission",
 ];
-const precededByAn = ["ED", "ED-CWG", "ED-MEM", "ED-FINAL", "unofficial"];  // specStatus values that should grammatically be preceded by an instead of a.
+
+// specStatus values that should grammatically be preceded by an instead of a.
+const precededByAn = ["ED", "ED-CWG", "ED-MEM", "ED-FINAL", "unofficial"];
 
 const licenses = {
   "pcisig-draft": {
     name: "PCISIG Specification License",
     short: "PCISIG Spec",
-    url: "https://sglaser.github.io/respec/Spec/Legal/2017/copyright-draft-specification"
+    url:
+      "https://sglaser.github.io/respec/Spec/Legal/2017/copyright-draft-specification",
   },
   "pcisig-final": {
     name: "PCISIG Specification License",
     short: "PCISIG Spec",
-    url: "https://sglaser.github.io/respec/Spec/Legal/2017/copyright-final-specification"
+    url:
+      "https://sglaser.github.io/respec/Spec/Legal/2017/copyright-final-specification",
   },
   "pcisig-note": {
     name: "PCISIG Note, Whitepaper, or Presentation License",
     short: "PCISIG Spec",
-    url: "https://sglaser.github.io/respec/Spec/Legal/2017/copyright-note"
+    url: "https://sglaser.github.io/respec/Spec/Legal/2017/copyright-note",
   },
-  "nda": {
+  nda: {
     name: "PCISIG Document under Non-Disclosure Agreement",
     short: "PCISIG NDA",
-    url: "https://sglaser.github.io/respec/Spec/Legal/2017/copyright-nda"
+    url: "https://sglaser.github.io/respec/Spec/Legal/2017/copyright-nda",
   },
   "cc-by": {
     name: "Creative Commons Attribution 4.0 International Public License",
@@ -237,8 +253,8 @@ const licenses = {
   cc0: {
     name: "Creative Commons 0 Public Domain Dedication",
     short: "CC0",
-    url: "https://creativecommons.org/publicdomain/zero/1.0/"
-  }
+    url: "https://creativecommons.org/publicdomain/zero/1.0/",
+  },
 };
 
 const baseLogo = Object.freeze({
@@ -269,13 +285,17 @@ function validateDateAndRecover(conf, prop, fallbackDate = new Date()) {
   return new Date(ISODate.format(new Date()));
 }
 
-export function run(conf) {
+export function run(conf, doc) {
   conf.isUnofficial = conf.specStatus === "unofficial";
   if (conf.isUnofficial && !Array.isArray(conf.logos)) {
     conf.logos = [];
   }
 
-  if (conf.specStatus && conf.specChapter && specFinal2Draft.hasOwnProperty(conf.specStatus)){
+  if (
+    conf.specStatus &&
+    conf.specChapter &&
+    specFinal2Draft.hasOwnProperty(conf.specStatus)
+  ) {
     conf.specStatus = specFinal2Draft[conf.specStatus];
   }
   // Default include RDFa document metadata
@@ -286,7 +306,10 @@ export function run(conf) {
   }
   if (["cc0", "cc-by"].includes(conf.license)) {
     let msg = `You cannot use license "${conf.license}" with PCISIG Specs. `;
-    let non_cc0 = licenses.keys.remove("cc0").remove("cc-by").toString();
+    const non_cc0 = licenses.keys
+      .remove("cc0")
+      .remove("cc-by")
+      .toString();
     msg += `Please set 'respecConfig.license:' to one of ${non_cc0} instead.`;
     pub("error", msg);
   }
@@ -331,7 +354,7 @@ export function run(conf) {
       src: "https://sglaser.github.io/respec/Spec/Icons/member_private.svg",
       width: "211",
     };
-    conf.logos.push({...baseLogo, ...memPrivateLogo});
+    conf.logos.push({ ...baseLogo, ...memPrivateLogo });
   }
   conf.isMemberSubmission = conf.specStatus === "member-submission";
   if (conf.isMemberSubmission) {
@@ -341,7 +364,7 @@ export function run(conf) {
       src: "https://sglaser.github.io/respec/Spec/Icons/member_submission.svg",
       width: "211",
     };
-    conf.logos.push({...baseLogo, ...memSubmissionLogo});
+    conf.logos.push({ ...baseLogo, ...memSubmissionLogo });
   }
   conf.isTeamPrivate = conf.specStatus === "team-private";
   if (conf.isTeamPrivate) {
@@ -351,7 +374,7 @@ export function run(conf) {
       src: "https://sglaser.github.io/respec/Spec/Icons/team_private.svg",
       width: "211",
     };
-    conf.logos.push({...baseLogo, ...teamPrivateLogo});
+    conf.logos.push({ ...baseLogo, ...teamPrivateLogo });
   }
   conf.isTeamSubmission = conf.specStatus === "team-submission";
   if (conf.isTeamSubmission) {
@@ -361,10 +384,11 @@ export function run(conf) {
       src: "https://sglaser.github.io/respec/Spec/Icons/team_submmission.svg",
       width: "211",
     };
-    conf.logos.push({...baseLogo, ...teamSubmissionLogo});
+    conf.logos.push({ ...baseLogo, ...teamSubmissionLogo });
   }
   conf.isSubmission = conf.isMemberSubmission || conf.isTeamSubmission;
-  conf.isPrivate = conf.isMemberPrivate || conf.isPrivate || conf.specStatus === "private";
+  conf.isPrivate =
+    conf.isMemberPrivate || conf.isPrivate || conf.specStatus === "private";
   conf.anOrA = precededByAn.includes(conf.specStatus) ? "an" : "a";
 
   let temp = [];
@@ -384,25 +408,18 @@ export function run(conf) {
 
   let publishSpace = "Spec/Published";
   if (conf.specStatus === "member-submission") publishSpace = "Spec/Submission";
-  else if (conf.specStatus === "member-private") publishSpace = "Spec/Submission/Private";
-  else if (conf.specStatus === "team-submission") publishSpace = "Spec/TeamSubmission";
-  else if (conf.specStatus === "team-private") publishSpace = "Spec/TeamSubmission/Private";
+  else if (conf.specStatus === "member-private")
+    publishSpace = "Spec/Submission/Private";
+  else if (conf.specStatus === "team-submission")
+    publishSpace = "Spec/TeamSubmission";
+  else if (conf.specStatus === "team-private")
+    publishSpace = "Spec/TeamSubmission/Private";
   if (conf.isRegular)
-    conf.thisVersion =
-      "https://sglaser.github.io/respec/" +
-      publishSpace +
-      "/" +
-      conf.publishDate.getUTCFullYear() +
-      "/" +
-      conf.shortName +
-      "-" +
-      conf.maturity +
-      "-" +
-      concatDate(conf.publishDate) +
-      "/";
+    conf.thisVersion = `https://sglaser.github.io/respec/${publishSpace}/${conf.publishDate.getUTCFullYear()}/${
+      conf.shortName
+    }-${conf.maturity}-${concatDate(conf.publishDate)}/`;
   if (conf.isRegular)
-    conf.latestVersion =
-      "https://sglaser.github.io/respec/" + publishSpace + "/" + conf.shortName + "/";
+    conf.latestVersion = `https://sglaser.github.io/respec/${publishSpace}/${conf.shortName}/`;
 
   if (conf.previousPublishDate) {
     if (!conf.previousStatus) {
@@ -412,7 +429,10 @@ export function run(conf) {
       pub("error", "`previousPublishDate` is set, but not `previousRevision`.");
     }
     if (!conf.previousDraftLevel) {
-      pub("error", "`previousPublishDate` is set, but not `previousDraftLevel`.");
+      pub(
+        "error",
+        "`previousPublishDate` is set, but not `previousDraftLevel`."
+      );
     }
 
     conf.previousPublishDate = validateDateAndRecover(
@@ -430,25 +450,18 @@ export function run(conf) {
     if (conf.previousStatus) {
       temp.push(conf.previousStatus);
     }
-    let pmat = temp.join("-");
+    const pmat = temp.join("-");
 
     if (conf.isBasic) {
       conf.prevVersion = "";
     } else {
-      conf.prevVersion =
-        "https://sglaser.github.io/respec/Spec/" +
-        conf.previousPublishDate.getUTCFullYear() +
-        "/" +
-        conf.shortName +
-        "-" +
-        pmat +
-        "-" +
-        concatDate(conf.previousPublishDate) +
-        "/";
+      conf.prevVersion = `https://sglaser.github.io/respec/Spec/${conf.previousPublishDate.getUTCFullYear()}/${
+        conf.shortName
+      }-${pmat}-${concatDate(conf.previousPublishDate)}/`;
     }
   } else {
     if (
-      !(/NOTE$/.test(conf.specStatus)) &&
+      !/NOTE$/.test(conf.specStatus) &&
       !conf.prevStatus === "none" &&
       !conf.noSpecTrack &&
       !conf.isNoTrack &&
@@ -457,7 +470,7 @@ export function run(conf) {
       pub(
         "error",
         "Document on specification track but has no previous version:" +
-        " Add `previousStatus`, `previousRevision`, `previousDraftLevel`, and `previousPublishDate` to ReSpec's config."
+          " Add `previousStatus`, `previousRevision`, `previousDraftLevel`, and `previousPublishDate` to ReSpec's config."
       );
     if (!conf.prevVersion) conf.prevVersion = "";
   }
@@ -502,7 +515,7 @@ export function run(conf) {
   conf.multipleEditors = conf.editors && conf.editors.length > 1;
   conf.multipleFormerEditors = conf.formerEditors.length > 1;
   conf.multipleAuthors = conf.authors && conf.authors.length > 1;
-  $.each(conf.alternateFormats || [], function (i, it) {
+  (conf.alternateFormats || []).forEach((i, it) => {
     if (!it.uri || !it.label)
       pub("error", "All alternate formats must have a uri and a label.");
   });
@@ -512,10 +525,10 @@ export function run(conf) {
     conf.alternateFormats &&
     joinAnd(conf.alternateFormats, alt => {
       let optional =
-        alt.hasOwnProperty("lang") && alt.lang ? ` hreflang='${alt.lang}'` : "";
+        alt.hasOwnProperty("lang") && alt.lang ? `hreflang='${alt.lang}'` : "";
       optional +=
-        alt.hasOwnProperty("type") && alt.type ? ` type='${alt.type}'` : "";
-      return `<a rel='alternate' href='${alt.uri}'${optional}>${alt.label}</a>`;
+        alt.hasOwnProperty("type") && alt.type ? `type='${alt.type}'` : "";
+      return `<a rel='alternate' href='${alt.uri}' ${optional}>${alt.label}</a>`;
     });
   if (conf.bugTracker) {
     if (conf.bugTracker.new && conf.bugTracker.open) {
@@ -528,7 +541,7 @@ export function run(conf) {
   }
   if (conf.copyrightStart && conf.copyrightStart == conf.publishYear)
     conf.copyrightStart = "";
-  for (let k in status2text) {
+  for (const k in status2text) {
     if (status2long[k]) continue;
     status2long[k] = status2text[k];
   }
@@ -539,21 +552,38 @@ export function run(conf) {
   }
   conf.showThisVersion = !conf.isNoTrack;
   conf.showPreviousVersion =
-    !conf.previousStatus === "none" &&
-    !conf.isNoTrack &&
-    !conf.isSubmission;
+    !conf.previousStatus === "none" && !conf.isNoTrack && !conf.isSubmission;
   if (conf.specStatus.endsWith("NOTE") && !conf.prevVersion)
     conf.showPreviousVersion = false;
-  conf.notYetFinal = conf.isSpecTrack && (conf.specStatus !== "FINAL" || conf.specStatus !== "PUB-FINAL");
-  conf.isFinal = conf.isSpecTrack && (conf.specStatus === "FINAL" || conf.specStatus === "PUB-FINAL");
+  conf.notYetFinal =
+    conf.isSpecTrack &&
+    (conf.specStatus !== "FINAL" || conf.specStatus !== "PUB-FINAL");
+  conf.isFinal =
+    conf.isSpecTrack &&
+    (conf.specStatus === "FINAL" || conf.specStatus === "PUB-FINAL");
   if (conf.isFinal && !conf.errata)
     pub("error", "Recommendations must have an errata link.");
   conf.isUnofficial = conf.specStatus === "unofficial";
   conf.prependPCISIG = !conf.isUnofficial;
-  conf.isED = conf.specStatus === "ED" || conf.specStatus === "ED-CWG" || conf.specStatus === "ED-MEM" || conf.specStatus === "ED-FINAL";
-  conf.isWD = conf.specStatus === "WD" || conf.specStatus === "WD-CWG" || conf.specStatus === "WD-MEM" || conf.specStatus === "WD-FINAL";
-  conf.isRC = conf.specStatus === "RC" || conf.specStatus === "RC-CWG" || conf.specStatus === "RC-MEM" || conf.specStatus === "RC-FINAL";
-  conf.isPUB = conf.specStatus === "PUB" || conf.specStatus === "PUB-CWG" || conf.specStatus === "PUB-MEM";
+  conf.isED =
+    conf.specStatus === "ED" ||
+    conf.specStatus === "ED-CWG" ||
+    conf.specStatus === "ED-MEM" ||
+    conf.specStatus === "ED-FINAL";
+  conf.isWD =
+    conf.specStatus === "WD" ||
+    conf.specStatus === "WD-CWG" ||
+    conf.specStatus === "WD-MEM" ||
+    conf.specStatus === "WD-FINAL";
+  conf.isRC =
+    conf.specStatus === "RC" ||
+    conf.specStatus === "RC-CWG" ||
+    conf.specStatus === "RC-MEM" ||
+    conf.specStatus === "RC-FINAL";
+  conf.isPUB =
+    conf.specStatus === "PUB" ||
+    conf.specStatus === "PUB-CWG" ||
+    conf.specStatus === "PUB-MEM";
   conf.dashDate = ISODate.format(conf.publishDate);
   conf.publishISODate = conf.publishDate.toISOString();
   conf.shortISODate = ISODate.format(conf.publishDate);
@@ -574,9 +604,9 @@ export function run(conf) {
   document.body.classList.add("h-entry");
 
   // handle SotD
-  let sotd =
+  const sotd =
     document.getElementById("sotd") || document.createElement("section");
-  if ((!conf.isNoTrack) && !sotd.id) {
+  if (!conf.isNoTrack && !sotd.id) {
     pub(
       "error",
       "A custom SotD paragraph is required for your type of document."
@@ -587,13 +617,16 @@ export function run(conf) {
 
   // invent toc if not already present
   if (!document.body.querySelector("#toc")) {
-    $("body", doc).prepend($("<nav id=\"toc\"><section class=\"introductory\"></section></nav>"));
+    document("body").prepend(
+      '<nav id="toc"><section class="introductory"></section></nav>'
+    );
   }
 
-// handle Revision History
-  let revision_history =
-    document.body.querySelector("#revision-history") || document.createElement("section");
-  if ((!conf.isNoTrack) && !revision_history.id) {
+  // handle Revision History
+  const revision_history =
+    document.body.querySelector("#revision-history") ||
+    document.createElement("section");
+  if (!conf.isNoTrack && !revision_history.id) {
     pub(
       "error",
       "A Revision History section is required for your type of document."
@@ -611,7 +644,6 @@ export function run(conf) {
   conf.cwgReviewEnd = validateDateAndRecover(conf, "cwgReviewEnd");
   conf.humanCwgReviewEnd = PCISIGDate.format(conf.cwgReviewEnd);
 
-
   if (conf.specStatus === "PUB-MEM" && !conf.memReviewEnd) {
     pub(
       "error",
@@ -623,13 +655,12 @@ export function run(conf) {
 
   hyperHTML.bind(sotd)`${populateSoTD(conf, sotd)}`;
 
-// Requested by https://github.com/w3c/respec/issues/504
-// Makes a record of a few auto-generated things.
+  // Requested by https://github.com/w3c/respec/issues/504
+  // Makes a record of a few auto-generated things.
   pub("amend-user-config", {
     publishISODate: conf.publishISODate,
     generatedSubtitle: `${conf.longStatus} ${conf.publishHumanDate}`,
   });
-  cb();
 }
 
 /**
@@ -678,7 +709,7 @@ function collectSotdContent(sotd, { isTagFinding = false }) {
     pub(
       "warn",
       "ReSpec does not support automated SotD generation for TAG findings, " +
-      "please add the prerequisite content in the 'sotd' section"
+        "please add the prerequisite content in the 'sotd' section"
     );
   }
   return {
@@ -724,7 +755,6 @@ function normalizeOrcid(orcid) {
 
   return orcidUrl.href;
 }
-
 
 /**
  * @param {Node} node

@@ -1,3 +1,5 @@
 builds/*
 js/*
 !js/profile-w3c-common.js
+!js/profile-pcisig-common.js
+!js/profile-pcisig.js

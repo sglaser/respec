@@ -1,17 +1,17 @@
 // @ts-check
-import html from "hyperhtml";
+import { hyperHTML } from "../../core/import-maps.js";
 import { showInlineWarning } from "../../core/utils.js";
 
 export default obj => {
   /** @type {HTMLAnchorElement} */
-  const a = html`
+  const a = hyperHTML`
     <a href="${obj.url || ""}" class="logo"></a>
   `;
   if (!obj.alt) {
     showInlineWarning(a, "Found spec logo without an `alt` attribute");
   }
   /** @type {HTMLImageElement} */
-  const img = html`
+  const img = hyperHTML`
     <img
       id="${obj.id}"
       alt="${obj.alt}"

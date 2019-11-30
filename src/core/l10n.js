@@ -25,6 +25,7 @@ const base = {
   definition_list: "Definitions",
   editors_note: "Editor's note",
   feature_at_risk: "(Feature at Risk) Issue",
+  implementation_note: "Implementation Note",
   info_references: "Informative references",
   issue_summary: "Issue Summary",
   issue: "Issue",
