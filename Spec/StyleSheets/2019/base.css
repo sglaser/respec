@@ -622,7 +622,7 @@ pre {
 /** General Hyperlinks ********************************************************/
 
 /* We hyperlink a lot, so make it less intrusive */
-a[href]:not(.footnote):not(.respec-offending-element) {
+a[href]:not(.footnote):not(.respec-offending-element):not(.logo) {
   color: inherit;
   text-decoration: none;
   border-bottom: 0.1em solid silver;

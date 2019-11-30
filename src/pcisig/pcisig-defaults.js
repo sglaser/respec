@@ -19,10 +19,11 @@ const pcisigDefaults = {
   license: "pcisig-software-doc",
   logos: [
     {
-      src: "https://www.pcisig.com/StyleSheets/TR/2016/logos/pcisig",
+      src:
+        "https://sglaser.github.io/respec/Spec/StyleSheets/2017/logos/pci_express_PMS.svg",
       alt: "pcisig",
-      height: 48,
-      width: 72,
+      height: 40,
+      width: 105,
       url: "https://www.pcisig.com/",
     },
   ],
