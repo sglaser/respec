@@ -1249,11 +1249,6 @@ table.data {
   width: auto;
 }
 
-table.data caption,
-table.index caption {
-  width: 100%;
-}
-
 table.data td, table.data th,
 table.index td, table.index th {
   padding: 0.5em;
