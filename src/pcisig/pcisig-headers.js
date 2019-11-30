@@ -74,7 +74,7 @@ import { hyperHTML } from "../core/import-maps.js";
 import { pub } from "../core/pubsubhub.js";
 import sotdTmpl from "./templates/sotd.js";
 
-export const name = "pcisig/headers";
+export const name = "pcisig/pcisig-headers";
 
 const PCISIGDate = new Intl.DateTimeFormat(["en-AU"], {
   timeZone: "UTC",
