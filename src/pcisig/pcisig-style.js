@@ -45,7 +45,7 @@ function createMetaViewport() {
 function createBaseStyle() {
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = "https://sglaser.github.io/respec/Spec/StyleSheets/2017/base.css";
+  link.href = "https://sglaser.github.io/respec/Spec/StyleSheets/2019/base.css";
   link.classList.add("removeOnSave");
   return link;
 }
@@ -55,7 +55,7 @@ function selectStyleVersion(styleVersion) {
   switch (styleVersion) {
     case null:
     case true:
-      version = "2017";
+      version = "2019";
       break;
     default:
       if (styleVersion && !isNaN(styleVersion)) {
@@ -65,48 +65,50 @@ function selectStyleVersion(styleVersion) {
   return version;
 }
 
-function createResourceHints() {
+function createResourceHints(conf) {
   const resourceHints = [
-    /* {
+    {
       hint: "preconnect", // for PCISIG styles and scripts.
       href: "https://sglaser.github.io/respec/Spec",
     },
     {
       hint: "preload", // all specs need it, and we attach it on end-all.
-      href: "https://sglaser.github.io/respec/Spec/scripts/2017/fixup.js",
+      href: "https://sglaser.github.io/respec/Spec/scripts/2019/fixup.js",
       as: "script",
     },
     {
       hint: "preload", // all specs include on base.css.
-      href: "https://sglaser.github.io/respec/Spec/StyleSheets/2017/base.css",
+      href: "https://sglaser.github.io/respec/Spec/StyleSheets/2019/base.css",
       as: "style",
     },
     {
       hint: "preload", // all specs show the logo.
       href:
-        "https://sglaser.github.io/respec/Spec/StyleSheets/2017/logos/pci_express_PMS.svg",
+        "https://sglaser.github.io/respec/Spec/StyleSheets/2019/logos/pci_express_PMS.svg",
       as: "image",
-    }, */
+    },
   ]
     .map(createResourceHint)
     .reduce((frag, link) => {
       frag.appendChild(link);
       return frag;
     }, document.createDocumentFragment());
-  return resourceHints;
+  return conf.cssOverride ? document.createDocumentFragment() : resourceHints;
 }
 
-// Collect elements for insertion (document fragment)
-const elements = createResourceHints();
+function insertInitialElements(conf) {
+  // Collect elements for insertion (document fragment)
+  const elements = createResourceHints();
 
-// Opportunistically apply base style
-elements.appendChild(createBaseStyle());
-if (!document.head.querySelector("meta[name=viewport]")) {
-  // Make meta viewport the first element in the head.
-  elements.insertBefore(createMetaViewport(), elements.firstChild);
+  // Opportunistically apply base style unless overridden
+  if (!conf.cssOverride) elements.appendChild(createBaseStyle());
+  if (!document.head.querySelector("meta[name=viewport]")) {
+    // Make meta viewport the first element in the head.
+    elements.insertBefore(createMetaViewport(), elements.firstChild);
+  }
+
+  document.head.insertBefore(elements, document.head.firstChild);
 }
-
-document.head.insertBefore(elements, document.head.firstChild);
 
 export function run(conf) {
   if (!conf.specStatus) {
@@ -114,6 +116,7 @@ export function run(conf) {
     conf.specStatus = "base";
     pub("warn", warn);
   }
+  insertInitialElements(conf);
 
   let styleFile = "PCISIG-";
 
@@ -121,18 +124,24 @@ export function run(conf) {
   switch (conf.specStatus.toUpperCase()) {
     case "WG-DRAFT-NOTE":
     case "PUB-DRAFT-NOTE":
+      styleFile += "NOTE";
+      break;
     case "WG-NOTE":
     case "PUB-NOTE":
-      styleFile = "NOTE";
+      styleFile += "NOTE";
       break;
     case "ED":
     case "ED-CWG":
+      styleFile += "DRAFT-ED";
+      break;
     case "ED-MEM":
     case "ED-FINAL":
       styleFile += "ED";
       break;
     case "WD":
     case "WD-CWG":
+      styleFile += "DRAFT-WD";
+      break;
     case "WD-MEM":
     case "WD-FINAL":
       styleFile += "WD";
@@ -140,22 +149,28 @@ export function run(conf) {
     case "RC":
     case "RC-CWG":
     case "RC-MEM":
+      styleFile += "DRAFT-RC";
+      break;
     case "RC-FINAL":
       styleFile += "RC";
       break;
     case "PUB":
     case "PUB-CWG":
+      styleFile += "DRAFT-PUB";
+      break;
     case "PUB-MEM":
       styleFile += "PUB";
       break;
     case "FINAL":
       styleFile += "FINAL";
       break;
+    case "DRAFT-NOTE":
+      styleFile = "DRAFT";
+      break;
     case "UNOFFICIAL":
     case "PRIVATE":
     case "BASE":
     case "NOTE":
-    case "DRAFT-NOTE":
     case "MEMBER-PRIVATE":
     case "MEMBER-SUBMISSION":
     case "TEAM-PRIVATE":
@@ -167,7 +182,7 @@ export function run(conf) {
   }
 
   // Select between released styles and experimental style.
-  const version = selectStyleVersion(conf.useExperimentalStyles || "2017");
+  const version = selectStyleVersion(conf.useExperimentalStyles || "2019");
   // Attach PCISIG fixup script after we are done.
   if (version && !conf.noToc) {
     sub(
