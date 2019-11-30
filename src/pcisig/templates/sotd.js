@@ -101,7 +101,6 @@ export default (conf, opts) => {
                 }
                 ${conf.sotdAfterWGinfo ? opts.additionalContent : ""}
                 ${conf.notRec ? renderNotRec(conf) : ""}
-                ${conf.isRec ? renderIsRec() : ""} ${renderDeliverer(conf)}
                 <p>
                   This document is governed by the
                   <a
@@ -213,80 +212,6 @@ function renderIsRec() {
       the Recommendation is to draw attention to the specification and to
       promote its widespread deployment. This enhances the functionality and
       interoperability of the Web.
-    </p>
-  `;
-}
-
-function renderDeliverer(conf) {
-  const {
-    isNote,
-    wgId,
-    isIGNote,
-    multipleWGs,
-    recNotExpected,
-    wgPatentHTML,
-    wgPatentURI,
-    charterDisclosureURI,
-  } = conf;
-
-  const producers = !isIGNote
-    ? hyperHTML`
-        This document was produced by ${multipleWGs ? "groups" : "a group"}
-        operating under the
-        <a href="https://www.pcisig.com/Consortium/Patent-Policy/"
-          >PCI-SIG Patent Policy</a
-        >.
-      `
-    : "";
-  const wontBeRec = recNotExpected
-    ? "The group does not expect this document to become a PCI-SIG Recommendation."
-    : "";
-  return hyperHTML`
-    <p data-deliverer="${isNote ? wgId : null}">
-      ${producers} ${wontBeRec}
-      ${
-        !isNote && !isIGNote
-          ? hyperHTML`
-            ${
-              multipleWGs
-                ? hyperHTML`
-                  PCI-SIG maintains ${[wgPatentHTML]}
-                `
-                : hyperHTML`
-                  PCI-SIG maintains a
-                  <a href="${[wgPatentURI]}" rel="disclosure"
-                    >public list of any patent disclosures</a
-                  >
-                `
-            }
-            made in connection with the deliverables of
-            ${
-              multipleWGs
-                ? "each group; these pages also include"
-                : "the group; that page also includes"
-            }
-            instructions for disclosing a patent. An individual who has actual
-            knowledge of a patent which the individual believes contains
-            <a href="https://www.pcisig.com/Consortium/Patent-Policy/#def-essential"
-              >Essential Claim(s)</a
-            >
-            must disclose the information in accordance with
-            <a
-              href="https://www.pcisig.com/Consortium/Patent-Policy/#sec-Disclosure"
-              >section 6 of the PCI-SIG Patent Policy</a
-            >.
-          `
-          : ""
-      }
-      ${
-        isIGNote
-          ? hyperHTML`
-            The disclosure obligations of the Participants of this group are
-            described in the
-            <a href="${charterDisclosureURI}">charter</a>.
-          `
-          : ""
-      }
     </p>
   `;
 }
@@ -420,3 +345,92 @@ function linkToCommunity(conf, opts) {
     </p>
   `;
 }
+
+/*
+<h2>{{l10n.sotd}}</h2>
+{{#if isPreview}}
+  <details class="annoying-warning" open="">
+    <summary>This is a preview</summary>
+    <p>
+      Do not attempt to implement this version of the specification. Do not reference this
+      version as authoritative in any way.
+    </p>
+  </details>
+{{/if}}
+{{#if isUnofficial}}
+  <p>
+    This document is draft of a potential specification. It has no official standing of
+    any kind and does not represent the support or consensus of any standards organisation.
+  </p>
+  {{{additionalContent}}}
+{{else}}
+  {{#if isNoTrack}}
+    <p>
+      This document is a PCISIG internal document. It has no official standing of any kind and does not represent
+      consensus of the PCISIG Membership.
+    </p>
+    {{{additionalContent}}}
+  {{else}}
+    {{#unless overrideStatus}}
+      {{#if isFinal}}
+        <p>
+          This specification is an official publication of the PCISIG. The PCISIG
+          may publish errata to this specification and may develop future revisions to this
+          specification.
+        </p>
+      {{else}}
+        <p>
+          This specification is intended to become a PCISIG Standard.
+          This particular document is a <strong>{{specStatusLong}}</strong>
+          {{#if specLevelLong}}
+            of the <strong>{{specLevelLong}}</strong> document
+            {{#if specReviewLong}}
+              for <strong>{{specReviewLong}}</strong>
+            {{/if}}
+          {{/if}}.
+          {{#if specReviewLong}}
+            {{#if humanReviewEndDate}}
+              The {{specReviewLong}} period ends 5:00 PM US Pacific Time on <b>{{humanReviewEndDate}}</b>.
+            {{/if}}
+          {{/if}}
+        </p>
+        {{#if is09}}
+          <p>PCISIG publishes a 0.9 maturity level specification to indicate that the document is believed to be
+            stable and to encourage implementation by the developer community.</p>
+        {{/if}}
+        {{#if is07}}
+          <p>
+            PCISIG publishes a 0.7 maturity level specification to indicate that the ...
+          </p>
+        {{/if}}
+        {{#if is05}}
+          <p>PCISIG publishes a 0.5 maturity level specification to indicate that the ...</p>
+        {{/if}}
+        {{#if is03}}
+          <p>PCISIG publishes a 0.3 maturity level specification to indicate that the ...</p>
+        {{/if}}
+      {{/if}}
+    {{/unless}}
+  {{/if}}
+  {{#if isSubmission}}
+    {{{additionalContent}}}
+    <p>PCISIG acknowledges that the Submitting Member have made a formal Submission request to PCISIG for
+      discussion. Publication of this document by PCISIG indicates no endorsement of its content by PCISIG, nor that
+      PCISIG has, is, or will be allocating any resources to the issues addressed by it. This document is not the
+      product of a chartered PCISIG Workgroup. </p>
+  {{else}}
+    {{#unless sotdAfterWGinfo}}
+      {{{additionalContent}}}
+    {{/unless}}
+    {{#if notRec}}
+      <p>
+        Publication as {{anOrA}} {{textStatus}} does not imply endorsement by the PCISIG. This is a draft document and
+        may be updated, replaced or obsoleted by other documents at any time. It is inappropriate to cite this document
+        as other than work in progress.
+      </p>
+    {{/if}}
+    {{#if addPatentNote}}<p>{{{addPatentNote}}}</p>{{/if}}
+  {{/if}}
+{{/if}}
+{{{additionalSections}}}
+ */
