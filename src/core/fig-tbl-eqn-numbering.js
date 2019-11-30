@@ -30,26 +30,26 @@ function renumberItems(selector, map) {
 export function run(conf) {
   if (conf.numberByChapter) {
     const chapterSecnos = document.querySelectorAll(
-      "body > section:not(.introductory) h1:first-child bdi.secno"
+      "body > section:not(.introductory) h2:first-child bdi.secno"
     );
     const figNumMap = new Map();
     const tblNumMap = new Map();
     const eqnNumMap = new Map();
     for (const bdi of chapterSecnos) {
-      const chapter = bdi.attr("secno").replace(/\..*$/, "");
+      const chapter = bdi.textContent.replace(/\..*$/, "");
       const section = bdi.closest("section");
       // Process Figure Captions, populating figNumMap
       numberItems(section, chapter, figNumMap, "figcaption bdi.figno");
       // Process Table Captions, populating tblNumMap
       numberItems(section, chapter, tblNumMap, "caption bdi.tblno");
       // Process Eqnure Captions, populating eqnNumMap
-      numberItems(section, chapter, tblNumMap, "figcaption bdi.eqnno");
+      numberItems(section, chapter, eqnNumMap, "figcaption bdi.eqnno");
     }
     // Convert all Figure references using figNumMap
     renumberItems("bdi.figno", figNumMap);
     // Convert all Table references using tblNumMap
-    renumberItems("bdp.tblno", tblNumMap);
+    renumberItems("bdi.tblno", tblNumMap);
     // Convert all Equation references using eqnNumMap
-    renumberItems("bdp.eqnno", eqnNumMap);
+    renumberItems("bdi.eqnno", eqnNumMap);
   }
 }
