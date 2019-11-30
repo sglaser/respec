@@ -278,7 +278,7 @@ function noteIfDualLicense(conf) {
   return hyperHTML`
     Some Rights Reserved: this document is dual-licensed,
     ${linkLicense("CC-BY", ccLicense)} and
-    ${linkLicense("pcisig Document License", pcisigLicense)}.
+    ${linkLicense("PCISIG Document License", pcisigLicense)}.
   `;
 }
 
