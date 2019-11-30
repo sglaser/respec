@@ -45,7 +45,7 @@ const modules = [
   import("../src/core/contrib.js"),
   import("../src/core/fix-headers.js"),
   import("../src/core/structure.js"),
-  // must run after structure
+  // must run after structure, equations, figures, and tables
   import("../src/core/fig-tbl-eqn-numbering.js"),
   import("../src/core/informative.js"),
   import("../src/core/id-headers.js"),

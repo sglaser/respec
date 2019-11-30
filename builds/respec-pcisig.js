@@ -48,7 +48,7 @@ const modules = [
   Promise.resolve().then(function () { return contrib; }),
   Promise.resolve().then(function () { return fixHeaders; }),
   Promise.resolve().then(function () { return structure$1; }),
-  // must run after structure
+  // must run after structure, equations, figures, and tables
   Promise.resolve().then(function () { return figTblEqnNumbering; }),
   Promise.resolve().then(function () { return informative; }),
   Promise.resolve().then(function () { return idHeaders; }),
@@ -7832,6 +7832,7 @@ const pcisigDefaults = {
   },
   pluralize: true,
   doJsonLd: false,
+  numberByChapter: true,
   license: "pcisig-software-doc",
   logos: [
     {

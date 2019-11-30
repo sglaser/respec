@@ -15,6 +15,7 @@ const pcisigDefaults = {
   },
   pluralize: true,
   doJsonLd: false,
+  numberByChapter: true,
   license: "pcisig-software-doc",
   logos: [
     {
