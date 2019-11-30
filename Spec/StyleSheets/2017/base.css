@@ -2198,7 +2198,6 @@ span.respec-error {
   }
 
   span.footnote {
-    /*noinspection CssInvalidElement*/
     float: footnote;
     text-align: left;
     padding: 0 7.5mm 0 0;
