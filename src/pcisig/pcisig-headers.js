@@ -68,7 +68,6 @@
 //      - "cc0", an extremely permissive license. Only recommended for documents intended for use
 //            outside of PCISIG.
 import { ISODate, concatDate, joinAnd } from "../core/utils.js";
-import cgbgHeadersTmpl from "../w3c/templates/cgbg-headers.js";
 import headersTmpl from "./templates/headers.js";
 import { hyperHTML } from "../core/import-maps.js";
 import { pub } from "../core/pubsubhub.js";
@@ -599,7 +598,7 @@ export function run(conf, doc) {
   }
 
   // insert into document
-  const header = (conf.isCGBG ? cgbgHeadersTmpl : headersTmpl)(conf);
+  const header = headersTmpl(conf);
   document.body.prepend(header);
   document.body.classList.add("h-entry");
 
