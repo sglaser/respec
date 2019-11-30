@@ -56,7 +56,7 @@ const fetchDestinations = new Set([
 
 // CSS selector for matching elements that are non-normative
 export const nonNormativeSelector =
-  ".informative, .note, .issue, .example, .ednote, .practice, .introductory";
+  ".informative, .note, .issue, .impnote, .example, .ednote, .practice, .introductory";
 
 /**
  * Creates a link element that represents a resource hint.
