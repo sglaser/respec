@@ -35,7 +35,8 @@ const modules = [
   Promise.resolve().then(function () { return issuesNotes; }),
   Promise.resolve().then(function () { return requirements; }),
   Promise.resolve().then(function () { return bestPractices; }),
-  // import("../src/pcisig/regpict.js"),
+  Promise.resolve().then(function () { return drawCsrs; }),
+  Promise.resolve().then(function () { return regpict; }),
   Promise.resolve().then(function () { return figures; }),
   Promise.resolve().then(function () { return equations; }),
   Promise.resolve().then(function () { return tables; }),
@@ -7835,10 +7836,11 @@ const pcisigDefaults = {
   license: "pcisig-software-doc",
   logos: [
     {
-      src: "https://www.pcisig.com/StyleSheets/TR/2016/logos/pcisig",
+      src:
+        "https://sglaser.github.io/respec/Spec/StyleSheets/2019/logos/pci_express_PMS.svg",
       alt: "pcisig",
-      height: 48,
-      width: 72,
+      height: 40,
+      width: 105,
       url: "https://www.pcisig.com/",
     },
   ],
@@ -8347,6 +8349,7 @@ var dataInclude = /*#__PURE__*/Object.freeze({
 });
 
 // @ts-check
+
 const html$1 = hyperHTML$2;
 
 var showLink = link => {
@@ -8403,6 +8406,8 @@ var showLogo = obj => {
 
 // @ts-check
 
+const html$2 = hyperHTML$2;
+
 const localizationStrings$1 = {
   en: {
     until: "Until",
@@ -8423,386 +8428,31 @@ var showPeople = (items = []) => {
     const company = [p.company];
     const editorid = p.w3cid ? parseInt(p.w3cid, 10) : null;
     /** @type {HTMLElement} */
-    const dd = hyperHTML$2`
+    const dd = html$2`
       <dd class="p-author h-card vcard" data-editor-id="${editorid}"></dd>
     `;
     const span = document.createDocumentFragment();
     const contents = [];
     if (p.mailto) {
-      contents.push(hyperHTML$2`
+      contents.push(html$2`
         <a class="ed_mailto u-email email p-name" href="${`mailto:${p.mailto}`}"
           >${personName}</a
         >
       `);
     } else if (p.url) {
-      contents.push(hyperHTML$2`
+      contents.push(html$2`
         <a class="u-url url p-name fn" href="${p.url}">${personName}</a>
       `);
     } else {
       contents.push(
-        hyperHTML$2`
+        html$2`
           <span class="p-name fn">${personName}</span>
         `
       );
     }
     if (p.orcid) {
       contents.push(
-        hyperHTML$2`
-          <a class="p-name orcid" href="${p.orcid}"
-            ><svg
-              width="16"
-              height="16"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 256 256"
-            >
-              <style>
-                .st1 {
-                  fill: #fff;
-                }
-              </style>
-              <path
-                d="M256 128c0 70.7-57.3 128-128 128S0 198.7 0 128 57.3 0 128 0s128 57.3 128 128z"
-                fill="#a6ce39"
-              />
-              <path
-                class="st1"
-                d="M86.3 186.2H70.9V79.1h15.4v107.1zM108.9 79.1h41.6c39.6 0 57 28.3 57 53.6 0 27.5-21.5 53.6-56.8 53.6h-41.8V79.1zm15.4 93.3h24.5c34.9 0 42.9-26.5 42.9-39.7C191.7 111.2 178 93 148 93h-23.7v79.4zM88.7 56.8c0 5.5-4.5 10.1-10.1 10.1s-10.1-4.6-10.1-10.1c0-5.6 4.5-10.1 10.1-10.1s10.1 4.6 10.1 10.1z"
-              />
-            </svg>
-          </a>
-        `
-      );
-    }
-    if (p.company) {
-      if (p.companyURL) {
-        contents.push(
-          hyperHTML$2`
-            (<a class="p-org org h-org h-card" href="${p.companyURL}"
-              >${company}</a
-            >)
-          `
-        );
-      } else {
-        contents.push(
-          hyperHTML$2`
-            (${company})
-          `
-        );
-      }
-    }
-    if (p.note) contents.push(document.createTextNode(` (${p.note})`));
-    if (p.extras) {
-      const results = p.extras
-        // Remove empty names
-        .filter(extra => extra.name && extra.name.trim())
-        // Convert to HTML
-        .map(getExtra);
-      for (const result of results) {
-        contents.push(document.createTextNode(", "), result);
-      }
-    }
-    if (p.retiredDate) {
-      const retiredDate = new Date(p.retiredDate);
-      const isValidDate = retiredDate.toString() !== "Invalid Date";
-      const timeElem = document.createElement("time");
-      timeElem.textContent = isValidDate
-        ? humanDate(retiredDate)
-        : "Invalid Date"; // todo: Localise invalid date
-      if (!isValidDate) {
-        showInlineError(
-          timeElem,
-          "The date is invalid. The expected format is YYYY-MM-DD.",
-          "Invalid date"
-        );
-      }
-      timeElem.dateTime = toShortIsoDate(retiredDate);
-      contents.push(
-        hyperHTML$2`
-          - ${l10n.until.concat(" ")}${[timeElem]}
-        `
-      );
-    }
-
-    // @ts-ignore: hyperhtml types only support Element but we use a DocumentFragment here
-    hyperHTML$2.bind(span)`${contents}`;
-    dd.appendChild(span);
-    return dd;
-  }
-
-  function getExtra(extra) {
-    const span = hyperHTML$2`
-      <span class="${extra.class || null}"></span>
-    `;
-    let textContainer = span;
-    if (extra.href) {
-      textContainer = hyperHTML$2`
-        <a href="${extra.href}"></a>
-      `;
-      span.appendChild(textContainer);
-    }
-    textContainer.textContent = extra.name;
-    return span;
-  }
-};
-
-// @ts-check
-
-var cgbgHeadersTmpl = conf => {
-  return hyperHTML$2`
-    <div class="head">
-      ${conf.logos.map(showLogo)}
-      <h1 class="title p-name" id="title">${conf.title}</h1>
-      ${conf.subtitle
-        ? hyperHTML$2`
-            <h2 id="subtitle">${conf.subtitle}</h2>
-          `
-        : ""}
-      <h2>
-        ${conf.longStatus}
-        <time class="dt-published" datetime="${conf.dashDate}"
-          >${conf.publishHumanDate}</time
-        >
-      </h2>
-      <dl>
-        ${conf.thisVersion
-          ? hyperHTML$2`
-              <dt>${conf.l10n.this_version}</dt>
-              <dd>
-                <a class="u-url" href="${conf.thisVersion}"
-                  >${conf.thisVersion}</a
-                >
-              </dd>
-            `
-          : ""}
-        ${conf.latestVersion
-          ? hyperHTML$2`
-              <dt>${conf.l10n.latest_published_version}</dt>
-              <dd>
-                <a href="${conf.latestVersion}">${conf.latestVersion}</a>
-              </dd>
-            `
-          : ""}
-        ${conf.edDraftURI
-          ? hyperHTML$2`
-              <dt>${conf.l10n.latest_editors_draft}</dt>
-              <dd><a href="${conf.edDraftURI}">${conf.edDraftURI}</a></dd>
-            `
-          : ""}
-        ${conf.testSuiteURI
-          ? hyperHTML$2`
-              <dt>Test suite:</dt>
-              <dd><a href="${conf.testSuiteURI}">${conf.testSuiteURI}</a></dd>
-            `
-          : ""}
-        ${conf.implementationReportURI
-          ? hyperHTML$2`
-              <dt>Implementation report:</dt>
-              <dd>
-                <a href="${conf.implementationReportURI}"
-                  >${conf.implementationReportURI}</a
-                >
-              </dd>
-            `
-          : ""}
-        ${conf.bugTrackerHTML
-          ? hyperHTML$2`
-              <dt>${conf.l10n.bug_tracker}</dt>
-              <dd>${[conf.bugTrackerHTML]}</dd>
-            `
-          : ""}
-        ${conf.prevVersion
-          ? hyperHTML$2`
-              <dt>Previous version:</dt>
-              <dd><a href="${conf.prevVersion}">${conf.prevVersion}</a></dd>
-            `
-          : ""}
-        ${!conf.isCGFinal
-          ? hyperHTML$2`
-              ${conf.prevED
-                ? hyperHTML$2`
-                    <dt>Previous editor's draft:</dt>
-                    <dd><a href="${conf.prevED}">${conf.prevED}</a></dd>
-                  `
-                : ""}
-            `
-          : ""}
-        <dt>${conf.multipleEditors ? conf.l10n.editors : conf.l10n.editor}</dt>
-        ${showPeople(conf.editors)}
-        ${Array.isArray(conf.formerEditors) && conf.formerEditors.length > 0
-          ? hyperHTML$2`
-              <dt>
-                ${conf.multipleFormerEditors
-                  ? conf.l10n.former_editors
-                  : conf.l10n.former_editor}
-              </dt>
-              ${showPeople(conf.formerEditors)}
-            `
-          : ""}
-        ${conf.authors
-          ? hyperHTML$2`
-              <dt>
-                ${conf.multipleAuthors ? conf.l10n.authors : conf.l10n.author}
-              </dt>
-              ${showPeople(conf.authors)}
-            `
-          : ""}
-        ${conf.otherLinks ? conf.otherLinks.map(showLink) : ""}
-      </dl>
-      ${conf.alternateFormats
-        ? hyperHTML$2`
-            <p>
-              ${conf.multipleAlternates
-                ? "This document is also available in these non-normative formats:"
-                : "This document is also available in this non-normative format:"}
-              ${[conf.alternatesHTML]}
-            </p>
-          `
-        : ""}
-      <p class="copyright">
-        <a href="https://www.w3.org/Consortium/Legal/ipr-notice#Copyright"
-          >Copyright</a
-        >
-        &copy;
-        ${conf.copyrightStart
-          ? `${conf.copyrightStart}-`
-          : ""}${conf.publishYear}
-        ${conf.additionalCopyrightHolders
-          ? hyperHTML$2`
-              ${[conf.additionalCopyrightHolders]} &amp;
-            `
-          : ""}
-        the Contributors to the ${conf.title} Specification, published by the
-        <a href="${conf.wgURI}">${conf.wg}</a> under the
-        ${conf.isCGFinal
-          ? hyperHTML$2`
-              <a href="https://www.w3.org/community/about/agreements/fsa/"
-                >W3C Community Final Specification Agreement (FSA)</a
-              >. A human-readable
-              <a href="https://www.w3.org/community/about/agreements/fsa-deed/"
-                >summary</a
-              >
-              is available.
-            `
-          : hyperHTML$2`
-              <a href="https://www.w3.org/community/about/agreements/cla/"
-                >W3C Community Contributor License Agreement (CLA)</a
-              >. A human-readable
-              <a href="https://www.w3.org/community/about/agreements/cla-deed/"
-                >summary</a
-              >
-              is available.
-            `}
-      </p>
-      <hr title="Separator for header" />
-    </div>
-  `;
-};
-
-// @ts-check
-
-const html$2 = hyperHTML$2;
-
-var showLink$1 = link => {
-  if (!link.key) {
-    const msg =
-      "Found a link without `key` attribute in the configuration. See dev console.";
-    pub("warn", msg);
-    console.warn("warn", msg, link);
-    return;
-  }
-  return html$2`
-    <dt class="${link.class ? link.class : null}">${link.key}:</dt>
-    ${link.data ? link.data.map(showLinkData$1) : showLinkData$1(link)}
-  `;
-};
-
-function showLinkData$1(data) {
-  return html$2`
-    <dd class="${data.class ? data.class : null}">
-      ${data.href
-        ? html$2`
-            <a href="${data.href}">${data.value || data.href}</a>
-          `
-        : ""}
-    </dd>
-  `;
-}
-
-// @ts-check
-
-var showLogo$1 = obj => {
-  /** @type {HTMLAnchorElement} */
-  const a = hyperHTML$2`
-    <a href="${obj.url || ""}" class="logo"></a>
-  `;
-  if (!obj.alt) {
-    showInlineWarning(a, "Found spec logo without an `alt` attribute");
-  }
-  /** @type {HTMLImageElement} */
-  const img = hyperHTML$2`
-    <img
-      id="${obj.id}"
-      alt="${obj.alt}"
-      width="${obj.width}"
-      height="${obj.height}"
-    />
-  `;
-  // avoid triggering 404 requests from dynamically generated
-  // hyperHTML attribute values
-  img.src = obj.src;
-  a.append(img);
-  return a;
-};
-
-// @ts-check
-
-const html$3 = hyperHTML$2;
-
-const localizationStrings$2 = {
-  en: {
-    until: "Until",
-  },
-  es: {
-    until: "Hasta",
-  },
-};
-
-const lang$a = lang in localizationStrings$2 ? lang : "en";
-
-var showPeople$1 = (items = []) => {
-  const l10n = localizationStrings$2[lang$a];
-  return items.map(getItem);
-
-  function getItem(p) {
-    const personName = [p.name]; // treated as opt-in HTML by hyperHTML
-    const company = [p.company];
-    const editorid = p.w3cid ? parseInt(p.w3cid, 10) : null;
-    /** @type {HTMLElement} */
-    const dd = html$3`
-      <dd class="p-author h-card vcard" data-editor-id="${editorid}"></dd>
-    `;
-    const span = document.createDocumentFragment();
-    const contents = [];
-    if (p.mailto) {
-      contents.push(html$3`
-        <a class="ed_mailto u-email email p-name" href="${`mailto:${p.mailto}`}"
-          >${personName}</a
-        >
-      `);
-    } else if (p.url) {
-      contents.push(html$3`
-        <a class="u-url url p-name fn" href="${p.url}">${personName}</a>
-      `);
-    } else {
-      contents.push(
-        html$3`
-          <span class="p-name fn">${personName}</span>
-        `
-      );
-    }
-    if (p.orcid) {
-      contents.push(
-        html$3`
+        html$2`
           <a class="p-name orcid" href="${p.orcid}"
             ><svg
               width="16"
@@ -8830,7 +8480,7 @@ var showPeople$1 = (items = []) => {
     if (p.company) {
       if (p.companyURL) {
         contents.push(
-          html$3`
+          html$2`
             (<a class="p-org org h-org h-card" href="${p.companyURL}"
               >${company}</a
             >)
@@ -8838,7 +8488,7 @@ var showPeople$1 = (items = []) => {
         );
       } else {
         contents.push(
-          html$3`
+          html$2`
             (${company})
           `
         );
@@ -8871,24 +8521,24 @@ var showPeople$1 = (items = []) => {
       }
       timeElem.dateTime = toShortIsoDate(retiredDate);
       contents.push(
-        html$3`
+        html$2`
           - ${l10n.until.concat(" ")}${[timeElem]}
         `
       );
     }
 
-    html$3.bind(span)`${contents}`;
+    html$2.bind(span)`${contents}`;
     dd.appendChild(span);
     return dd;
   }
 
   function getExtra(extra) {
-    const span = html$3`
+    const span = html$2`
       <span class="${extra.class || null}"></span>
     `;
     let textContainer = span;
     if (extra.href) {
-      textContainer = html$3`
+      textContainer = html$2`
         <a href="${extra.href}"></a>
       `;
       span.appendChild(textContainer);
@@ -8950,7 +8600,7 @@ function getSpecSubTitleElem(conf) {
 var headersTmpl = conf => {
   return hyperHTML$2`
     <div class="head">
-      ${conf.logos.map(showLogo$1)} ${getSpecTitleElem(conf)}
+      ${conf.logos.map(showLogo)} ${getSpecTitleElem(conf)}
       ${getSpecSubTitleElem(conf)}
       <h2>
         ${conf.prependPCISIG ? "PCI-SIG " : ""}${conf.textStatus}
@@ -9047,7 +8697,7 @@ var headersTmpl = conf => {
             `
         }
         <dt>${conf.multipleEditors ? conf.l10n.editors : conf.l10n.editor}</dt>
-        ${showPeople$1(conf.editors)}
+        ${showPeople(conf.editors)}
         ${
           Array.isArray(conf.formerEditors) && conf.formerEditors.length > 0
             ? hyperHTML$2`
@@ -9058,7 +8708,7 @@ var headersTmpl = conf => {
                     : conf.l10n.former_editor
                 }
               </dt>
-              ${showPeople$1(conf.formerEditors)}
+              ${showPeople(conf.formerEditors)}
             `
             : ""
         }
@@ -9068,11 +8718,11 @@ var headersTmpl = conf => {
               <dt>
                 ${conf.multipleAuthors ? conf.l10n.authors : conf.l10n.author}
               </dt>
-              ${showPeople$1(conf.authors)}
+              ${showPeople(conf.authors)}
             `
             : ""
         }
-        ${conf.otherLinks ? conf.otherLinks.map(showLink$1) : ""}
+        ${conf.otherLinks ? conf.otherLinks.map(showLink) : ""}
       </dl>
       ${
         conf.errata
@@ -9172,7 +8822,7 @@ function noteIfDualLicense(conf) {
   return hyperHTML$2`
     Some Rights Reserved: this document is dual-licensed,
     ${linkLicense("CC-BY", ccLicense)} and
-    ${linkLicense("pcisig Document License", pcisigLicense)}.
+    ${linkLicense("PCISIG Document License", pcisigLicense)}.
   `;
 }
 
@@ -10141,7 +9791,7 @@ function run$a(conf, doc) {
   }
 
   // insert into document
-  const header = (conf.isCGBG ? cgbgHeadersTmpl : headersTmpl)(conf);
+  const header = headersTmpl(conf);
   document.body.prepend(header);
   document.body.classList.add("h-entry");
 
@@ -11072,7 +10722,7 @@ var biblio$1 = /*#__PURE__*/Object.freeze({
 
 const name$q = "core/render-biblio";
 
-const localizationStrings$3 = {
+const localizationStrings$2 = {
   en: {
     info_references: "Informative references",
     norm_references: "Normative references",
@@ -11090,9 +10740,9 @@ const localizationStrings$3 = {
   },
 };
 
-const lang$b = lang in localizationStrings$3 ? lang : "en";
+const lang$a = lang in localizationStrings$2 ? lang : "en";
 
-const l10n$4 = localizationStrings$3[lang$b];
+const l10n$4 = localizationStrings$2[lang$a];
 
 const REF_STATUSES = new Map([
   ["CR", "W3C Candidate Recommendation"],
@@ -11826,7 +11476,7 @@ var pluralize$2 = /*#__PURE__*/Object.freeze({
 
 const name$w = "core/examples";
 
-const localizationStrings$4 = {
+const localizationStrings$3 = {
   en: {
     example: "Example",
   },
@@ -11838,9 +11488,9 @@ const localizationStrings$4 = {
   },
 };
 
-const lang$c = lang in localizationStrings$4 ? lang : "en";
+const lang$b = lang in localizationStrings$3 ? lang : "en";
 
-const l10n$5 = localizationStrings$4[lang$c];
+const l10n$5 = localizationStrings$3[lang$b];
 
 const cssPromise = loadStyle$2();
 
@@ -11959,7 +11609,7 @@ var examples = /*#__PURE__*/Object.freeze({
 
 const name$x = "core/issues-notes";
 
-const localizationStrings$5 = {
+const localizationStrings$4 = {
   en: {
     issue_summary: "Issue Summary",
     no_issues_in_spec: "There are no issues listed in this specification.",
@@ -11984,9 +11634,9 @@ async function loadStyle$3() {
   }
 }
 
-const lang$d = lang in localizationStrings$5 ? lang : "en";
+const lang$c = lang in localizationStrings$4 ? lang : "en";
 
-const l10n$6 = localizationStrings$5[lang$d];
+const l10n$6 = localizationStrings$4[lang$c];
 
 /**
  * @typedef {object} Report
@@ -12342,23 +11992,23 @@ var requirements = /*#__PURE__*/Object.freeze({
 
 const name$z = "core/best-practices";
 
-const localizationStrings$6 = {
+const localizationStrings$5 = {
   en: {
     best_practice: "Best Practice ",
   },
 };
-const lang$e = lang in localizationStrings$6 ? lang : "en";
+const lang$d = lang in localizationStrings$5 ? lang : "en";
 
 function run$o() {
   /** @type {NodeListOf<HTMLElement>} */
   const bps = document.querySelectorAll(".practicelab");
-  const l10n = localizationStrings$6[lang$e];
+  const l10n = localizationStrings$5[lang$d];
   const bpSummary = document.getElementById("bp-summary");
   const summaryItems = bpSummary ? document.createElement("ul") : null;
   [...bps].forEach((bp, num) => {
     const id = addId(bp, "bp");
     const localizedBpName = hyperHTML$2`
-      <a class="marker self-link" href="${`#${id}`}"><bdi lang="${lang$e}">${
+      <a class="marker self-link" href="${`#${id}`}"><bdi lang="${lang$d}">${
       l10n.best_practice
     }${num + 1}</bdi></a>`;
 
@@ -12406,9 +12056,752 @@ var bestPractices = /*#__PURE__*/Object.freeze({
 
 // @ts-check
 
-const name$A = "core/figures";
+const name$A = "pcisig/draw-csrs";
 
-const localizationStrings$7 = {
+/**
+ * insert_unused_table_rows inserts "reserved" rows into a tables for
+ * unused register bits.
+ * @param  {HTMLElement} tbl   table to insert into (modified)
+ * @param  {Object}      json  parsed JSON describing register
+ * @access  public
+ */
+function insert_unused_table_rows(tbl, json) {
+  let last_lsb = json.width;
+  const field_slot = [];
+  const tbody = tbl.querySelector("tbody:first-child");
+  if (tbody !== null) {
+    // console.log("non-empty tbody");
+    const rows = tbody.childNodes;
+    if (rows.length > 0) {
+      // console.log(`rows.length=${rows.length}`);
+      // console.log(`json=${JSON.stringify(json, null, 2)}`);
+      // console.log(`Object.keys(json.fields).length=${Object.keys(json.fields).length}`);
+      if (Object.keys(json.fields).length > 0) {
+        Object.keys(json.fields).forEach(name => {
+          const item = json.fields[name];
+          // console.log(`field_slot[${item.msb}]=${JSON.stringify(item, null, 2)}`);
+          field_slot[item.msb] = item;
+        });
+        for (let msb = json.width; msb >= 0; msb--) {
+          const item = field_slot[msb];
+          if (item !== undefined) {
+            // console.log(`msb=${msb} item.index=${item.index} last_lsb=${last_lsb}`);
+            if (msb < last_lsb - 1) {
+              const bit_location =
+                last_lsb - 1 === msb
+                  ? `${msb + 1}`
+                  : `${last_lsb - 1}:${msb + 1}`;
+              const new_row = hyperHTML$2`<tr><td>${bit_location}</td><td>${json.defaultUnused}</td><td>${json.defaultUnused}</td></tr>`;
+              tbody.appendChild(new_row);
+              // console.log(`rows[${item.index}].after(${new_row})`);
+            }
+            last_lsb = item.lsb;
+          }
+        }
+      }
+      if (last_lsb > 0) {
+        const bit_location = last_lsb - 1 === 1 ? "0" : `${last_lsb - 1}:0`;
+        const new_row = hyperHTML$2`<tr><td>${bit_location}</td><td>${json.defaultUnused}</td><td>${json.defaultUnused}</td></tr>`;
+        tbody.appendChild(new_row);
+        // console.log(`tbody.appendChild(${new_row}`);
+        // console.log(`tbody=${tbody.innerHTML}`);
+      }
+    } else {
+      const bit_location = last_lsb - 1 === 1 ? "0" : `${last_lsb - 1}:0`;
+      const new_row = hyperHTML$2`<tr><td>${bit_location}</td><td>${json.defaultUnused}</td><td>${json.defaultUnused}</td></tr>`;
+      tbody.appendChild(new_row);
+      // console.log(`tbody.appendChild(${new_row})`);
+    }
+  }
+}
+
+/**
+ * parse_table
+ * @param   {HTMLElement} tbl  (modified)
+ * @returns {Object}
+ * @access   public
+ */
+function parse_table(tbl) {
+  const json = { fields: {} };
+  const tbody = tbl.querySelector("tbody");
+  // console.log(`pcisig_reg: tbody="${$tbody.get(0).outerHTML}"`);
+  if (tbl.hasAttribute("id")) {
+    json.figName = tbl.getAttribute("id").replace(/^tbl-/, "");
+  } else if (tbl.hasAttribute("title")) {
+    json.figName = tbl.getAttribute("title");
+  } else if (tbl.querySelector("caption")) {
+    json.figName = tbl.querySelector("caption").textContent;
+  } else {
+    json.figName = "";
+  }
+  json.figName = json.figName
+    .toLowerCase()
+    .replace(/^\s+/, "")
+    .replace(/\s+$/, "")
+    .replace(/[^\-.0-9a-z_]+/gi, "-")
+    .replace(/^-+/, "")
+    .replace(/-+$/, "")
+    .replace(/\.$/, ".x")
+    .replace(/^([^a-z])/i, "x$1")
+    .replace(/^$/, "generatedID");
+
+  console.log(`core/draw-csrs table id="${tbl.getAttribute("id")}"`);
+
+  if (tbl.hasAttribute("data-json")) {
+    try {
+      mergeJSON(json, tbl.getAttribute("data-json"));
+    } catch {
+      showInlineError(tbl, "Invalid data-json attribute on <table>", "");
+    }
+  }
+
+  if (!tbl.hasAttribute("id")) {
+    tbl.setAttribute("id", `tbl-${json.figName}`);
+  }
+
+  if (tbl.hasAttribute("data-width"))
+    json.width = tbl.getAttribute("data-width");
+  if (tbl.hasAttribute("data-unused"))
+    json.defaultUnused = tbl.getAttribute("data-unused");
+  if (tbl.hasAttribute("data-href")) json.href = tbl.getAttribute("data-href");
+  if (tbl.hasAttribute("data-register"))
+    json.register = tbl.getAttribute("data-register");
+
+  tbody.children().each(function(index) {
+    const td = this.children();
+    if (td.length >= 3) {
+      const bits = td[0].textContent.trim();
+      const desc = td[1];
+      let attr = td[2].textContent.toLowerCase().trim();
+      let lsb = -1;
+      let msb = -1;
+      const match = /^\s*(\d+)\s*(:\s*(\d+))?\s*$/.exec(bits);
+      if (match) {
+        msb = lsb = Number(match[1]);
+        if (typeof match[3] === "string" && match[3] !== "") {
+          lsb = Number(match[3]);
+        }
+        if (lsb > msb) {
+          msb = lsb;
+          lsb = Number(match[1]);
+        }
+      }
+      let fieldName;
+      let dfn = desc.querySelector("dfn:first");
+      if (dfn.length === 0) {
+        fieldName = /^\s*([-_\w]+)/.exec(desc.textContent);
+        if (fieldName) {
+          fieldName = fieldName[1]; // first word of text content
+        } else {
+          fieldName = `Bogus_${desc.textContent.trim()}`;
+        }
+      } else {
+        dfn = dfn.first();
+        fieldName = dfn.textContent().trim();
+        dfn.classList.add("field");
+        const lt = tbl.getAttribute("id").replace(/^tbl-/, "");
+        dfn.setAttribute("data-dfn-for", lt);
+        dfn.setAttribute("data-dfn-type", "field");
+        dfn.last().makeID("field", `${lt}-${fieldName.toLowerCase()}`);
+      }
+      const val = desc.querySelector("span.value:first");
+      let value = "";
+      if (val.length === 1) {
+        try {
+          value = JSON.parse(val.textContent().trim());
+        } catch {
+          tbl.insertAdjacentHTML(
+            "beforebegin",
+            `<p class="issue">Invalid data-json attribute in next span.value</p>`
+          );
+          val.classList.add("respec-error");
+        }
+      }
+      const validAttr = /^(rw|rws|ro|ros|rw1c|rw1cs|rw1s|rw1ss|wo|wos|hardwired|fixed|hwinit|rsvd|rsvdp|rsvdz|reserved|ignored|ign|unused|other)$/i;
+      if (!validAttr.test(attr)) {
+        attr = "other";
+      }
+      const unusedAttr = /^(rsvd|rsvdp|rsvdz|reserved|ignored|ign|unused)$/i;
+      const isUnused = !!unusedAttr.test(attr);
+      // console.log(`field: ${fieldName} bits="${bits}"  match=${match}  lsb=${lsb} msb=${msb} attr=${attr} isUnused=${isUnused}`);
+      json.fields[fieldName] = {
+        index,
+        msb,
+        lsb,
+        attr,
+        isUnused,
+        value,
+      };
+    }
+  });
+  // console.log(`json=${JSON.stringify(json, null, 2)}`);
+  return json;
+}
+
+/**
+ * Merges two JSON objects together.
+ * Src object properties override existing target properties.
+ * @param {Object} target starting object (modified)
+ * @param {Object} src merging object
+ * @returns {Object} modified target
+ */
+function mergeJSON(target, src) {
+  const json = typeof src !== "string" ? src : JSON.parse(src);
+  for (const prop in json) {
+    if (src.hasOwnProperty(prop)) {
+      // if the value is a nested object, recursively copy all it's properties
+      if (typeof src[prop] === "object" && !!src[prop]) {
+        target[prop] = mergeJSON(target, src[prop]);
+      } else {
+        target[prop] = src[prop];
+      }
+    }
+  }
+  return target;
+}
+
+/**
+ * Locate all table.register elements and insert a figure before them with JSON
+ * representing the table.
+ * @returns {Promise<void>}
+ */
+async function run$p() {
+  document
+    .querySelectorAll("figure.regipct-generated")
+    .forEach(item => item.remove());
+  document.querySelectorAll("table.register").forEach(tbl => {
+    const json = parse_table(tbl);
+    console.log(
+      `draw-csrs.table.register json = ${JSON.stringify(json, null, 2)}`
+    );
+
+    // insert a figure before this table
+    tbl.insertAdjacentHTML(
+      "beforebegin",
+      `<figure class="regpict-generated"
+                id="fig-${tbl.getAttribute("id").replace(/^#tbl-/, "")}">
+                <pre">
+                ${JSON.stringify(json, null, 2)}
+                </pre>
+                <figcaption>
+                  ${tbl.querySelector("caption").textContent}
+                </figcaption>
+              </figure>`
+    );
+    // insert_unused_table_rows(tbl, json);
+  });
+}
+
+var drawCsrs = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  name: name$A,
+  insert_unused_table_rows: insert_unused_table_rows,
+  parse_table: parse_table,
+  run: run$p
+});
+
+// @ts-check
+// import css from "text!../../src/pcisig/css/regpict.css";
+
+const name$B = "pcisig/regpict";
+
+const cssPromise$2 = loadStyle$4();
+
+async function loadStyle$4() {
+  try {
+    return (await Promise.resolve().then(function () { return examples$2; })).default;
+  } catch {
+    return fetchAsset("examples.css");
+  }
+}
+
+/**
+ * Merges two JSON objects together.
+ * Src object properties override existing target properties.
+ * @param {Object} target starting object (modified)
+ * @param {object} src merging object
+ * @returns {Object} modified target
+ */
+function mergeJSON$1(target, src) {
+  const json = typeof src !== "string" ? src : JSON.parse(src);
+  for (const prop in json) {
+    if (src.hasOwnProperty(prop)) {
+      // if the value is a nested object, recursively copy all it's properties
+      if (typeof src[prop] === "object" && !!src[prop]) {
+        target[prop] = mergeJSON$1(target, src[prop]);
+      } else {
+        target[prop] = src[prop];
+      }
+    }
+  }
+  return target;
+}
+
+/**
+ * Merges an HTMLElement containing JSON into an existing JSON object.
+ * HTMLElement properties override existing properties.
+ * @param {Object} result starting object (modified)
+ * @param {HTMLElement} me element with json content to merge in
+ */
+function mergeElementJSON(result, me) {
+  if (me && me instanceof HTMLElement) {
+    if (me.hasAttribute("data-parents")) {
+      me.getAttribute("data-parents")
+        .split(/\s+/)
+        .forEach(parent => {
+          const temp = document.querySelector(`#${parent}`);
+          console.log(`merging: #${parent}`);
+          if (temp) {
+            console.log(`mergeJSONElement: recursive call to merge #${parent}`);
+            mergeElementJSON(result, temp);
+          }
+        });
+    }
+    try {
+      console.log(`mergeJSONElement: adding "${me.outerHTML}"`);
+      mergeJSON$1(result, me.textContent);
+      console.log(`result=${JSON.stringify(result, null, 2)}`);
+      me.classList.add("hidden");
+    } catch {
+      showInlineError(me, "Invalid JSON in element", "");
+    }
+  }
+}
+
+/**
+ * choose-defaults
+ * Returns new JSON that's a copy of the input but fills in default values.
+ *
+ * @param   {Object} inputJSON
+ * @return  {Object}
+ * @access  public
+ */
+function choose_defaults(inputJSON) {
+  /**
+   * pget(string, object)
+   * Returns the value of a inputJSON property, substituting a default
+   * if the property is not present or is null.
+   *
+   * @param  {String} prop  Property Name
+   * @param  {Object} def   Default Value
+   * @return {Object} Value
+   * @access  public
+   */
+  function pget(prop, def) {
+    return inputJSON !== null &&
+      inputJSON.hasOwnProperty(prop) &&
+      inputJSON[prop] !== null
+      ? inputJSON[prop]
+      : def;
+  }
+
+  /**
+   * pget_String(string, string)
+   * Returns the string value of a inputJSON property, substituting a default if the property is not present or is null.
+   *
+   * @param  {String} prop Property Name
+   * @param  {Object} def Default Value (convertible to String if not already one)
+   * @return {String}
+   * @access  public
+   */
+  function pget_String(prop, def) {
+    return String(pget(prop, def));
+  }
+
+  /**
+   * pget_Number(string, string)
+   * Returns the numeric value of a inputJSON property, substituting a default if the property is not present or is null.
+   *
+   * @param   {String} prop string  Property Name
+   * @param   {Object} def  object  Default Value (convertible to Number if not already one)
+   * @return  {Number}
+   * @access  public
+   */
+  function pget_Number(prop, def) {
+    return Number(pget(prop, def));
+  }
+
+  /**
+   * pget_Boolean(string, string)
+   * Returns the boolean value of a inputJSON property, substituting a default if the property is not present or is null.
+   *
+   * @param   {String} prop string  Property Name
+   * @param   {Object} def  object  Default Value (convertible to Number if not already one)
+   * @return  {Boolean}
+   * @access  public
+   */
+  function pget_Boolean(prop, def) {
+    return Boolean(pget(prop, def));
+  }
+
+  const json = {
+    preClass: pget_String("preClass", "hide"),
+    width: pget_Number("width", 32),
+    wordWidth: pget_Number("wordWidth", 32),
+    debug: pget_Boolean("debug", false),
+    defaultUnused: pget_String("defaultUnused", "RsvdP"),
+    defaultAttr: pget_String("defaultAttr", "other"),
+    cellWidth: pget_Number("cellWidth", 16),
+    cellHeight: pget_Number("cellHeight", 32),
+    cellInternalHeight: pget_Number("cellInternalHeight", 8),
+    bracketHeight: pget_Number("bracketHeight", 4),
+    cellTop: pget_Number("cellTop", 40),
+    bitWidthPos: pget_Number("bitWidthPos", 20),
+    figName: pget_String("figName", "???"),
+    maxFigWidth: pget_Number("maxFigWidth", 624), // 6.5 inches (assuming 96 px per inch)
+    visibleLSB: pget_Number("visibleLSB", 0),
+    visibleMSB: pget_Number("visibleMSB", json.width),
+    isRegister: pget_Boolean("isRegister", true), // default
+    isMessage: pget_Boolean("isMessage", false),
+    isMemoryBlock: pget_Boolean("isMemoryBlock", false),
+  };
+  // isMessage, isMemoryBlock, and isRegister are mutually exclusive.
+  // 1. isMessage has highest priority
+  // 2. isMemoryBlock has middle priority
+  // 3. isRegister has lowest priority and is the default
+  if (json.isMessage) {
+    json.isRegister = false;
+    json.isMemoryBlock = false;
+  } else if (json.isMemoryBlock) {
+    json.isRegister = false;
+    json.isMessage = false;
+  } else {
+    json.isRegister = true;
+    json.isMemoryBlock = false;
+    json.isMessage = false;
+  }
+
+  if (json.isRegister) {
+    json.rowLabelTop = pget_Number("rowLabelTop", 20); // top of text for regLabel
+    json.cellValueTop = pget_Number("cellValueTop", 20); // top of text for regFieldValueInternal
+    json.cellBitValueTop = pget_Number("cellBitValueTop", 20); // top of text for regFieldBitValue
+    json.cellNameTop = pget_Number("cellNameTop", 16); // top of text for regFieldNameInternal
+  } else {
+    json.rowLabelTop = pget_Number("rowLabelTop", 20); // top of text for regLabel
+    json.cellValueTop = pget_Number("cellValueTop", 28); // top of text for regFieldValueInternal
+    json.cellBitValueTop = pget_Number("cellBitValueTop", 28); // top of text for regFieldBitValue
+    json.cellNameTop = pget_Number("cellNameTop", 14); // top of text for regFieldNameInternal
+  }
+
+  json.left_to_right = pget_Boolean("leftToRight", json.isMessage);
+  json.forceFit = pget_Boolean(
+    "forceFit",
+    json.isMessage || json.isMemoryBlock
+  );
+  json.figLeft = pget_Number("figLeft", json.left_to_right ? 96 : 40);
+
+  json.fields = pget("fields", {}); // default to empty register
+
+  if (json.visibleMSB < 0) {
+    json.visibleMSB = 0;
+  }
+  if (json.visibleMSB > json.width) {
+    json.visibleMSB = json.width;
+  }
+  if (json.visibleLSB < 0) {
+    json.visibleLSB = 0;
+  }
+  if (json.visibleLSB > json.width) {
+    json.visibleLSB = json.width;
+  }
+
+  console.log(
+    `choose_defaults: width=${json.width} defaultUnused=${json.defaultUnused} cellWidth=${json.cellWidth} cellHeight=${json.cellHeight} cellInternalHeight=${json.cellInternalHeight} cellTop=${json.cellTop} bracketHeight=${json.bracketHeight}`
+  );
+  console.log(`choose_defaults: fields=${json.fields.toString()}`);
+
+  // sanitize field array to avoid subsequent problems
+  for (const index in json.fields) {
+    if (json.fields.hasOwnProperty(index)) {
+      const item = json.fields[index];
+      if (item.hasOwnProperty("msbit") || item.hasOwnProperty("msbyte")) {
+        let byte = 0;
+        let bit = 0;
+        if (item.hasOwnProperty("msbit")) {
+          byte = Math.floor(item.msbit / 8);
+          bit = item.msbit % 8;
+        }
+        if (item.hasOwnProperty("msbyte")) {
+          byte = byte + item.msbyte;
+        }
+        item.msb = byte * 8 + (json.isMessage ? 7 - bit : bit);
+      }
+      if (item.hasOwnProperty("lsbit") || item.hasOwnProperty("lsbyte")) {
+        let byte = 0;
+        let bit = 0;
+        if (item.hasOwnProperty("lsbit")) {
+          byte = Math.floor(item.lsbit / 8);
+          bit = item.lsbit % 8;
+        }
+        if (item.hasOwnProperty("lsbyte")) {
+          byte = byte + item.lsbyte;
+        }
+        item.lsb = byte * 8 + (json.isMessage ? 7 - bit : bit);
+      }
+      if (item.hasOwnProperty("msb") && !item.hasOwnProperty("lsb")) {
+        item.lsb = item.msb;
+      }
+      if (item.hasOwnProperty("lsb") && !item.hasOwnProperty("msb")) {
+        item.msb = item.lsb;
+      }
+      if (item.msb < item.lsb) {
+        const temp = item.lsb;
+        item.lsb = item.msb;
+        item.msb = temp;
+      }
+      if (!item.hasOwnProperty("lsbyte") || !item.hasOwnProperty("lsbit")) {
+        item.lsbyte = Math.floor(item.lsb / 8);
+        item.lsbit = item.lsb % 8;
+      }
+      if (!item.hasOwnProperty("msbyte") || !item.hasOwnProperty("msbit")) {
+        item.msbyte = Math.floor(item.msb / 8);
+        item.msbit = item.msb % 8;
+      }
+      if (!item.hasOwnProperty("isUnused")) {
+        item.isUnused = false;
+      }
+      if (!item.hasOwnProperty("attr")) {
+        item.attr = json.defaultAttr;
+      }
+      if (!item.hasOwnProperty("name")) {
+        item.name = index;
+      }
+      if (!item.hasOwnProperty("value")) {
+        item.value = "";
+      }
+      if (!item.hasOwnProperty("index")) {
+        item.index = -1; // no associated table row
+      }
+      json.fields[index] = item;
+      console.log(
+        `choose_defaults: field: msb=${item.msb} lsb=${item.lsb} attr=${item.attr} isUnused=${item.isUnused} name="${item.name}" index=${item.index}`
+      );
+    }
+  }
+  return json;
+}
+
+/**
+ * draw_regpict
+ * Creates an SVG drawing for the register descriped by inputJSoN in the
+ * otherwise empty HTMLElement divsvg.
+ *
+ * @param   {HTMLElement} divsvg
+ * @param   {Object}      inputJSON
+ * @return  {Object}      JSON used to draw the register
+ * @access  public
+ */
+function draw_regpict(divsvg, inputJSON) {
+  const reg = choose_defaults(inputJSON);
+  const width = reg.width;
+  const left_to_right = reg.left_to_right;
+  const forceFit = reg.forceFit;
+  const debug = reg.debug;
+  const preClass = reg.preClass;
+  const defaultUnused = reg.defaultUnused;
+  const fields = reg.fields;
+
+  const bitarray = []; // Array indexed by bit # in register range 0:width
+  // field[bitarray[N]] contains bit N
+  // bitarray[N] == null for unused bits
+  // bitarray[N] == 1000 for first bit outside register width
+
+  let i;
+  let j;
+  bitarray[width] = 1000; // ???
+  for (i = 0; i < width; i++) {
+    bitarray[i] = null;
+  }
+
+  for (const index in fields) {
+    if (fields.hasOwnProperty(index)) {
+      for (i = fields[index].lsb; i <= fields[index].msb; i++) {
+        bitarray[i] = index;
+      }
+    }
+  }
+
+  let lsb = -1; // if >= 0, contains bit# of lsb of a string of unused bits
+  for (i = 0; i <= width; ++i) {
+    // note: includes bitarray[width]
+    if (lsb >= 0 && bitarray[i] !== null) {
+      // first "used" bit after stretch of unused bits, invent an "unused" field
+      let index = `_unused_${i - 1}`; // _unused_msb
+      if (lsb !== i - 1) {
+        index = `${index}_${lsb}`; // _unused_msb_lsb
+      }
+      fields[index] = {
+        msb: i - 1,
+        lsb,
+        // "name": ((i - lsb) * 2 - 1) >= defaultUnused.length ? defaultUnused : defaultUnused[0].toUpperCase(), // use full name if if fits, else use 1st char
+        name: defaultUnused,
+        attr: defaultUnused.toLowerCase(), // attribute is name
+        isUnused: true,
+        value: "",
+      };
+      for (j = lsb; j < i; j++) {
+        bitarray[j] = index;
+      }
+      lsb = -1;
+    }
+    if (lsb < 0 && bitarray[i] === null) {
+      // starting a string of unused bits
+      lsb = i;
+    }
+  }
+
+  if (debug) {
+    console.log(JSON.stringify(reg, null, " "));
+    console.log(` forceFit=${forceFit} left_to_right=${left_to_right}`);
+  }
+  divsvg.insertAdjacentHTML(
+    "beforebegin",
+    `<pre class="${preClass}">
+ ${JSON.stringify(reg, null, " ")}
+ </pre>`
+  );
+  return reg;
+}
+
+/**
+ * Copy indicated attribute from src Element to dest property if present.
+ * @param {HTMLElement} dest starting object
+ * @param {Object} src merging object
+ * @param {String} attribute name
+ * @param {String} property
+ */
+function copyAttribute(dest, src, attribute, property) {
+  if (src.hasAttribute(attribute)) dest[property] = src.getAttribute(attribute);
+}
+
+async function run$q(conf) {
+  pub("start", "core/regpict");
+  if (!conf.noRegpictCSS) {
+    const css = await cssPromise$2;
+    document.head.insertBefore(
+      hyperHTML$2`<style>
+${css}
+</style>`,
+      document.querySelector("link")
+    );
+  }
+
+  document
+    .querySelectorAll("figure.register, figure.message, figure.capability")
+    .forEach(fig => {
+      // let isRegister = $fig.classList.contains("register");
+      let isMessage = fig.classList.contains("message");
+      let isCapability = fig.classList.contains("capability");
+      let isMemoryBlock = fig.classList.contains("memoryBlock");
+      // isMessage, isMemoryBlock, and isRegister are mutually exclusive.
+      // 1. isMessage has highest priority
+      // 2. isMemoryBlock and isCapability have middle priority, isCapability implies isMemoryBlock
+      // 3. isRegister has lowest priority and is the default
+      if (isMessage) {
+        // isRegister = false;
+        isMemoryBlock = false;
+        isCapability = false;
+      } else if (isMemoryBlock || isCapability) {
+        // isRegister = false;
+        isMessage = false;
+        isMemoryBlock = true; // implied by isCapability
+      } else {
+        // isRegister = true;
+        isMessage = false;
+        isMemoryBlock = false;
+        isCapability = false;
+      }
+      let json = {};
+      let figNum = 0;
+      if (fig.getAttribute("id")) {
+        json.figName = fig.getAttribute("id").replace(/^fig-/, "");
+      } else {
+        json.figName =
+          fig.getAttribute("title") ||
+          fig.querySelector("figcaption").textContent ||
+          `unnamed-${++figNum}`;
+      }
+      addId(fig, "fig", json.figName);
+      console.log(
+        `core/regpict figure.register id="${fig.getAttribute("id")}"`
+      );
+
+      if (!fig.hasAttribute("data-json")) {
+        try {
+          mergeJSON$1(json, fig.getAttribute("data-json"));
+        } catch {
+          showInlineError(fig, "Invalid data-json attribute", "");
+        }
+      }
+
+      copyAttribute(json, fig, "data-width", "width");
+      copyAttribute(json, fig, "data-wordWidth", "wordWidth");
+      copyAttribute(json, fig, "data-unused", "defaultUnused");
+      // copyAttribute(json, fig, "data-href", "href");
+      copyAttribute(json, fig, "data-table", "table");
+      // copyAttribute(json, fig, "data-register", "register");
+
+      fig.querySelectorAll("pre.json,div.json,span.json").forEach(pre => {
+        try {
+          mergeJSON$1(json, pre.textContent);
+          pre.classList.add("hidden");
+        } catch {
+          showInlineError(
+            pre,
+            "Invalid JSON in pre.json, div.json, or span.json"
+          );
+        }
+      });
+
+      if (json.hasOwnProperty("table")) {
+        const tbl = document.querySelector(json.table, document);
+        json = mergeJSON$1(parse_table(tbl), json);
+      }
+
+      // invent a div to hold the svg
+      const cap = fig.querySelector("figcaption");
+      function create_divsvg() {
+        if (cap) {
+          console.log("inserting div.svg before <figcaption>");
+          cap.insertAdjacentHTML("beforebegin", `<div class="svg"></div>`);
+        } else {
+          console.log("inserting div.svg at end of <figure>");
+          fig.insertAdjacentHTML("beforeend", `<div class="svg"></div>`);
+        }
+        return fig.querySelector("div.svg:last-child");
+      }
+
+      const render = fig.querySelectorAll("pre.render,div.render,span.render");
+      if (render.length > 0) {
+        render.forEach((node, index) => {
+          const temp = mergeElementJSON(mergeJSON$1({}, json), node);
+          const divsvg = create_divsvg();
+          addId(divsvg, "svg", `render-${index}`);
+          draw_regpict(divsvg, temp);
+        });
+      } else {
+        if (json !== null) {
+          draw_regpict(create_divsvg(), json);
+        }
+      }
+      console.log(
+        `core/regpict figure.register id="${fig.getAttribute("id")}"`
+      );
+    });
+}
+
+var regpict = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  name: name$B,
+  draw_regpict: draw_regpict,
+  run: run$q
+});
+
+// @ts-check
+
+const name$C = "core/figures";
+
+const localizationStrings$6 = {
   en: {
     list_of_figures: "List of Figures",
     fig: "Figure ",
@@ -12435,11 +12828,11 @@ const localizationStrings$7 = {
   },
 };
 
-const lang$f = lang in localizationStrings$7 ? lang : "en";
+const lang$e = lang in localizationStrings$6 ? lang : "en";
 
-const l10n$7 = localizationStrings$7[lang$f];
+const l10n$7 = localizationStrings$6[lang$e];
 
-function run$p() {
+function run$r() {
   normalizeImages(document);
 
   const tof = collectFigures();
@@ -12579,26 +12972,26 @@ function* iteratePreviousElements(element) {
 
 var figures = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$A,
-  run: run$p
+  name: name$C,
+  run: run$r
 });
 
 // @ts-check
 
-const name$B = "core/equations";
+const name$D = "core/equations";
 
-const localizationStrings$8 = {
+const localizationStrings$7 = {
   en: {
     list_of_equations: "List of Equations",
     eqn: "Equation ",
   },
 };
 
-const lang$g = lang in localizationStrings$8 ? lang : "en";
+const lang$f = lang in localizationStrings$7 ? lang : "en";
 
-const l10n$8 = localizationStrings$8[lang$g];
+const l10n$8 = localizationStrings$7[lang$f];
 
-function run$q() {
+function run$s() {
   normalizeImages$1(document);
 
   const toe = collectEquations();
@@ -12738,26 +13131,26 @@ function* iteratePreviousElements$1(element) {
 
 var equations = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$B,
-  run: run$q
+  name: name$D,
+  run: run$s
 });
 
 // @ts-check
 
-const name$C = "core/tables";
+const name$E = "core/tables";
 
-const localizationStrings$9 = {
+const localizationStrings$8 = {
   en: {
     list_of_tables: "List of Tables",
     tbl: "Table ",
   },
 };
 
-const lang$h = lang in localizationStrings$9 ? lang : "en";
+const lang$g = lang in localizationStrings$8 ? lang : "en";
 
-const l10n$9 = localizationStrings$9[lang$h];
+const l10n$9 = localizationStrings$8[lang$g];
 
-function run$r() {
+function run$t() {
   const tot = collectTables();
 
   // Create a Table of Tables if a section with id 'tot' exists.
@@ -12883,8 +13276,8 @@ function* iteratePreviousElements$2(element) {
 
 var tables = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$C,
-  run: run$r
+  name: name$E,
+  run: run$t
 });
 
 // @ts-check
@@ -13100,7 +13493,7 @@ function getDataType(idlStruct) {
 
 // Module core/webidl
 
-const name$D = "core/webidl";
+const name$F = "core/webidl";
 
 const operationNames = {};
 const idlPartials = {};
@@ -13425,9 +13818,9 @@ function renderWebIDL(idlElement, index) {
   return parse;
 }
 
-const cssPromise$2 = loadStyle$4();
+const cssPromise$3 = loadStyle$5();
 
-async function loadStyle$4() {
+async function loadStyle$5() {
   try {
     return (await Promise.resolve().then(function () { return webidl$2; })).default;
   } catch {
@@ -13435,7 +13828,7 @@ async function loadStyle$4() {
   }
 }
 
-async function run$s() {
+async function run$u() {
   const idls = document.querySelectorAll("pre.idl");
   if (!idls.length) {
     return;
@@ -13444,7 +13837,7 @@ async function run$s() {
     const link = document.querySelector("head link");
     if (link) {
       const style = document.createElement("style");
-      style.textContent = await cssPromise$2;
+      style.textContent = await cssPromise$3;
       link.before(style);
     }
   }
@@ -13470,12 +13863,12 @@ async function run$s() {
 
 var webidl = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$D,
-  run: run$s
+  name: name$F,
+  run: run$u
 });
 
 // @ts-check
-const name$E = "core/data-cite";
+const name$G = "core/data-cite";
 
 function requestLookup(conf) {
   const toCiteDetails = citeDetailsConverter(conf);
@@ -13610,7 +14003,7 @@ function citeDetailsConverter(conf) {
   };
 }
 
-async function run$t(conf) {
+async function run$v(conf) {
   const toCiteDetails = citeDetailsConverter(conf);
   /** @type {NodeListOf<HTMLElement>} */
   const cites = document.querySelectorAll("dfn[data-cite], a[data-cite]");
@@ -13666,8 +14059,8 @@ async function linkInlineCitations(doc, conf = respecConfig) {
 
 var dataCite = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$E,
-  run: run$t,
+  name: name$G,
+  run: run$v,
   linkInlineCitations: linkInlineCitations
 });
 
@@ -13684,9 +14077,9 @@ var dataCite = /*#__PURE__*/Object.freeze({
  * Or if a header element is an immediate child, then
  * that is preferred.
  */
-const name$F = "core/webidl-index";
+const name$H = "core/webidl-index";
 
-function run$u() {
+function run$w() {
   /** @type {HTMLElement | null} */
   const idlIndexSec = document.querySelector("section#idl-index");
   if (!idlIndexSec) {
@@ -13740,8 +14133,8 @@ function run$u() {
 
 var webidlIndex = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$F,
-  run: run$u
+  name: name$H,
+  run: run$w
 });
 
 // @ts-check
@@ -13856,7 +14249,7 @@ if (
  * @param {Object} conf respecConfig
  * @param {HTMLElement[]} elems possibleExternalLinks
  */
-async function run$v(conf, elems) {
+async function run$x(conf, elems) {
   const xref = normalizeConfig(conf.xref);
   if (xref.specs) {
     const bodyCite = document.body.dataset.cite
@@ -14219,7 +14612,7 @@ function bufferToHexString(buffer) {
 }
 
 // @ts-check
-const name$G = "core/link-to-dfn";
+const name$I = "core/link-to-dfn";
 const l10n$a = {
   en: {
     /**
@@ -14231,7 +14624,7 @@ const l10n$a = {
     duplicateTitle: "This is defined more than once in the document.",
   },
 };
-const lang$i = lang in l10n$a ? lang : "en";
+const lang$h = lang in l10n$a ? lang : "en";
 
 class CaseInsensitiveMap extends Map {
   /**
@@ -14259,7 +14652,7 @@ class CaseInsensitiveMap extends Map {
   }
 }
 
-async function run$w(conf) {
+async function run$y(conf) {
   const titleToDfns = mapTitleToDfns();
   /** @type {HTMLElement[]} */
   const possibleExternalLinks = [];
@@ -14289,7 +14682,7 @@ async function run$w(conf) {
   if (conf.xref) {
     possibleExternalLinks.push(...findExplicitExternalLinks());
     try {
-      await run$v(conf, possibleExternalLinks);
+      await run$x(conf, possibleExternalLinks);
     } catch (error) {
       console.error(error);
       showLinkingError(possibleExternalLinks);
@@ -14312,8 +14705,8 @@ function mapTitleToDfns() {
     if (duplicates.length > 0) {
       showInlineError(
         duplicates,
-        l10n$a[lang$i].duplicateMsg(title),
-        l10n$a[lang$i].duplicateTitle
+        l10n$a[lang$h].duplicateMsg(title),
+        l10n$a[lang$h].duplicateTitle
       );
     }
   });
@@ -14474,14 +14867,14 @@ function showLinkingError(elems) {
 
 var linkToDfn = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$G,
-  run: run$w
+  name: name$I,
+  run: run$y
 });
 
 // @ts-check
-const name$H = "core/contrib";
+const name$J = "core/contrib";
 
-async function run$x(conf) {
+async function run$z(conf) {
   const ghContributors = document.getElementById("gh-contributors");
   if (!ghContributors) {
     return;
@@ -14564,15 +14957,15 @@ function toHTML(contributors, element) {
 
 var contrib = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$H,
-  run: run$x
+  name: name$J,
+  run: run$z
 });
 
 // @ts-check
 
-const name$I = "core/fix-headers";
+const name$K = "core/fix-headers";
 
-function run$y() {
+function run$A() {
   [...document.querySelectorAll("section:not(.introductory)")]
     .map(sec => sec.querySelector("h1, h2, h3, h4, h5, h6"))
     .filter(h => h)
@@ -14593,8 +14986,8 @@ function getParents(el, selector) {
 
 var fixHeaders = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$I,
-  run: run$y
+  name: name$K,
+  run: run$A
 });
 
 // @ts-check
@@ -14602,9 +14995,9 @@ var fixHeaders = /*#__PURE__*/Object.freeze({
 const lowerHeaderTags = ["h2", "h3", "h4", "h5", "h6"];
 const headerTags = ["h1", ...lowerHeaderTags];
 
-const name$J = "core/structure";
+const name$L = "core/structure";
 
-const localizationStrings$a = {
+const localizationStrings$9 = {
   en: {
     toc: "Table of Contents",
   },
@@ -14616,9 +15009,9 @@ const localizationStrings$a = {
   },
 };
 
-const lang$j = lang in localizationStrings$a ? lang : "en";
+const lang$i = lang in localizationStrings$9 ? lang : "en";
 
-const l10n$b = localizationStrings$a[lang$j];
+const l10n$b = localizationStrings$9[lang$i];
 
 /**
  * @typedef {object} SectionInfo
@@ -14752,7 +15145,7 @@ function filterHeader(h) {
   );
 }
 
-function run$z(conf) {
+function run$B(conf) {
   if ("tocIntroductory" in conf === false) {
     conf.tocIntroductory = false;
   }
@@ -14842,8 +15235,8 @@ function appendixNumber(index) {
 
 var structure$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$J,
-  run: run$z
+  name: name$L,
+  run: run$B
 });
 
 // Module pcisig/fig-tbl-eqn-numbering
@@ -14853,7 +15246,7 @@ var structure$1 = /*#__PURE__*/Object.freeze({
 // 1. core/figures runs before core/structure and thus doesn't know Chapter and Appendix numbers
 // 2. A second pass means that this plugin is not part of the src/core.
 
-const name$K = "pcisig/fig-tbl-eqn-numbering";
+const name$M = "pcisig/fig-tbl-eqn-numbering";
 
 function numberItems(sec, chapter, map, selector) {
   // Process Figure Captions, populating figNumMap
@@ -14875,7 +15268,7 @@ function renumberItems(selector, map) {
   });
 }
 
-function run$A(conf) {
+function run$C(conf) {
   if (conf.numberByChapter) {
     const chapterSecnos = document.querySelectorAll(
       "body > section:not(.introductory) h2:first-child bdi.secno"
@@ -14904,15 +15297,15 @@ function run$A(conf) {
 
 var figTblEqnNumbering = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$K,
-  run: run$A
+  name: name$M,
+  run: run$C
 });
 
 // @ts-check
 
-const name$L = "core/informative";
+const name$N = "core/informative";
 
-const localizationStrings$b = {
+const localizationStrings$a = {
   en: {
     informative: "This section is non-normative.",
   },
@@ -14921,11 +15314,11 @@ const localizationStrings$b = {
   },
 };
 
-const lang$k = lang in localizationStrings$b ? lang : "en";
+const lang$j = lang in localizationStrings$a ? lang : "en";
 
-const l10n$c = localizationStrings$b[lang$k];
+const l10n$c = localizationStrings$a[lang$j];
 
-function run$B() {
+function run$D() {
   Array.from(document.querySelectorAll("section.informative"))
     .map(informative => informative.querySelector("h2, h3, h4, h5, h6"))
     .filter(heading => heading)
@@ -14936,8 +15329,8 @@ function run$B() {
 
 var informative = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$L,
-  run: run$B
+  name: name$N,
+  run: run$D
 });
 
 // @ts-check
@@ -14945,9 +15338,9 @@ var informative = /*#__PURE__*/Object.freeze({
 // All headings are expected to have an ID, unless their immediate container has one.
 // This is currently in core though it comes from a W3C rule. It may move in the future.
 
-const name$M = "core/id-headers";
+const name$O = "core/id-headers";
 
-function run$C(conf) {
+function run$E(conf) {
   /** @type {NodeListOf<HTMLElement>} */
   const headings = document.querySelectorAll(
     `section:not(.head):not(.introductory) h2, h3, h4, h5, h6`
@@ -14964,13 +15357,13 @@ function run$C(conf) {
 
 var idHeaders = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$M,
-  run: run$C
+  name: name$O,
+  run: run$E
 });
 
 // @ts-check
 
-const name$N = "core/caniuse";
+const name$P = "core/caniuse";
 
 const API_URL$1 = "https://respec.org/caniuse/";
 
@@ -15014,9 +15407,9 @@ if (
   document.head.appendChild(link);
 }
 
-const caniuseCssPromise = loadStyle$5();
+const caniuseCssPromise = loadStyle$6();
 
-async function loadStyle$5() {
+async function loadStyle$6() {
   try {
     return (await Promise.resolve().then(function () { return caniuse$2; })).default;
   } catch {
@@ -15024,7 +15417,7 @@ async function loadStyle$5() {
   }
 }
 
-async function run$D(conf) {
+async function run$F(conf) {
   if (!conf.caniuse) {
     return; // nothing to do.
   }
@@ -15172,13 +15565,13 @@ function addBrowser([browserName, browserData]) {
 
 var caniuse = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$N,
-  run: run$D
+  name: name$P,
+  run: run$F
 });
 
 // @ts-check
 
-const name$O = "core/mdn-annoatation";
+const name$Q = "core/mdn-annoatation";
 
 const SPEC_MAP_URL =
   "https://raw.githubusercontent.com/w3c/mdn-spec-links/master/SPECMAP.json";
@@ -15206,9 +15599,9 @@ const MDN_BROWSERS = {
   webview_android: "WebView Android",
 };
 
-const mdnCssPromise = loadStyle$6();
+const mdnCssPromise = loadStyle$7();
 
-async function loadStyle$6() {
+async function loadStyle$7() {
   try {
     return (await Promise.resolve().then(function () { return mdnAnnotation$2; })).default;
   } catch {
@@ -15303,7 +15696,7 @@ function buildBrowserSupportTable(support) {
   return innerHTML;
 }
 
-async function run$E(conf) {
+async function run$G(conf) {
   const { shortName, mdn } = conf;
   if (!shortName || !mdn) {
     // Nothing to do if shortName is not provided
@@ -15355,8 +15748,8 @@ async function run$E(conf) {
 
 var mdnAnnotation = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$O,
-  run: run$E
+  name: name$Q,
+  run: run$G
 });
 
 // @ts-check
@@ -15446,7 +15839,7 @@ expose("core/exporter", { rsDocToDataURL });
 
 // @ts-check
 
-const name$P = "ui/save-html";
+const name$R = "ui/save-html";
 
 // Create and download an EPUB 3 version of the content
 // Using (by default) the EPUB 3 conversion service set up at labs.w3.org/epub-generator
@@ -15540,7 +15933,7 @@ function exportDocument(_, mimeType) {
 
 var saveHtml = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$P,
+  name: name$R,
   exportDocument: exportDocument
 });
 
@@ -15670,9 +16063,9 @@ var aboutRespec = /*#__PURE__*/Object.freeze({
  * first paragraph of the abstract.
  */
 
-const name$Q = "core/seo";
+const name$S = "core/seo";
 
-function run$F() {
+function run$H() {
   // This is not critical, so let's continue other processing first
   (async () => {
     await document.respecIsReady;
@@ -15696,8 +16089,8 @@ function insertMetaDescription(firstParagraph) {
 
 var seo = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$Q,
-  run: run$F
+  name: name$S,
+  run: run$H
 });
 
 // @ts-check
@@ -15707,7 +16100,7 @@ var seo = /*#__PURE__*/Object.freeze({
  * Exports a Web Worker for ReSpec, allowing for
  * multi-threaded processing of things.
  */
-const name$R = "core/worker";
+const name$T = "core/worker";
 // Opportunistically preload syntax highlighter
 const hint = {
   hint: "preload",
@@ -15736,18 +16129,18 @@ async function createWorker() {
 const workerPromise = createWorker();
 
 expose(
-  name$R,
+  name$T,
   workerPromise.then(worker => ({ worker }))
 );
 
 // @ts-check
-const name$S = "core/highlight";
+const name$U = "core/highlight";
 
 const nextMsgId = msgIdGenerator("highlight");
 
-const ghCssPromise = loadStyle$7();
+const ghCssPromise = loadStyle$8();
 
-async function loadStyle$7() {
+async function loadStyle$8() {
   try {
     return (await Promise.resolve().then(function () { return github$2; })).default;
   } catch {
@@ -15814,7 +16207,7 @@ async function sendHighlightRequest(code, languages) {
   });
 }
 
-async function run$G(conf) {
+async function run$I(conf) {
   // Nothing to highlight
   if (conf.noHighlightCSS) return;
   const highlightables = [
@@ -15847,12 +16240,12 @@ async function run$G(conf) {
 
 var highlight = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$S,
-  run: run$G
+  name: name$U,
+  run: run$I
 });
 
 // @ts-check
-const name$T = "core/webidl-clipboard";
+const name$V = "core/webidl-clipboard";
 
 const copyButtonPromise = createButton();
 
@@ -15872,7 +16265,7 @@ async function createButton() {
   return copyButton;
 }
 
-async function run$H() {
+async function run$J() {
   // This button serves a prototype that we clone as needed.
   const copyButton = await copyButtonPromise;
   for (const pre of document.querySelectorAll("pre.idl")) {
@@ -15907,8 +16300,8 @@ function clipboardWriteText(text) {
 
 var webidlClipboard = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$T,
-  run: run$H
+  name: name$V,
+  run: run$J
 });
 
 // @ts-check
@@ -15922,9 +16315,9 @@ const l10n$d = {
   },
 };
 
-const name$U = "core/data-tests";
+const name$W = "core/data-tests";
 
-const lang$l = lang in l10n$d ? lang : "en";
+const lang$k = lang in l10n$d ? lang : "en";
 
 function toListItem(href) {
   const emojiList = [];
@@ -15970,14 +16363,14 @@ function toListItem(href) {
   return testList;
 }
 
-function run$I(conf) {
+function run$K(conf) {
   /** @type {NodeListOf<HTMLElement>} */
   const testables = document.querySelectorAll("[data-tests]");
   if (!testables.length) {
     return;
   }
   if (!conf.testSuiteURI) {
-    pub("error", l10n$d[lang$l].missing_test_suite_uri);
+    pub("error", l10n$d[lang$k].missing_test_suite_uri);
     return;
   }
   Array.from(testables)
@@ -15994,7 +16387,7 @@ function run$I(conf) {
           try {
             href = new URL(url, conf.testSuiteURI).href;
           } catch {
-            pub("warn", `${l10n$d[lang$l].bad_uri}: ${url}`);
+            pub("warn", `${l10n$d[lang$k].bad_uri}: ${url}`);
           }
           return href;
         });
@@ -16028,12 +16421,12 @@ function run$I(conf) {
 
 var dataTests = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$U,
-  run: run$I
+  name: name$W,
+  run: run$K
 });
 
 // @ts-check
-const name$V = "core/list-sorter";
+const name$X = "core/list-sorter";
 
 function makeSorter(direction) {
   return ({ textContent: a }, { textContent: b }) => {
@@ -16086,7 +16479,7 @@ function sortDefinitionTerms(dl, dir) {
   return sortedElements;
 }
 
-function run$J() {
+function run$L() {
   /** @type {NodeListOf<HTMLElement>} */
   const sortables = document.querySelectorAll("[data-sort]");
   for (const elem of sortables) {
@@ -16118,19 +16511,19 @@ function run$J() {
 
 var listSorter = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$V,
+  name: name$X,
   sortListItems: sortListItems,
   sortDefinitionTerms: sortDefinitionTerms,
-  run: run$J
+  run: run$L
 });
 
 // @ts-check
 
-const name$W = "core/highlight-vars";
+const name$Y = "core/highlight-vars";
 
-const hlVarsPromise = loadStyle$8();
+const hlVarsPromise = loadStyle$9();
 
-async function loadStyle$8() {
+async function loadStyle$9() {
   try {
     return (await Promise.resolve().then(function () { return _var$1; })).default;
   } catch {
@@ -16138,7 +16531,7 @@ async function loadStyle$8() {
   }
 }
 
-async function run$K(conf) {
+async function run$M(conf) {
   if (!conf.highlightVars) {
     return;
   }
@@ -16232,17 +16625,17 @@ function addHighlight(elem, highlightColor) {
 
 var highlightVars$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$W,
-  run: run$K
+  name: name$Y,
+  run: run$M
 });
 
 // @ts-check
 
-const name$X = "core/data-type";
+const name$Z = "core/data-type";
 
-const tooltipStylePromise = loadStyle$9();
+const tooltipStylePromise = loadStyle$a();
 
-async function loadStyle$9() {
+async function loadStyle$a() {
   try {
     return (await Promise.resolve().then(function () { return datatype$1; })).default;
   } catch {
@@ -16250,7 +16643,7 @@ async function loadStyle$9() {
   }
 }
 
-async function run$L(conf) {
+async function run$N(conf) {
   if (!conf.highlightVars) {
     return;
   }
@@ -16280,17 +16673,17 @@ async function run$L(conf) {
 
 var dataType = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$X,
-  run: run$L
+  name: name$Z,
+  run: run$N
 });
 
 // @ts-check
 
-const name$Y = "core/algorithms";
+const name$_ = "core/algorithms";
 
-const cssPromise$3 = loadStyle$a();
+const cssPromise$4 = loadStyle$b();
 
-async function loadStyle$a() {
+async function loadStyle$b() {
   try {
     return (await Promise.resolve().then(function () { return algorithms$2; })).default;
   } catch {
@@ -16298,29 +16691,29 @@ async function loadStyle$a() {
   }
 }
 
-async function run$M() {
+async function run$O() {
   const elements = Array.from(document.querySelectorAll("ol.algorithm li"));
   elements
     .filter(li => li.textContent.trim().startsWith("Assert: "))
     .forEach(li => li.classList.add("assert"));
   if (document.querySelector(".assert")) {
     const style = document.createElement("style");
-    style.textContent = await cssPromise$3;
+    style.textContent = await cssPromise$4;
     document.head.appendChild(style);
   }
 }
 
 var algorithms = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$Y,
-  run: run$M
+  name: name$_,
+  run: run$O
 });
 
 // @ts-check
 
-const name$Z = "core/anchor-expander";
+const name$$ = "core/anchor-expander";
 
-function run$N() {
+function run$P() {
   /** @type {NodeListOf<HTMLElement>} */
   const anchorElements = document.querySelectorAll(
     "a[href^='#']:not(.self-link):not([href$='the-empty-string'])"
@@ -16482,15 +16875,15 @@ function localize(matchingElement, newElement) {
 
 var anchorExpander = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$Z,
-  run: run$N
+  name: name$$,
+  run: run$P
 });
 
 // @ts-check
 
-const name$_ = "pcisig/include-final-config";
+const name$10 = "pcisig/include-final-config";
 
-function run$O(conf) {
+function run$Q(conf) {
   const script = document.createElement("script");
   script.id = "finalUserConfig";
   script.type = "application/json";
@@ -16500,8 +16893,8 @@ function run$O(conf) {
 
 var includeFinalConfig = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$_,
-  run: run$O
+  name: name$10,
+  run: run$Q
 });
 
 var ui$2 = "#respec-ui {\n  position: fixed;\n  display: flex;\n  flex-direction: row-reverse;\n  top: 20px;\n  right: 20px;\n  width: 202px;\n  text-align: right;\n  z-index: 9000;\n}\n\n#respec-pill,\n.respec-info-button {\n  background: #fff;\n  height: 2.5em;\n  color: rgb(120, 120, 120);\n  border: 1px solid #ccc;\n  box-shadow: 1px 1px 8px 0 rgba(100, 100, 100, 0.5);\n}\n\n.respec-info-button {\n  border: none;\n  opacity: 0.75;\n  border-radius: 2em;\n  margin-right: 1em;\n  min-width: 3.5em;\n}\n\n.respec-info-button:focus,\n.respec-info-button:hover {\n  opacity: 1;\n  transition: opacity 0.2s;\n}\n\n#respec-pill:disabled {\n  font-size: 2.8px;\n  text-indent: -9999em;\n  border-top: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-right: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-bottom: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-left: 1.1em solid #ffffff;\n  transform: translateZ(0);\n  animation: respec-spin 0.5s infinite linear;\n  box-shadow: none;\n}\n\n#respec-pill:disabled,\n#respec-pill:disabled:after {\n  border-radius: 50%;\n  width: 10em;\n  height: 10em;\n}\n\n@keyframes respec-spin {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n\n.respec-hidden {\n  visibility: hidden;\n  opacity: 0;\n  transition: visibility 0s 0.2s, opacity 0.2s linear;\n}\n\n.respec-visible {\n  visibility: visible;\n  opacity: 1;\n  transition: opacity 0.2s linear;\n}\n\n#respec-pill:hover,\n#respec-pill:focus {\n  color: rgb(0, 0, 0);\n  background-color: rgb(245, 245, 245);\n  transition: color 0.2s;\n}\n\n#respec-menu {\n  position: absolute;\n  margin: 0;\n  padding: 0;\n  font-family: sans-serif;\n  background: #fff;\n  box-shadow: 1px 1px 8px 0 rgba(100, 100, 100, 0.5);\n  width: 200px;\n  display: none;\n  text-align: left;\n  margin-top: 32px;\n  font-size: 0.8em;\n}\n\n#respec-menu:not([hidden]) {\n  display: block;\n}\n\n#respec-menu li {\n  list-style-type: none;\n  margin: 0;\n  padding: 0;\n}\n\n.respec-save-buttons {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(47%, 2fr));\n  grid-gap: 0.5cm;\n  padding: 0.5cm;\n}\n\n.respec-save-button:link {\n  padding-top: 16px;\n  color: rgb(240, 240, 240);\n  background: rgb(42, 90, 168);\n  justify-self: stretch;\n  height: 1cm;\n  text-decoration: none;\n  text-align: center;\n  font-size: inherit;\n  border: none;\n  border-radius: 0.2cm;\n}\n\n.respec-save-button:link:hover {\n  color: white;\n  background: rgb(42, 90, 168);\n  padding: 0;\n  margin: 0;\n  border: 0;\n  padding-top: 16px;\n}\n\n#respec-ui button:focus,\n#respec-pill:focus,\n.respec-option:focus {\n  outline: 0;\n  outline-style: none;\n}\n\n#respec-pill-error {\n  background-color: red;\n  color: white;\n}\n\n#respec-pill-warning {\n  background-color: orange;\n  color: white;\n}\n\n.respec-warning-list,\n.respec-error-list {\n  margin: 0;\n  padding: 0;\n  list-style: none;\n  font-family: sans-serif;\n  background-color: rgb(255, 251, 230);\n  font-size: 0.85em;\n}\n\n.respec-warning-list > li,\n.respec-error-list > li {\n  padding: 0.4em 0.7em;\n}\n\n.respec-warning-list > li::before {\n  content: \"⚠️\";\n  padding-right: 0.5em;\n}\n.respec-warning-list p,\n.respec-error-list p {\n  padding: 0;\n  margin: 0;\n}\n\n.respec-warning-list li {\n  color: rgb(92, 59, 0);\n  border-bottom: thin solid rgb(255, 245, 194);\n}\n\n.respec-error-list,\n.respec-error-list li {\n  background-color: rgb(255, 240, 240);\n}\n\n.respec-error-list li::before {\n  content: \"💥\";\n  padding-right: 0.5em;\n}\n\n.respec-error-list li {\n  padding: 0.4em 0.7em;\n  color: rgb(92, 59, 0);\n  border-bottom: thin solid rgb(255, 215, 215);\n}\n\n.respec-error-list li > p {\n  margin: 0;\n  padding: 0;\n  display: inline-block;\n}\n\n#respec-overlay {\n  display: block;\n  position: fixed;\n  z-index: 10000;\n  top: 0px;\n  left: 0px;\n  height: 100%;\n  width: 100%;\n  background: #000;\n}\n\n.respec-show-overlay {\n  transition: opacity 0.2s linear;\n  opacity: 0.5;\n}\n\n.respec-hide-overlay {\n  transition: opacity 0.2s linear;\n  opacity: 0;\n}\n\n.respec-modal {\n  display: block;\n  position: fixed;\n  z-index: 11000;\n  margin: auto;\n  top: 10%;\n  background: #fff;\n  border: 5px solid #666;\n  min-width: 20%;\n  width: 79%;\n  padding: 0;\n  max-height: 80%;\n  overflow-y: auto;\n  margin: 0 -0.5cm;\n}\n\n@media screen and (min-width: 78em) {\n  .respec-modal {\n    width: 62%;\n  }\n}\n\n.respec-modal h3 {\n  margin: 0;\n  padding: 0.2em;\n  text-align: center;\n  color: black;\n  background: linear-gradient(\n    to bottom,\n    rgba(238, 238, 238, 1) 0%,\n    rgba(238, 238, 238, 1) 50%,\n    rgba(204, 204, 204, 1) 100%\n  );\n  font-size: 1em;\n}\n\n.respec-modal .inside div p {\n  padding-left: 1cm;\n}\n\n#respec-menu button.respec-option {\n  background: white;\n  padding: 0 0.2cm;\n  border: none;\n  width: 100%;\n  text-align: left;\n  font-size: inherit;\n  padding: 1.2em 1.2em;\n}\n\n#respec-menu button.respec-option:hover,\n#respec-menu button:focus {\n  background-color: #eeeeee;\n}\n\n.respec-cmd-icon {\n  padding-right: 0.5em;\n}\n\n#respec-ui button.respec-option:last-child {\n  border: none;\n  border-radius: inherit;\n}\n\n.respec-button-copy-paste {\n  position: absolute;\n  height: 28px;\n  width: 40px;\n  cursor: pointer;\n  background-image: linear-gradient(#fcfcfc, #eee);\n  border: 1px solid rgb(144, 184, 222);\n  border-left: 0;\n  border-radius: 0px 0px 3px 0;\n  -webkit-user-select: none;\n  user-select: none;\n  -webkit-appearance: none;\n  top: 0;\n  left: 127px;\n}\n\n#specref-ui {\n  margin: 0 2%;\n  margin-bottom: 0.5cm;\n}\n\n#specref-ui header {\n  font-size: 0.7em;\n  background-color: #eee;\n  text-align: center;\n  padding: 0.2cm;\n  margin-bottom: 0.5cm;\n  border-radius: 0 0 0.2cm 0.2cm;\n}\n\n#specref-ui header h1 {\n  padding: 0;\n  margin: 0;\n  color: black;\n}\n\n#specref-ui p {\n  padding: 0;\n  margin: 0;\n  font-size: 0.8em;\n  text-align: center;\n}\n\n#specref-ui p.state {\n  margin: 1cm;\n}\n\n#specref-ui .searchcomponent {\n  font-size: 16px;\n  display: grid;\n  grid-template-columns: auto 2cm;\n}\n#specref-ui .searchcomponent:focus {\n}\n\n#specref-ui input,\n#specref-ui button {\n  border: 0;\n  padding: 6px 12px;\n}\n\n#specref-ui label {\n  font-size: 0.6em;\n  grid-column-end: 3;\n  text-align: right;\n  grid-column-start: 1;\n}\n\n#specref-ui input[type=\"search\"] {\n  -webkit-appearance: none;\n  font-size: 16px;\n  border-radius: 0.1cm 0 0 0.1cm;\n  border: 1px solid rgb(204, 204, 204);\n}\n\n#specref-ui button[type=\"submit\"] {\n  color: white;\n  border-radius: 0 0.1cm 0.1cm 0;\n  background-color: rgb(51, 122, 183);\n}\n\n#specref-ui button[type=\"submit\"]:hover {\n  background-color: #286090;\n  border-color: #204d74;\n}\n\n#specref-ui .result-stats {\n  margin: 0;\n  padding: 0;\n  color: rgb(128, 128, 128);\n  font-size: 0.7em;\n  font-weight: bold;\n}\n\n#specref-ui .specref-results {\n  font-size: 0.8em;\n}\n\n#specref-ui .specref-results dd + dt {\n  margin-top: 0.51cm;\n}\n\n#specref-ui .specref-results a {\n  text-transform: capitalize;\n}\n#specref-ui .specref-results .authors {\n  display: block;\n  color: #006621;\n}\n\n@media print {\n  #respec-ui {\n    display: none;\n  }\n}\n\n#xref-ui {\n  width: 100%;\n  min-height: 550px;\n  height: 100%;\n  overflow: hidden;\n  padding: 0;\n  margin: 0;\n  border: 0;\n}\n\n#xref-ui:not(.ready) {\n  background: url(\"https://respec.org/xref/loader.gif\") no-repeat center;\n}\n";
