@@ -284,7 +284,7 @@ function validateDateAndRecover(conf, prop, fallbackDate = new Date()) {
   return new Date(ISODate.format(new Date()));
 }
 
-export function run(conf, doc) {
+export function run(conf) {
   conf.isUnofficial = conf.specStatus === "unofficial";
   if (conf.isUnofficial && !Array.isArray(conf.logos)) {
     conf.logos = [];
@@ -326,14 +326,14 @@ export function run(conf, doc) {
   if (conf.isRegular && !conf.shortName) {
     pub("error", "Missing required configuration: `shortName`");
   }
-  conf.title = doc.title || "No Title";
+  conf.title = document.title || "No Title";
   if (!conf.subtitle) conf.subtitle = "";
   conf.publishDate = validateDateAndRecover(
     conf,
     "publishDate",
-    doc.lastModified
+    document.lastModified
   );
-  conf.publishYear = conf.publishDate.getUTCFullYear().toString();
+  conf.publishYear = conf.publishDate.getUTCFullYear();
   conf.publishHumanDate = PCISIGDate.format(conf.publishDate);
   conf.isNoTrack = noTrackStatus.includes(conf.specStatus) || conf.specChapter;
   conf.isSpecTrack = conf.noSpecTrack
@@ -345,49 +345,8 @@ export function run(conf, doc) {
   if (conf.isSpecTrack && !conf.specDraftLevel) {
     pub("error", "Missing required configuration: `specDraftLevel`");
   }
-  conf.isMemberPrivate = conf.specStatus === "member-private";
-  if (conf.isMemberPrivate) {
-    const memPrivateLogo = {
-      alt: "PCISIG Member Private",
-      href: "https://sglaser.github.io/respec/Spec/MemberSubmission/Private/",
-      src: "https://sglaser.github.io/respec/Spec/Icons/member_private.svg",
-      width: "211",
-    };
-    conf.logos.push({ ...baseLogo, ...memPrivateLogo });
-  }
   conf.isMemberSubmission = conf.specStatus === "member-submission";
-  if (conf.isMemberSubmission) {
-    const memSubmissionLogo = {
-      alt: "PCISIG Member Submission",
-      href: "https://sglaser.github.io/respec/Spec/MemberSubmission/",
-      src: "https://sglaser.github.io/respec/Spec/Icons/member_submission.svg",
-      width: "211",
-    };
-    conf.logos.push({ ...baseLogo, ...memSubmissionLogo });
-  }
-  conf.isTeamPrivate = conf.specStatus === "team-private";
-  if (conf.isTeamPrivate) {
-    const teamPrivateLogo = {
-      alt: "PCISIG Team Private",
-      href: "https://sglaser.github.io/respec/Spec/TeamSubmission/Private/",
-      src: "https://sglaser.github.io/respec/Spec/Icons/team_private.svg",
-      width: "211",
-    };
-    conf.logos.push({ ...baseLogo, ...teamPrivateLogo });
-  }
-  conf.isTeamSubmission = conf.specStatus === "team-submission";
-  if (conf.isTeamSubmission) {
-    const teamSubmissionLogo = {
-      alt: "PCISIG Team Submission",
-      href: "https://sglaser.github.io/respec/Spec/TeamSubmission/",
-      src: "https://sglaser.github.io/respec/Spec/Icons/team_submmission.svg",
-      width: "211",
-    };
-    conf.logos.push({ ...baseLogo, ...teamSubmissionLogo });
-  }
   conf.isSubmission = conf.isMemberSubmission || conf.isTeamSubmission;
-  conf.isPrivate =
-    conf.isMemberPrivate || conf.isPrivate || conf.specStatus === "private";
   conf.anOrA = precededByAn.includes(conf.specStatus) ? "an" : "a";
 
   let temp = [];
@@ -407,12 +366,8 @@ export function run(conf, doc) {
 
   let publishSpace = "Spec/Published";
   if (conf.specStatus === "member-submission") publishSpace = "Spec/Submission";
-  else if (conf.specStatus === "member-private")
-    publishSpace = "Spec/Submission/Private";
   else if (conf.specStatus === "team-submission")
     publishSpace = "Spec/TeamSubmission";
-  else if (conf.specStatus === "team-private")
-    publishSpace = "Spec/TeamSubmission/Private";
   if (conf.isRegular)
     conf.thisVersion = `https://sglaser.github.io/respec/${publishSpace}/${conf.publishDate.getUTCFullYear()}/${
       conf.shortName
@@ -668,10 +623,10 @@ export function run(conf, doc) {
  */
 function populateSoTD(conf, sotd) {
   const options = {
-    ...collectSotdContent(sotd, conf),
+    ...collectSotdContent(sotd),
 
     get mailToWGPublicList() {
-      return `mailto:${conf.wgPublicList}@pcisig.org`;
+      return `mailto:${conf.wgPublicList}@pcisig.com`;
     },
     get mailToWGPublicListWithSubject() {
       const fragment = conf.subjectPrefix
@@ -680,7 +635,7 @@ function populateSoTD(conf, sotd) {
       return this.mailToWGPublicList + fragment;
     },
     get mailToWGPublicListSubscription() {
-      return `mailto:${conf.wgPublicList}-request@pcisig.org?subject=subscribe`;
+      return `mailto:${conf.wgPublicList}-request@pcisig.com?subject=subscribe`;
     },
   };
   const template = sotdTmpl;
@@ -690,7 +645,7 @@ function populateSoTD(conf, sotd) {
 /**
  * @param {HTMLElement} sotd
  */
-function collectSotdContent(sotd, { isTagFinding = false }) {
+function collectSotdContent(sotd) {
   const sotdClone = sotd.cloneNode(true);
   const additionalContent = document.createDocumentFragment();
   // we collect everything until we hit a section,
@@ -703,13 +658,6 @@ function collectSotdContent(sotd, { isTagFinding = false }) {
       break;
     }
     additionalContent.appendChild(sotdClone.firstChild);
-  }
-  if (isTagFinding && !additionalContent.hasChildNodes()) {
-    pub(
-      "warn",
-      "ReSpec does not support automated SotD generation for TAG findings, " +
-        "please add the prerequisite content in the 'sotd' section"
-    );
   }
   return {
     additionalContent,

@@ -2,8 +2,8 @@
 // Module pcisig/draw-csrs
 // Create <figure> for csr registers by extracting information from <table class="register"> elements.
 
+import { addId, showInlineError } from "../core/utils.js";
 import { hyperHTML } from "../core/import-maps.js";
-import { showInlineError } from "../core/utils.js";
 
 export const name = "pcisig/draw-csrs";
 
@@ -17,7 +17,7 @@ export const name = "pcisig/draw-csrs";
 export function insert_unused_table_rows(tbl, json) {
   let last_lsb = json.width;
   const field_slot = [];
-  const tbody = tbl.querySelector("tbody:first-child");
+  const tbody = tbl.querySelector("tbody:first-of-type");
   if (tbody !== null) {
     // console.log("non-empty tbody");
     const rows = tbody.childNodes;
@@ -25,9 +25,8 @@ export function insert_unused_table_rows(tbl, json) {
       // console.log(`rows.length=${rows.length}`);
       // console.log(`json=${JSON.stringify(json, null, 2)}`);
       // console.log(`Object.keys(json.fields).length=${Object.keys(json.fields).length}`);
-      if (Object.keys(json.fields).length > 0) {
-        Object.keys(json.fields).forEach(name => {
-          const item = json.fields[name];
+      if (json.fields.length > 0) {
+        json.fields.forEach(item => {
           // console.log(`field_slot[${item.msb}]=${JSON.stringify(item, null, 2)}`);
           field_slot[item.msb] = item;
         });
@@ -71,9 +70,8 @@ export function insert_unused_table_rows(tbl, json) {
  * @access   public
  */
 export function parse_table(tbl) {
-  const json = { fields: {} };
-  const tbody = tbl.querySelector("tbody");
-  // console.log(`pcisig_reg: tbody="${$tbody.get(0).outerHTML}"`);
+  const json = { fields: [] };
+  // console.log(`pcisig_reg: ${tbl.outerHTML} tbody="${tbl.querySelector("tbody:first-of-type").outerHTML}"`);
   if (tbl.hasAttribute("id")) {
     json.figName = tbl.getAttribute("id").replace(/^tbl-/, "");
   } else if (tbl.hasAttribute("title")) {
@@ -94,8 +92,6 @@ export function parse_table(tbl) {
     .replace(/^([^a-z])/i, "x$1")
     .replace(/^$/, "generatedID");
 
-  console.log(`core/draw-csrs table id="${tbl.getAttribute("id")}"`);
-
   if (tbl.hasAttribute("data-json")) {
     try {
       mergeJSON(json, tbl.getAttribute("data-json"));
@@ -107,82 +103,88 @@ export function parse_table(tbl) {
   if (!tbl.hasAttribute("id")) {
     tbl.setAttribute("id", `tbl-${json.figName}`);
   }
+  console.log(`core/draw-csrs table id="${tbl.getAttribute("id")}"`);
 
   if (tbl.hasAttribute("data-width"))
     json.width = tbl.getAttribute("data-width");
-  if (tbl.hasAttribute("data-unused"))
+  if (tbl.hasAttribute("data-unused")) {
     json.defaultUnused = tbl.getAttribute("data-unused");
+  } else if (!json.hasOwnProperty("data-unused")) {
+    json.defaultUnused = "RsvdP";
+  }
   if (tbl.hasAttribute("data-href")) json.href = tbl.getAttribute("data-href");
   if (tbl.hasAttribute("data-register"))
     json.register = tbl.getAttribute("data-register");
 
-  tbody.children().each(function(index) {
-    const td = this.children();
-    if (td.length >= 3) {
-      const bits = td[0].textContent.trim();
-      const desc = td[1];
-      let attr = td[2].textContent.toLowerCase().trim();
-      let lsb = -1;
-      let msb = -1;
-      const match = /^\s*(\d+)\s*(:\s*(\d+))?\s*$/.exec(bits);
-      if (match) {
-        msb = lsb = Number(match[1]);
-        if (typeof match[3] === "string" && match[3] !== "") {
-          lsb = Number(match[3]);
+  // :scope avoids issues with nested tables
+  tbl
+    .querySelectorAll(":scope > tbody:first-of-type > tr, :scope > tr")
+    .forEach(tr => {
+      const td = tr.children;
+      if (td.length >= 3) {
+        const bits = td[0].textContent.trim();
+        const desc = td[1];
+        let attr = td[2].textContent.toLowerCase().trim();
+        let lsb = -1;
+        let msb = -1;
+        const match = /^\s*(\d+)\s*(:\s*(\d+))?\s*$/.exec(bits);
+        if (match) {
+          msb = lsb = Number(match[1]);
+          if (typeof match[3] === "string" && match[3] !== "") {
+            lsb = Number(match[3]);
+          }
+          if (lsb > msb) {
+            msb = lsb;
+            lsb = Number(match[1]);
+          }
         }
-        if (lsb > msb) {
-          msb = lsb;
-          lsb = Number(match[1]);
-        }
-      }
-      let fieldName;
-      let dfn = desc.querySelector("dfn:first");
-      if (dfn.length === 0) {
-        fieldName = /^\s*([-_\w]+)/.exec(desc.textContent);
-        if (fieldName) {
-          fieldName = fieldName[1]; // first word of text content
+        let fieldName;
+        const dfn = desc.querySelector("dfn:first-of-type");
+        if (dfn) {
+          fieldName = dfn.textContent.trim();
+          if (!dfn.hasAttribute("class")) dfn.classList.add("field");
+          const lt = tbl.getAttribute("id").replace(/^tbl-/, "");
+          dfn.setAttribute("data-dfn-for", lt);
+          dfn.setAttribute("data-dfn-type", "field");
+          addId(dfn, "field", `${lt}-${fieldName.toLowerCase()}`);
         } else {
-          fieldName = `Bogus_${desc.textContent.trim()}`;
+          fieldName = /^\s*([-_\w]+)/.exec(desc.textContent);
+          if (fieldName) {
+            fieldName = fieldName[1]; // first word of text content
+          } else {
+            fieldName = `Bogus_${desc.textContent.trim()}`;
+          }
         }
-      } else {
-        dfn = dfn.first();
-        fieldName = dfn.textContent().trim();
-        dfn.classList.add("field");
-        const lt = tbl.getAttribute("id").replace(/^tbl-/, "");
-        dfn.setAttribute("data-dfn-for", lt);
-        dfn.setAttribute("data-dfn-type", "field");
-        dfn.last().makeID("field", `${lt}-${fieldName.toLowerCase()}`);
-      }
-      const val = desc.querySelector("span.value:first");
-      let value = "";
-      if (val.length === 1) {
-        try {
-          value = JSON.parse(val.textContent().trim());
-        } catch {
-          tbl.insertAdjacentHTML(
-            "beforebegin",
-            `<p class="issue">Invalid data-json attribute in next span.value</p>`
-          );
-          val.classList.add("respec-error");
+        const val = desc.querySelector("span.value:first-of-type");
+        let value = "";
+        if (val) {
+          try {
+            value = JSON.parse(val.textContent.trim());
+          } catch {
+            showInlineError(
+              val,
+              "Invalid data-json attribute in next span.value",
+              ""
+            );
+          }
         }
+        const validAttr = /^(rw|rws|ro|ros|rw1c|rw1cs|rw1s|rw1ss|wo|wos|hardwired|fixed|hwinit|rsvd|rsvdp|rsvdz|reserved|ignored|ign|unused|other)$/i;
+        if (!validAttr.test(attr)) {
+          attr = "other";
+        }
+        const unusedAttr = /^(rsvd|rsvdp|rsvdz|reserved|ignored|ign|unused)$/i;
+        const isUnused = !!unusedAttr.test(attr);
+        // console.log(`field: ${fieldName} bits="${bits}"  match=${match}  lsb=${lsb} msb=${msb} attr=${attr} isUnused=${isUnused}`);
+        json.fields.push({
+          name: fieldName,
+          msb,
+          lsb,
+          attr,
+          isUnused,
+          value,
+        });
       }
-      const validAttr = /^(rw|rws|ro|ros|rw1c|rw1cs|rw1s|rw1ss|wo|wos|hardwired|fixed|hwinit|rsvd|rsvdp|rsvdz|reserved|ignored|ign|unused|other)$/i;
-      if (!validAttr.test(attr)) {
-        attr = "other";
-      }
-      const unusedAttr = /^(rsvd|rsvdp|rsvdz|reserved|ignored|ign|unused)$/i;
-      const isUnused = !!unusedAttr.test(attr);
-      // console.log(`field: ${fieldName} bits="${bits}"  match=${match}  lsb=${lsb} msb=${msb} attr=${attr} isUnused=${isUnused}`);
-      json.fields[fieldName] = {
-        index,
-        msb,
-        lsb,
-        attr,
-        isUnused,
-        value,
-      };
-    }
-  });
+    });
   // console.log(`json=${JSON.stringify(json, null, 2)}`);
   return json;
 }
@@ -220,16 +222,16 @@ export async function run() {
     .forEach(item => item.remove());
   document.querySelectorAll("table.register").forEach(tbl => {
     const json = parse_table(tbl);
-    console.log(
-      `draw-csrs.table.register json = ${JSON.stringify(json, null, 2)}`
-    );
+    // console.log(
+    //   `draw-csrs.table.register json = ${JSON.stringify(json, null, 2)}`
+    // );
 
     // insert a figure before this table
     tbl.insertAdjacentHTML(
       "beforebegin",
       `<figure class="regpict-generated"
                 id="fig-${tbl.getAttribute("id").replace(/^#tbl-/, "")}">
-                <pre">
+                <pre class="json">
                 ${JSON.stringify(json, null, 2)}
                 </pre>
                 <figcaption>
@@ -237,6 +239,6 @@ export async function run() {
                 </figcaption>
               </figure>`
     );
-    // insert_unused_table_rows(tbl, json);
+    insert_unused_table_rows(tbl, json);
   });
 }
