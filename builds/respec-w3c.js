@@ -1175,9 +1175,13 @@ function getLinkTargets(elem) {
     result.push({ for: linkFor, title });
 
     // Finally, we can try to match without link for
-    if (linkFor !== "") result.push({ for: "", title });
+    if (linkFor !== "") {
+      result.push({ for: "", title: `${linkFor}.${title}` });
+      result.push({ for: "", title });
+    }
     return result;
   }, []);
+  console.log(`getLinkTargets(${elem.outerHTML}) = ${JSON.stringify(results)}`);
   return results;
 }
 
@@ -13164,7 +13168,9 @@ function decorateDfn(dfn, defn, parent, name) {
 
   // Mark the definition as code.
   if (!dfn.querySelector("code") && !dfn.closest("code") && dfn.children) {
-    wrapInner(dfn, dfn.ownerDocument.createElement("code"));
+    const code = dfn.ownerDocument.createElement("code");
+    code.classList.add("code-dfn");
+    wrapInner(dfn, code);
   }
 
   // Add data-lt values and register them
@@ -14380,6 +14386,9 @@ class CaseInsensitiveMap extends Map {
   delete(key) {
     return super.delete(key.toLowerCase());
   }
+  toString() {
+    return `[${JSON.stringify(super.entries())}]`;
+  }
 }
 
 async function run$t(conf) {
@@ -14433,6 +14442,7 @@ function mapTitleToDfns() {
     const { result, duplicates } = collectDfns(title);
     titleToDfns.set(title, result);
     if (duplicates.length > 0) {
+      console.log(`mapTitleToDfns: duplicates=${JSON.stringify(duplicates)}`);
       showInlineError(
         duplicates,
         l10n$8[lang$f].duplicateMsg(title),
@@ -14480,6 +14490,11 @@ function collectDfns(title) {
  */
 function findLinkTarget(target, anchor, titleToDfns, possibleExternalLinks) {
   const { linkFor } = anchor.dataset;
+  console.log(
+    `findLinkTarget(${JSON.stringify(target)}, ${
+      anchor.outerHTML
+    }, ${titleToDfns.toString()}`
+  );
   if (
     !titleToDfns.has(target.title) ||
     !titleToDfns.get(target.title).get(target.for)

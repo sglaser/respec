@@ -4,6 +4,7 @@
 // to the matching definitions.
 // Modified from core/link-to-dfn.js to remove requirements that only data-for happens for webIDL
 
+import { addId } from "../core/utils.js";
 import { linkInlineCitations } from "../core/data-cite.js";
 import { pub } from "../core/pubsubhub.js";
 
@@ -23,7 +24,7 @@ export function run(conf, doc) {
     titles[title] = {};
     conf.definitionMap[title].forEach(dfn => {
       if (dfn.attr("id") === undefined) {
-        dfn.makeID("dfn", title);
+        addId(dfn,"dfn", title);
       }
       const dfn_for = dfn.attr("data-dfn-for") || "";
       if (dfn_for in titles[title]) {

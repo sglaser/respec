@@ -402,54 +402,64 @@
       <figure class="capability"
               id="json-capability">
         <pre class="json">
-           { "debug": false,
-             "preClass": "hide",
-             "width" : 128,
-             "isMemoryBlock": true,
+           {  "debug": false,
+              "preClass": "hide",
+              "width" : 128,
+              "isMemoryBlock": true,
               "defaultUnused" : "C",
+              "xxx-json-capability": true,
               "xxcellBitValueTop": 28,
-              "fields": [
-                {   "msb": 4,
+              "fields": {
+                "bits 4:0": {   "msb": 4,
                     "lsb": 0,
                     "name": "bits 4:0",
                     "attr": "ro"
-                }, {
+                },
+                "A": {
                     "msb": 7,
                     "lsb": 6,
                     "name": "A"
-                }, {
+                },
+                "B": {
                     "msb": 9,
                     "name": "B"
-                }, {
+                },
+                "D": {
                     "lsb": 10,
                     "name": "D",
                     "addClass": "svg_error"
-                }, {
+                },
+                "E": {
                     "lsb": 11,
                     "name": "E"
-                }, {
+                },
+                "F": {
                     "lsb": 12,
                     "name": "F",
                     "value": "1"
-                }, {
+                },
+                "G": {
                     "lsb": 13,
                     "name": "G",
                     "href": "field-bit13"
-                }, {
+                },
+                "H": {
                     "lsb": 14,
                     "msb": 20,
                     "name": "H",
                     "value": "value"
-                }, {
+                },
+                "byte": {
                     "lsb": 24,
                     "msb": 31,
                     "name": "byte",
                     "value": [ "A", "B", "C", "D", "E", "F", "G", "H"]
-                }, {
+                },
+                "word": {
                     "lsb": 34,
                     "msb": 121,
                     "name": "word"
-                }] }
+                } } }
         </pre>
         <figcaption>
           Graph for JSON Defined Capability Example
@@ -464,48 +474,58 @@
               "isMessage": true,
               "width" : 128,
               "defaultUnused" : "M",
-              "fields": [
-                {   "msb": 4,
+              "xxx-json-message": true,
+              "fields": {
+                "bits 4:0": {   "msb": 4,
                     "lsb": 0,
                     "name": "bits 4:0",
                     "attr": "ro"
-                }, {
+                },
+                "A": {
                     "msb": 7,
                     "lsb": 6,
                     "name": "A"
-                }, {
+                },
+                "B": {
                     "msb": 9,
                     "name": "B"
-                }, {
+                },
+                "D": {
                     "lsb": 10,
                     "name": "D",
                     "addClass": "svg_error"
-                }, {
+                },
+                "E": {
                     "lsb": 11,
                     "name": "E"
-                }, {
+                },
+                "F": {
                     "lsb": 12,
                     "name": "F",
                     "value": "1"
-                }, {
+                },
+                "G": {
                     "lsb": 13,
                     "name": "G",
                     "href": "field-bit13"
-                }, {
+                },
+                "H": {
                     "lsb": 14,
                     "msb": 20,
                     "name": "H",
                     "value": "value"
-                }, {
+                },
+                "byte": {
                     "lsb": 24,
                     "msb": 31,
                     "name": "byte",
                     "value": [ "A", "B", "C", "D", "E", "F", "G", "H"]
-                }, {
+                },
+                "word": {
                     "lsb": 34,
                     "msb": 121,
                     "name": "word"
-                } ] }
+                } } }
         </pre>
         <figcaption>
           Graph for JSON Defined Message Example
@@ -519,45 +539,54 @@
               "preClass": "hide",
               "isRegister": true,
               "defaultUnused" : "Bogus",
-              "fields": [
-                {   "msb": 4,
+              "xxx-json-register": true,
+              "fields": {
+                "bits 4:0": {   "msb": 4,
                     "lsb": 0,
                     "name": "bits 4:0",
                     "attr": "ro"
-                }, {
+                },
+                "Very long name that will never fit": {
                     "msb": 7,
                     "lsb": 6,
                     "name": "Very long name that will never fit"
-                }, {
+                },
+                "bit9": {
                     "msb": 9,
                     "name": "bit9"
-                }, {
+                },
+                "bit10": {
                     "lsb": 10,
                     "name": "bit10",
                     "addClass": "svg_error"
-                }, {
+                },
+                "bit11": {
                     "lsb": 11,
                     "name": "bit11"
-                }, {
+                },
+                "bit12": {
                     "lsb": 12,
                     "name": "bit12",
                     "value": "1"
-                }, {
+                },
+                "bit13": {
                     "lsb": 13,
                     "name": "bit13",
                     "href": "field-bit13"
-                }, {
+                },
+                "bit 20:13": {
                     "lsb": 14,
                     "msb": 23,
                     "name": "bit 20:13",
                     "value": "value",
                     "forceFit": false
-                }, {
+                },
+                "byte": {
                     "lsb": 24,
                     "msb": 31,
                     "name": "byte",
                     "value": [ "A", "B", "C", "D", "E", "F", "G", "H"]
-                } ] }
+                } } }
         </pre>
         <figcaption>
           Graph for JSON Defined Register Example
@@ -773,7 +802,8 @@
         Dummy paragraph before PCISIG-Style Register #2
       </p>
       <table class="register pcisig_reg"
-             data-json='{"debug": false, "preClass": "hide"}'
+             data-json='{"debug": true, "preClass": "hide"}'
+             data-width="16"
              data-unused="RsvdZ">
         <caption>
           PCISIG-Style Register #2
@@ -841,7 +871,7 @@
             </td>
             <td>
               <p>
-                <dfn class="field">xx_Ab</dfn> &ndash; four
+                <dfn class="field">Ab</dfn> &ndash; four
               </p>
             </td>
             <td>
@@ -965,7 +995,7 @@
           <dfn class="register">Device Capabilities 2 Register</dfn> (Offset 24h)
         </h2>
         <table class="pcisig_reg register"
-               data-json='{"debug": false, "preClass": "hide"}'
+               data-json='{"debug": true, "preClass": "hide"}'
                id="tbl-device-capabilities-2-register">
           <caption>
             Device Capabilities 2 Register
@@ -1096,6 +1126,7 @@
                 <p>
                   <dfn class="field">Completion Timeout Disable Supported</dfn> – A value of 1b indicates support for the Completion Timeout Disable mechanism.
                 </p>
+                <p><dfn class="field">Completion Timeout Disable Supported</dfn></p>
                 <p>
                   The Completion Timeout Disable mechanism is REQUIRED for Endpoints that issue Requests on their own behalf and PCI Express to PCI/PCI-X Bridges that take ownership of Requests issued on PCI Express.
                 </p>
@@ -1492,6 +1523,18 @@
           </h2>
           <p>Empty Reference to non-existent target '<a href="#bogus"></a>'.</p>
           <ul>
+            <li>
+              <a>PCISIG-Style Register #1.Ab</a>
+            </li>
+            <li>
+              <a>PCISIG-Style Register #2.Ab</a>
+            </li>
+            <li>
+              <a data-link-for="PCISIG-Style Register #1">Ab</a>
+            </li>
+            <li>
+              <a>PCISIG-Style Register #1.Z</a>
+            </li>
             <li>
               <a>Completion Timeout Ranges Supported</a>
             </li>

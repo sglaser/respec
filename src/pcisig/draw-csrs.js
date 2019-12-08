@@ -2,7 +2,8 @@
 // Module pcisig/draw-csrs
 // Create <figure> for csr registers by extracting information from <table class="register"> elements.
 
-import { addId, showInlineError } from "../core/utils.js";
+import { addId, makeSafeCopy, showInlineError } from "../core/utils.js";
+import { decorateDfn } from "../core/dfn-finder.js";
 import { hyperHTML } from "../core/import-maps.js";
 
 export const name = "pcisig/draw-csrs";
@@ -103,7 +104,10 @@ export function parse_table(tbl) {
   if (!tbl.hasAttribute("id")) {
     tbl.setAttribute("id", `tbl-${json.figName}`);
   }
-  console.log(`core/draw-csrs table id="${tbl.getAttribute("id")}"`);
+  // console.log(`core/draw-csrs table id="${tbl.getAttribute("id")}"`);
+  if (!tbl.hasAttribute("dfn-data-for")) {
+    tbl.setAttribute("data-dfn-for", json.figName);
+  }
 
   if (tbl.hasAttribute("data-width"))
     json.width = tbl.getAttribute("data-width");
@@ -116,7 +120,8 @@ export function parse_table(tbl) {
   if (tbl.hasAttribute("data-register"))
     json.register = tbl.getAttribute("data-register");
 
-  // :scope avoids issues with nested tables
+  const tblName = makeSafeCopy(tbl.querySelector("caption")).textContent.trim();
+
   tbl
     .querySelectorAll(":scope > tbody:first-of-type > tr, :scope > tr")
     .forEach(tr => {
@@ -139,31 +144,40 @@ export function parse_table(tbl) {
           }
         }
         let fieldName;
-        const dfn = desc.querySelector("dfn:first-of-type");
-        if (dfn) {
-          fieldName = dfn.textContent.trim();
-          if (!dfn.hasAttribute("class")) dfn.classList.add("field");
-          const lt = tbl.getAttribute("id").replace(/^tbl-/, "");
-          dfn.setAttribute("data-dfn-for", lt);
-          dfn.setAttribute("data-dfn-type", "field");
-          addId(dfn, "field", `${lt}-${fieldName.toLowerCase()}`);
-        } else {
+        let dfn = desc.querySelector("dfn:first-of-type");
+        if (!dfn) {
           fieldName = /^\s*([-_\w]+)/.exec(desc.textContent);
           if (fieldName) {
-            fieldName = fieldName[1]; // first word of text content
+            fieldName = fieldName[1]; // first word of text content (1st paren in regexp)
           } else {
-            fieldName = `Bogus_${desc.textContent.trim()}`;
+            fieldName = `Field_${
+              lsb !== msb ? `${msb}_${lsb}` : `${lsb}`
+            }_${desc.textContent.trim().replace(/\s+/g, "_")}`;
           }
+          desc.insertAdjacentHTML("afterbegin", `<dfn>${fieldName}</dfn>`);
+          dfn = desc.querySelector("dfn:first-of-type");
         }
+        fieldName = dfn.textContent.trim();
+        if (!dfn.hasAttribute("class")) dfn.classList.add("field");
+        // dfn.setAttribute("data-dfn-for", lt);
+        dfn.setAttribute("data-dfn-type", "field");
+        addId(dfn, "field", `${tblName}-${fieldName.toLowerCase()}`);
+        decorateDfn(
+          dfn,
+          { type: "field", generic: "field" },
+          tblName,
+          fieldName
+        );
+        // console.log(`decorateDfn(${dfn.outerHTML})`);
         const val = desc.querySelector("span.value:first-of-type");
         let value = "";
         if (val) {
           try {
             value = JSON.parse(val.textContent.trim());
-          } catch {
+          } catch (e) {
             showInlineError(
               val,
-              "Invalid data-json attribute in next span.value",
+              `Invalid json in next span.value ${e.toString()}`,
               ""
             );
           }
@@ -229,7 +243,7 @@ export async function run() {
     // insert a figure before this table
     tbl.insertAdjacentHTML(
       "beforebegin",
-      `<figure class="regpict-generated"
+      `<figure class="regpict-generated register"
                 id="fig-${tbl.getAttribute("id").replace(/^#tbl-/, "")}">
                 <pre class="json">
                 ${JSON.stringify(json, null, 2)}

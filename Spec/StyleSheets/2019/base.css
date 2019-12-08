@@ -599,7 +599,7 @@ sup {
 
 /** General monospace/pre rules ***********************************************/
 
-pre, code, a.property {
+pre, code:not(.code-dfn), a.property {
   font-family: Menlo, Consolas, "DejaVu Sans Mono", Monaco, monospace;
   font-size: .9em;
   page-break-inside: avoid;
@@ -609,6 +609,11 @@ pre {
   margin-top: 1em;
   margin-bottom: 1em;
   overflow: auto;
+}
+
+dfn code {
+  color: inherit;
+  font-family: inherit;
 }
 
 /** Inline Code fragments *****************************************************/
