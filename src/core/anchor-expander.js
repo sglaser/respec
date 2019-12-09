@@ -28,7 +28,8 @@ export function run() {
         processHeading(matchingElement, a);
         break;
       }
-      case "section": {
+      case "section":
+      case "nav": {
         // find first heading in the section
         processSection(matchingElement, id, a);
         break;
