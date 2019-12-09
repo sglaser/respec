@@ -10,7 +10,7 @@ import { hyperHTML } from "./import-maps.js";
 export function run(conf) {
   /** @type {NodeListOf<HTMLElement>} */
   const headings = document.querySelectorAll(
-    `section:not(.head):not(.introductory) h2, h3, h4, h5, h6`
+    `section:not(.head):not(.introductory) h2, h3, h4, h5, h6, figcaption, caption, div.impnote-title, div.note-title`
   );
   for (const h of headings) {
     // prefer for ID: heading.id > parentElement.id > newly generated heading.id
