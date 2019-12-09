@@ -82,13 +82,20 @@ function processFigure(matchingElement, id, a) {
     showInlineError(a, msg, "Missing figcaption in referenced figure.");
     return;
   }
+  const hadSelfLink = figcaption.querySelector(".self-link");
   // remove the figure's title
   const children = [...makeSafeCopy(figcaption).childNodes].filter(
-    node => !node.classList || !node.classList.contains(`${figEqn}-title`)
+    node =>
+      !node.classList ||
+      !(
+        node.classList.contains(`${figEqn}-title`) ||
+        node.classList.contains("self-link")
+      )
   );
   // drop an empty space at the end.
   children.pop();
   a.append(...children);
+  if (hadSelfLink) a.prepend("§\u00A0");
   a.classList.add(`${figEqn}-ref`);
   const figTitle = figcaption.querySelector(`.${figEqn}-title`);
   if (!a.hasAttribute("title") && figTitle) {
@@ -104,13 +111,20 @@ function processTable(matchingElement, id, a) {
     showInlineError(a, msg, "Missing caption in referenced table.");
     return;
   }
+  const hadSelfLink = caption.querySelector(".self-link");
   // remove the table's title
   const children = [...makeSafeCopy(caption).childNodes].filter(
-    node => !node.classList || !node.classList.contains("tbl-title")
+    node =>
+      !node.classList ||
+      !(
+        node.classList.contains("tbl-title") ||
+        node.classList.contains("self-link")
+      )
   );
   // drop an empty space at the end.
   children.pop();
   a.append(...children);
+  if (hadSelfLink) a.prepend("§\u00A0");
   a.classList.add("tbl-ref");
   const tblTitle = caption.querySelector(".tbl-title");
   if (!a.hasAttribute("title") && tblTitle) {
