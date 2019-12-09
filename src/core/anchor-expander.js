@@ -69,7 +69,7 @@ function processBox(matchingElement, id, a) {
     matchingElement.classList.contains("impnote") ||
     matchingElement.classList.contains("note")
   ) {
-    const marker = matchingElement.querySelector("marker");
+    const marker = matchingElement.querySelector(".marker");
     if (marker) {
       const children = [...makeSafeCopy(marker).childNodes].filter(
         node => !node.classList || !node.classList.contains("self-link")
