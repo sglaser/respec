@@ -4,7 +4,12 @@ import { makeSafeCopy, norm, showInlineError } from "./utils.js";
 
 export const name = "core/anchor-expander";
 
-export function run() {
+let sectionRefsByNumber = false;
+
+export function run(conf) {
+  if (conf.hasOwnProperty("sectionRefsByNumber")) {
+    sectionRefsByNumber = conf.sectionRefsByNumber;
+  }
   /** @type {NodeListOf<HTMLElement>} */
   const anchorElements = document.querySelectorAll(
     "a[href^='#']:not(.self-link):not([href$='the-empty-string'])"
