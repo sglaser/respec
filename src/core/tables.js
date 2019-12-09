@@ -63,8 +63,12 @@ function decorateTable(table, caption, i) {
   const title = caption.textContent;
   addId(table, "tbl", title);
   // set proper caption title
-  wrapInner(caption, hyperHTML`<span class='tbl-title'>`);
-  caption.prepend(l10n.tbl, hyperHTML`<bdi class='tblno'>${i + 1}</bdi>`, " ");
+  wrapInner(caption, hyperHTML`<span class='tbl-title'></span>`);
+  caption.prepend(
+    hyperHTML`<span class='tblhdr'>${l10n.tbl}</span>`,
+    hyperHTML`<bdi class='tblno'>${i + 1}</bdi>`,
+    " "
+  );
 }
 
 /**

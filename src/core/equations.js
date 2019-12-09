@@ -65,8 +65,12 @@ function decorateEquation(equation, caption, i) {
   const title = caption.textContent;
   addId(equation, "eqn", title);
   // set proper caption title
-  wrapInner(caption, hyperHTML`<span class='eqn-title'>`);
-  caption.prepend(l10n.eqn, hyperHTML`<bdi class='eqnno'>${i + 1}</bdi>`, " ");
+  wrapInner(caption, hyperHTML`<span class='eqn-title'></span>`);
+  caption.prepend(
+    hyperHTML`<span class='eqnhdr'>${l10n.eqn}</span>`,
+    hyperHTML`<bdi class='eqnno'>${i + 1}</bdi>`,
+    " "
+  );
 }
 
 /**

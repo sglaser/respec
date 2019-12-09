@@ -83,8 +83,12 @@ function decorateFigure(figure, caption, i) {
   const title = caption.textContent;
   addId(figure, "fig", title);
   // set proper caption title
-  wrapInner(caption, hyperHTML`<span class='fig-title'>`);
-  caption.prepend(l10n.fig, hyperHTML`<bdi class='figno'>${i + 1}</bdi>`, " ");
+  wrapInner(caption, hyperHTML`<span class='fig-title'></span>`);
+  caption.prepend(
+    hyperHTML`<span class='fighdr'>${l10n.fig}</span>`,
+    hyperHTML`<bdi class='figno'>${i + 1}</bdi>`,
+    " "
+  );
 }
 
 /**
