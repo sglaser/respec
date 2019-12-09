@@ -1176,7 +1176,7 @@ export function draw_regpict(divsvg, inputJSON) {
             }
             text
               .x(rightOf(-0.5))
-              .y(nextBitLine)
+              .y(nextBitLine - 15)
               .addClass("regFieldName");
             p = new Path(g);
             p.move(boxLeft, cellTop + cellHeight * (startRow + 1));
