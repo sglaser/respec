@@ -65,15 +65,30 @@ export function run(conf) {
 
 function processBox(matchingElement, id, a) {
   const selfLink = matchingElement.querySelector(".marker .self-link");
-  if (!selfLink) {
-    a.textContent = a.getAttribute("href");
-    const msg = `Found matching element "${id}", but it has no title or marker.`;
-    showInlineError(a, msg, "Missing title.");
-    return;
+  if (
+    matchingElement.classList.contains("impnote") ||
+    matchingElement.classList.contains("note")
+  ) {
+    const marker = matchingElement.querySelector("marker");
+    if (marker) {
+      const children = [...makeSafeCopy(marker).childNodes].filter(
+        node => !node.classList || !node.classList.contains("self-link")
+      );
+      a.append(...children);
+      if (selfLink) a.prepend("§\u00A0");
+      a.classList.add("note-ref");
+    }
+  } else {
+    if (!selfLink) {
+      a.textContent = a.getAttribute("href");
+      const msg = `Found matching element "${id}", but it has no title or marker.`;
+      showInlineError(a, msg, "Missing title.");
+      return;
+    }
+    const copy = makeSafeCopy(selfLink);
+    a.append(...copy.childNodes);
+    a.classList.add("box-ref");
   }
-  const copy = makeSafeCopy(selfLink);
-  a.append(...copy.childNodes);
-  a.classList.add("box-ref");
 }
 
 function processFigure(matchingElement, id, a) {
