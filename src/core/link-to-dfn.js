@@ -53,6 +53,9 @@ class CaseInsensitiveMap extends Map {
   delete(key) {
     return super.delete(key.toLowerCase());
   }
+  toString() {
+    return `[${JSON.stringify(super.entries())}]`;
+  }
 }
 
 export async function run(conf) {
