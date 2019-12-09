@@ -62,7 +62,7 @@ function scanSections(sections, maxTocLevel, { prefix = "" } = {}) {
       : appendixMode
       ? appendixNumber(index - lastNonAppendix)
       : prefix + index;
-    const level = parents(section, "section").length + 1;
+    const level = parents(section.element, "section").length + 1;
     if (level === 1) {
       secno += ".";
       // if this is a top level item, insert
