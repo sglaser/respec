@@ -1081,10 +1081,7 @@ export function draw_regpict(divsvg, inputJSON) {
         }
         let hasValue = false;
         if ("value" in f) {
-          if (
-            Array.isArray(f.value) &&
-            f.value.length === f.msb - f.lsb + 1
-          ) {
+          if (Array.isArray(f.value) && f.value.length === f.msb - f.lsb + 1) {
             hasValue = true;
             for (item = 0; item < f.value.length; ++item) {
               const temp = g
@@ -1098,10 +1095,7 @@ export function draw_regpict(divsvg, inputJSON) {
                 temp.addClass("regFieldBitValue-msb");
               }
             }
-          } else if (
-            typeof f.value === "string" ||
-            f.value instanceof String
-          ) {
+          } else if (typeof f.value === "string" || f.value instanceof String) {
             if (f.value.length > 0) {
               hasValue = true;
               g.text(f.value)
