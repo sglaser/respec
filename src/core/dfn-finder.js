@@ -207,12 +207,10 @@ export function decorateDfn(dfnElem, idlAst, parent, name) {
   }
 
   // Mark the definition as code.
-  if (
-    !dfnElem.querySelector("code") &&
-    !dfnElem.closest("code") &&
-    dfnElem.children
-  ) {
-    wrapInner(dfnElem, dfnElem.ownerDocument.createElement("code"));
+  if (!dfnElem.querySelector("code") && !dfnElem.closest("code") && dfnElem.children) {
+    const code =  dfnElem.ownerDocument.createElement("code");
+    code.classList.add("code-dfn");
+    wrapInner(dfnElem, code);
   }
 
   // Add data-lt and data-local-lt values and register them
