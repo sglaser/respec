@@ -152,9 +152,17 @@ function processSection(matchingElement, id, a) {
 
 function processHeading(heading, a) {
   const hadSelfLink = heading.querySelector(".self-link");
-  const children = [...makeSafeCopy(heading).childNodes].filter(
+  let children = [...makeSafeCopy(heading).childNodes].filter(
     node => !node.classList || !node.classList.contains("self-link")
   );
+  if (sectionRefsByNumber) {
+    children = children.filter(
+      node => !node.classList || !node.classList.contains("sect-title")
+    );
+    children.forEach(
+      node => node instanceof HTMLElement && node.removeAttribute("hidden")
+    );
+  }
   a.append(...children);
   if (hadSelfLink) a.prepend("§\u00A0");
   a.classList.add("sec-ref");
