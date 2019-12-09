@@ -8,7 +8,7 @@
 //  - lang: can change the generated text (supported: en, fr)
 //  - maxTocLevel: only generate a TOC so many levels deep
 
-import { addId, children, parents, renameElement } from "./utils.js";
+import { addId, children, parents, renameElement, wrapInner } from "./utils.js";
 import { getIntlData } from "../core/l10n.js";
 import { hyperHTML } from "./import-maps.js";
 
@@ -20,12 +20,21 @@ export const name = "core/structure";
 const localizationStrings = {
   en: {
     toc: "Table of Contents",
+    section: "Section ",
+    chapter: "Chapter ",
+    appendix: "Appendix ",
   },
   nl: {
     toc: "Inhoudsopgave",
+    section: "Section ", // TODO translate
+    chapter: "Chapter ", // TODO: translate
+    appendix: "Appendix ", // TODO: translate
   },
   es: {
     toc: "Tabla de Contenidos",
+    section: "Section ", // TODO: translate
+    chapter: "Chapter ", // TODO: translate
+    appendix: "Appendix ", // TODO: translate
   },
 };
 
@@ -70,10 +79,19 @@ function scanSections(sections, maxTocLevel, { prefix = "" } = {}) {
       // paginate the output
       section.header.before(document.createComment("OddPage"));
     }
-
+    const secthdr =
+      level === 1
+        ? appendixMode
+          ? l10n.appendix
+          : l10n.chapter
+        : l10n.section;
+    wrapInner(section.header, hyperHTML`<span class='sect-title'>`);
     if (!section.isIntro) {
       index += 1;
-      section.header.prepend(hyperHTML`<bdi class='secno'>${secno} </bdi>`);
+      section.header.prepend(
+        hyperHTML`<span class='secthdr' hidden>${secthdr}</span>`,
+        hyperHTML`<bdi class='secno'>${secno} </bdi>`
+      );
     }
 
     if (level <= maxTocLevel) {
