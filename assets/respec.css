@@ -239,7 +239,10 @@ h2 > a.self-link,
 h3 > a.self-link,
 h4 > a.self-link,
 h5 > a.self-link,
-h6 > a.self-link {
+h6 > a.self-link,
+div.marker > a.self-link,
+figcaption > a.self-link,
+caption > a.self-link {
   border: none;
   color: inherit;
   font-size: 83%;
@@ -258,7 +261,10 @@ h2 > a.self-link::before,
 h3 > a.self-link::before,
 h4 > a.self-link::before,
 h5 > a.self-link::before,
-h6 > a.self-link::before {
+h6 > a.self-link::before,
+div.marker > a.self-link::before,
+figcaption > a.self-link::before,
+caption > a.self-link::before {
   content: "§";
   display: block;
 }
@@ -273,7 +279,10 @@ h6 > a.self-link::before {
   h3 > a.self-link,
   h4 > a.self-link,
   h5 > a.self-link,
-  h6 > a.self-link {
+  h6 > a.self-link,
+  div.marker > a.self-link,
+  figcaption > a.self-link,
+  caption > a.self-link {
     left: auto;
     top: auto;
   }
