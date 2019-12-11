@@ -212,7 +212,7 @@ export function parse_table(tbl) {
  */
 function mergeJSON(target, src) {
   const json = typeof src !== "string" ? src : JSON.parse(src);
-  for (const prop in json) {
+  for (const prop in Object.getOwnPropertyNames(json)) {
     if (src.hasOwnProperty(prop)) {
       // if the value is a nested object, recursively copy all it's properties
       if (typeof src[prop] === "object" && !!src[prop]) {
