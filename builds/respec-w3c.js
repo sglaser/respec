@@ -12464,7 +12464,7 @@ function handleIssues(ins, ghIssues, conf) {
     // wrap
     if (!isInline) {
       const cssClass = isFeatureAtRisk ? `${type} atrisk` : type;
-      const ariaRole = type === "note" ? "note" : null;
+      const ariaRole = type === "note" || type === "impnote" ? "note" : null;
       const div = hyperHTML$1`<div class="${cssClass}" role="${ariaRole}"></div>`;
       const title = document.createElement("span");
       const titleParent = hyperHTML$1`
@@ -12914,8 +12914,12 @@ function decorateFigure(figure, caption, i) {
   const title = caption.textContent;
   addId(figure, "fig", title);
   // set proper caption title
-  wrapInner(caption, hyperHTML$1`<span class='fig-title'>`);
-  caption.prepend(l10n$7.fig, hyperHTML$1`<bdi class='figno'>${i + 1}</bdi>`, " ");
+  wrapInner(caption, hyperHTML$1`<span class='fig-title'></span>`);
+  caption.prepend(
+    hyperHTML$1`<span class='fighdr'>${l10n$7.fig}</span>`,
+    hyperHTML$1`<bdi class='figno'>${i + 1}</bdi>`,
+    " "
+  );
 }
 
 /**
@@ -14745,12 +14749,21 @@ const name$G = "core/structure";
 const localizationStrings$7 = {
   en: {
     toc: "Table of Contents",
+    section: "Section ",
+    chapter: "Chapter ",
+    appendix: "Appendix ",
   },
   nl: {
     toc: "Inhoudsopgave",
+    section: "Section ", // TODO translate
+    chapter: "Chapter ", // TODO: translate
+    appendix: "Appendix ", // TODO: translate
   },
   es: {
     toc: "Tabla de Contenidos",
+    section: "Section ", // TODO: translate
+    chapter: "Chapter ", // TODO: translate
+    appendix: "Appendix ", // TODO: translate
   },
 };
 
@@ -14789,7 +14802,7 @@ function scanSections(sections, maxTocLevel, { prefix = "" } = {}) {
       : appendixMode
       ? appendixNumber(index - lastNonAppendix)
       : prefix + index;
-    const level = parents(section, "section").length + 1;
+    const level = parents(section.element, "section").length + 1;
     if (level === 1) {
       secno += ".";
       // if this is a top level item, insert
@@ -14797,10 +14810,19 @@ function scanSections(sections, maxTocLevel, { prefix = "" } = {}) {
       // paginate the output
       section.header.before(document.createComment("OddPage"));
     }
-
+    const secthdr =
+      level === 1
+        ? appendixMode
+          ? l10n$9.appendix
+          : l10n$9.chapter
+        : l10n$9.section;
+    wrapInner(section.header, hyperHTML$1`<span class='sect-title'>`);
     if (!section.isIntro) {
       index += 1;
-      section.header.prepend(hyperHTML$1`<bdi class='secno'>${secno} </bdi>`);
+      section.header.prepend(
+        hyperHTML$1`<span class='secthdr' hidden>${secthdr}</span>`,
+        hyperHTML$1`<bdi class='secno'>${secno} </bdi>`
+      );
     }
 
     if (level <= maxTocLevel) {
@@ -15026,7 +15048,7 @@ const name$I = "core/id-headers";
 function run$y(conf) {
   /** @type {NodeListOf<HTMLElement>} */
   const headings = document.querySelectorAll(
-    `section:not(.head):not(.introductory) h2, h3, h4, h5, h6`
+    `section:not(.head):not(.introductory) h2, h3, h4, h5, h6, figcaption, caption, div.impnote-title, div.note-title`
   );
   for (const h of headings) {
     addId(h);
@@ -16835,7 +16857,12 @@ var algorithms = /*#__PURE__*/Object.freeze({
 
 const name$W = "core/anchor-expander";
 
-function run$K() {
+let sectionRefsByNumber = false;
+
+function run$K(conf) {
+  if (conf.hasOwnProperty("sectionRefsByNumber")) {
+    sectionRefsByNumber = conf.sectionRefsByNumber;
+  }
   /** @type {NodeListOf<HTMLElement>} */
   const anchorElements = document.querySelectorAll(
     "a[href^='#']:not(.self-link):not([href$='the-empty-string'])"
@@ -16859,7 +16886,8 @@ function run$K() {
         processHeading(matchingElement, a);
         break;
       }
-      case "section": {
+      case "section":
+      case "nav": {
         // find first heading in the section
         processSection(matchingElement, id, a);
         break;
@@ -16890,15 +16918,30 @@ function run$K() {
 
 function processBox(matchingElement, id, a) {
   const selfLink = matchingElement.querySelector(".marker .self-link");
-  if (!selfLink) {
-    a.textContent = a.getAttribute("href");
-    const msg = `Found matching element "${id}", but it has no title or marker.`;
-    showInlineError(a, msg, "Missing title.");
-    return;
+  if (
+    matchingElement.classList.contains("impnote") ||
+    matchingElement.classList.contains("note")
+  ) {
+    const marker = matchingElement.querySelector(".marker");
+    if (marker) {
+      const children = [...makeSafeCopy(marker).childNodes].filter(
+        node => !node.classList || !node.classList.contains("self-link")
+      );
+      a.append(...children);
+      if (selfLink) a.prepend("§\u00A0");
+      a.classList.add("note-ref");
+    }
+  } else {
+    if (!selfLink) {
+      a.textContent = a.getAttribute("href");
+      const msg = `Found matching element "${id}", but it has no title or marker.`;
+      showInlineError(a, msg, "Missing title.");
+      return;
+    }
+    const copy = makeSafeCopy(selfLink);
+    a.append(...copy.childNodes);
+    a.classList.add("box-ref");
   }
-  const copy = makeSafeCopy(selfLink);
-  a.append(...copy.childNodes);
-  a.classList.add("box-ref");
 }
 
 function processFigure(matchingElement, id, a) {
@@ -16912,13 +16955,20 @@ function processFigure(matchingElement, id, a) {
     showInlineError(a, msg, "Missing figcaption in referenced figure.");
     return;
   }
+  const hadSelfLink = figcaption.querySelector(".self-link");
   // remove the figure's title
   const children = [...makeSafeCopy(figcaption).childNodes].filter(
-    node => !node.classList || !node.classList.contains(`${figEqn}-title`)
+    node =>
+      !node.classList ||
+      !(
+        node.classList.contains(`${figEqn}-title`) ||
+        node.classList.contains("self-link")
+      )
   );
   // drop an empty space at the end.
   children.pop();
   a.append(...children);
+  if (hadSelfLink) a.prepend("§\u00A0");
   a.classList.add(`${figEqn}-ref`);
   const figTitle = figcaption.querySelector(`.${figEqn}-title`);
   if (!a.hasAttribute("title") && figTitle) {
@@ -16934,13 +16984,20 @@ function processTable(matchingElement, id, a) {
     showInlineError(a, msg, "Missing caption in referenced table.");
     return;
   }
+  const hadSelfLink = caption.querySelector(".self-link");
   // remove the table's title
   const children = [...makeSafeCopy(caption).childNodes].filter(
-    node => !node.classList || !node.classList.contains("tbl-title")
+    node =>
+      !node.classList ||
+      !(
+        node.classList.contains("tbl-title") ||
+        node.classList.contains("self-link")
+      )
   );
   // drop an empty space at the end.
   children.pop();
   a.append(...children);
+  if (hadSelfLink) a.prepend("§\u00A0");
   a.classList.add("tbl-ref");
   const tblTitle = caption.querySelector(".tbl-title");
   if (!a.hasAttribute("title") && tblTitle) {
@@ -16963,9 +17020,17 @@ function processSection(matchingElement, id, a) {
 
 function processHeading(heading, a) {
   const hadSelfLink = heading.querySelector(".self-link");
-  const children = [...makeSafeCopy(heading).childNodes].filter(
+  let children = [...makeSafeCopy(heading).childNodes].filter(
     node => !node.classList || !node.classList.contains("self-link")
   );
+  if (sectionRefsByNumber) {
+    children = children.filter(
+      node => !node.classList || !node.classList.contains("sect-title")
+    );
+    children.forEach(
+      node => node instanceof HTMLElement && node.removeAttribute("hidden")
+    );
+  }
   a.append(...children);
   if (hadSelfLink) a.prepend("§\u00A0");
   a.classList.add("sec-ref");
@@ -17008,7 +17073,7 @@ var ui$3 = /*#__PURE__*/Object.freeze({
   'default': ui$2
 });
 
-var respec2 = "/*****************************************************************\n * ReSpec 3 CSS\n * Robin Berjon - http://berjon.com/\n *****************************************************************/\n\n@keyframes pop {\n  0% {\n    transform: scale(1, 1);\n  }\n  25% {\n    transform: scale(1.25, 1.25);\n    opacity: 0.75;\n  }\n  100% {\n    transform: scale(1, 1);\n  }\n}\n\n/* Override code highlighter background */\n.hljs {\n  background: transparent !important;\n}\n\n/* --- INLINES --- */\nh1 abbr,\nh2 abbr,\nh3 abbr,\nh4 abbr,\nh5 abbr,\nh6 abbr,\na abbr {\n  border: none;\n}\n\ndfn {\n  font-weight: bold;\n}\n\na.internalDFN {\n  color: inherit;\n  border-bottom: 1px solid #99c;\n  text-decoration: none;\n}\n\na.externalDFN {\n  color: inherit;\n  border-bottom: 1px dotted #ccc;\n  text-decoration: none;\n}\n\na.bibref {\n  text-decoration: none;\n}\n\n.respec-offending-element:target {\n  animation: pop 0.25s ease-in-out 0s 1;\n}\n\n.respec-offending-element,\na[href].respec-offending-element {\n  text-decoration: red wavy underline;\n}\n@supports not (text-decoration: red wavy underline) {\n  .respec-offending-element:not(pre) {\n    display: inline-block;\n  }\n  .respec-offending-element {\n    /* Red squiggly line */\n    background: url(data:image/gif;base64,R0lGODdhBAADAPEAANv///8AAP///wAAACwAAAAABAADAEACBZQjmIAFADs=)\n      bottom repeat-x;\n  }\n}\n\n#references :target {\n  background: #eaf3ff;\n  animation: pop 0.4s ease-in-out 0s 1;\n}\n\ncite .bibref {\n  font-style: normal;\n}\n\ncode {\n  color: #c83500;\n}\n\nth code {\n  color: inherit;\n}\n\na[href].orcid {\n    padding-left: 4px;\n    padding-right: 4px;\n}\n\na[href].orcid > svg {\n    margin-bottom: -2px;\n}\n\n/* --- TOC --- */\n\n.toc a,\n.tof a {\n  text-decoration: none;\n}\n\na .secno,\na .figno {\n  color: #000;\n}\n\nul.tof,\nol.tof {\n  list-style: none outside none;\n}\n\n.caption {\n  margin-top: 0.5em;\n  font-style: italic;\n}\n\n/* --- TABLE --- */\n\ntable.simple {\n  border-spacing: 0;\n  border-collapse: collapse;\n  border-bottom: 3px solid #005a9c;\n}\n\n.simple th {\n  background: #005a9c;\n  color: #fff;\n  padding: 3px 5px;\n  text-align: left;\n}\n\n.simple th a {\n  color: #fff;\n  padding: 3px 5px;\n  text-align: left;\n}\n\n.simple th[scope=\"row\"] {\n  background: inherit;\n  color: inherit;\n  border-top: 1px solid #ddd;\n}\n\n.simple td {\n  padding: 3px 10px;\n  border-top: 1px solid #ddd;\n}\n\n.simple tr:nth-child(even) {\n  background: #f0f6ff;\n}\n\n/* --- DL --- */\n\n.section dd > p:first-child {\n  margin-top: 0;\n}\n\n.section dd > p:last-child {\n  margin-bottom: 0;\n}\n\n.section dd {\n  margin-bottom: 1em;\n}\n\n.section dl.attrs dd,\n.section dl.eldef dd {\n  margin-bottom: 0;\n}\n\n#issue-summary > ul,\n.respec-dfn-list {\n  column-count: 2;\n}\n\n#issue-summary li,\n.respec-dfn-list li {\n  list-style: none;\n}\n\ndetails.respec-tests-details {\n  margin-left: 1em;\n  display: inline-block;\n  vertical-align: top;\n}\n\ndetails.respec-tests-details > * {\n  padding-right: 2em;\n}\n\ndetails.respec-tests-details[open] {\n  z-index: 999999;\n  position: absolute;\n  border: thin solid #cad3e2;\n  border-radius: 0.3em;\n  background-color: white;\n  padding-bottom: 0.5em;\n}\n\ndetails.respec-tests-details[open] > summary {\n  border-bottom: thin solid #cad3e2;\n  padding-left: 1em;\n  margin-bottom: 1em;\n  line-height: 2em;\n}\n\ndetails.respec-tests-details > ul {\n  width: 100%;\n  margin-top: -0.3em;\n}\n\ndetails.respec-tests-details > li {\n  padding-left: 1em;\n}\n\na[href].self-link:hover {\n  opacity: 1;\n  text-decoration: none;\n  background-color: transparent;\n}\n\nh2,\nh3,\nh4,\nh5,\nh6 {\n  position: relative;\n}\n\naside.example .marker > a.self-link {\n  color: inherit;\n}\n\nh2 > a.self-link,\nh3 > a.self-link,\nh4 > a.self-link,\nh5 > a.self-link,\nh6 > a.self-link {\n  border: none;\n  color: inherit;\n  font-size: 83%;\n  height: 2em;\n  left: -1.6em;\n  opacity: 0.5;\n  position: absolute;\n  text-align: center;\n  text-decoration: none;\n  top: 0;\n  transition: opacity 0.2s;\n  width: 2em;\n}\n\nh2 > a.self-link::before,\nh3 > a.self-link::before,\nh4 > a.self-link::before,\nh5 > a.self-link::before,\nh6 > a.self-link::before {\n  content: \"§\";\n  display: block;\n}\n\n@media (max-width: 767px) {\n  dd {\n    margin-left: 0;\n  }\n\n  /* Don't position self-link in headings off-screen */\n  h2 > a.self-link,\n  h3 > a.self-link,\n  h4 > a.self-link,\n  h5 > a.self-link,\n  h6 > a.self-link {\n    left: auto;\n    top: auto;\n  }\n}\n\n@media print {\n  .removeOnSave {\n    display: none;\n  }\n}\n";
+var respec2 = "/*****************************************************************\n * ReSpec 3 CSS\n * Robin Berjon - http://berjon.com/\n *****************************************************************/\n\n@keyframes pop {\n  0% {\n    transform: scale(1, 1);\n  }\n  25% {\n    transform: scale(1.25, 1.25);\n    opacity: 0.75;\n  }\n  100% {\n    transform: scale(1, 1);\n  }\n}\n\n/* Override code highlighter background */\n.hljs {\n  background: transparent !important;\n}\n\n/* --- INLINES --- */\nh1 abbr,\nh2 abbr,\nh3 abbr,\nh4 abbr,\nh5 abbr,\nh6 abbr,\na abbr {\n  border: none;\n}\n\ndfn {\n  font-weight: bold;\n}\n\na.internalDFN {\n  color: inherit;\n  border-bottom: 1px solid #99c;\n  text-decoration: none;\n}\n\na.externalDFN {\n  color: inherit;\n  border-bottom: 1px dotted #ccc;\n  text-decoration: none;\n}\n\na.bibref {\n  text-decoration: none;\n}\n\n.respec-offending-element:target {\n  animation: pop 0.25s ease-in-out 0s 1;\n}\n\n.respec-offending-element,\na[href].respec-offending-element {\n  text-decoration: red wavy underline;\n}\n@supports not (text-decoration: red wavy underline) {\n  .respec-offending-element:not(pre) {\n    display: inline-block;\n  }\n  .respec-offending-element {\n    /* Red squiggly line */\n    background: url(data:image/gif;base64,R0lGODdhBAADAPEAANv///8AAP///wAAACwAAAAABAADAEACBZQjmIAFADs=)\n      bottom repeat-x;\n  }\n}\n\n#references :target {\n  background: #eaf3ff;\n  animation: pop 0.4s ease-in-out 0s 1;\n}\n\ncite .bibref {\n  font-style: normal;\n}\n\ncode {\n  color: #c83500;\n}\n\nth code {\n  color: inherit;\n}\n\na[href].orcid {\n    padding-left: 4px;\n    padding-right: 4px;\n}\n\na[href].orcid > svg {\n    margin-bottom: -2px;\n}\n\n/* --- TOC --- */\n\n.toc a,\n.tof a {\n  text-decoration: none;\n}\n\na .secno,\na .figno {\n  color: #000;\n}\n\nul.tof,\nol.tof {\n  list-style: none outside none;\n}\n\n.caption {\n  margin-top: 0.5em;\n  font-style: italic;\n}\n\n/* --- TABLE --- */\n\ntable.simple {\n  border-spacing: 0;\n  border-collapse: collapse;\n  border-bottom: 3px solid #005a9c;\n}\n\n.simple th {\n  background: #005a9c;\n  color: #fff;\n  padding: 3px 5px;\n  text-align: left;\n}\n\n.simple th a {\n  color: #fff;\n  padding: 3px 5px;\n  text-align: left;\n}\n\n.simple th[scope=\"row\"] {\n  background: inherit;\n  color: inherit;\n  border-top: 1px solid #ddd;\n}\n\n.simple td {\n  padding: 3px 10px;\n  border-top: 1px solid #ddd;\n}\n\n.simple tr:nth-child(even) {\n  background: #f0f6ff;\n}\n\n/* --- DL --- */\n\n.section dd > p:first-child {\n  margin-top: 0;\n}\n\n.section dd > p:last-child {\n  margin-bottom: 0;\n}\n\n.section dd {\n  margin-bottom: 1em;\n}\n\n.section dl.attrs dd,\n.section dl.eldef dd {\n  margin-bottom: 0;\n}\n\n#issue-summary > ul,\n.respec-dfn-list {\n  column-count: 2;\n}\n\n#issue-summary li,\n.respec-dfn-list li {\n  list-style: none;\n}\n\ndetails.respec-tests-details {\n  margin-left: 1em;\n  display: inline-block;\n  vertical-align: top;\n}\n\ndetails.respec-tests-details > * {\n  padding-right: 2em;\n}\n\ndetails.respec-tests-details[open] {\n  z-index: 999999;\n  position: absolute;\n  border: thin solid #cad3e2;\n  border-radius: 0.3em;\n  background-color: white;\n  padding-bottom: 0.5em;\n}\n\ndetails.respec-tests-details[open] > summary {\n  border-bottom: thin solid #cad3e2;\n  padding-left: 1em;\n  margin-bottom: 1em;\n  line-height: 2em;\n}\n\ndetails.respec-tests-details > ul {\n  width: 100%;\n  margin-top: -0.3em;\n}\n\ndetails.respec-tests-details > li {\n  padding-left: 1em;\n}\n\na[href].self-link:hover {\n  opacity: 1;\n  text-decoration: none;\n  background-color: transparent;\n}\n\nh2,\nh3,\nh4,\nh5,\nh6 {\n  position: relative;\n}\n\naside.example .marker > a.self-link {\n  color: inherit;\n}\n\nh2 > a.self-link,\nh3 > a.self-link,\nh4 > a.self-link,\nh5 > a.self-link,\nh6 > a.self-link,\ndiv.marker > a.self-link,\nfigcaption > a.self-link,\ncaption > a.self-link {\n  border: none;\n  color: inherit;\n  font-size: 83%;\n  height: 2em;\n  left: -1.6em;\n  opacity: 0.5;\n  position: absolute;\n  text-align: center;\n  text-decoration: none;\n  top: 0;\n  transition: opacity 0.2s;\n  width: 2em;\n}\n\nh2 > a.self-link::before,\nh3 > a.self-link::before,\nh4 > a.self-link::before,\nh5 > a.self-link::before,\nh6 > a.self-link::before,\ndiv.marker > a.self-link::before,\nfigcaption > a.self-link::before,\ncaption > a.self-link::before {\n  content: \"§\";\n  display: block;\n}\n\n@media (max-width: 767px) {\n  dd {\n    margin-left: 0;\n  }\n\n  /* Don't position self-link in headings off-screen */\n  h2 > a.self-link,\n  h3 > a.self-link,\n  h4 > a.self-link,\n  h5 > a.self-link,\n  h6 > a.self-link,\n  div.marker > a.self-link,\n  figcaption > a.self-link,\n  caption > a.self-link {\n    left: auto;\n    top: auto;\n  }\n}\n\n@media print {\n  .removeOnSave {\n    display: none;\n  }\n}\n";
 
 var respec2$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,

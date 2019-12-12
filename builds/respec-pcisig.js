@@ -7819,6 +7819,7 @@ const pcisigDefaults = {
   pluralize: true,
   doJsonLd: false,
   numberByChapter: true,
+  sectionRefsByNumber: true,
   license: "pcisig-software-doc",
   logos: [
     {
@@ -11617,7 +11618,7 @@ function handleIssues(ins, ghIssues, conf) {
     // wrap
     if (!isInline) {
       const cssClass = isFeatureAtRisk ? `${type} atrisk` : type;
-      const ariaRole = type === "note" ? "note" : null;
+      const ariaRole = type === "note" || type === "impnote" ? "note" : null;
       const div = hyperHTML$2`<div class="${cssClass}" role="${ariaRole}"></div>`;
       const title = document.createElement("span");
       const titleParent = hyperHTML$2`
@@ -12404,12 +12405,12 @@ function parse_table(tbl) {
  * Merges two JSON objects together.
  * Src object properties override existing target properties.
  * @param {Object} target starting object (modified)
- * @param {Object} src merging object
+ * @param {Object} inputSrc merging object
  * @returns {Object} modified target
  */
-function mergeJSON(target, src) {
-  const json = typeof src !== "string" ? src : JSON.parse(src);
-  for (const prop in json) {
+function mergeJSON(target, inputSrc) {
+  const src = typeof inputSrc !== "string" ? inputSrc : JSON.parse(inputSrc);
+  for (const prop in src) {
     if (src.hasOwnProperty(prop)) {
       // if the value is a nested object, recursively copy all it's properties
       if (typeof src[prop] === "object" && !!src[prop]) {
@@ -12450,7 +12451,7 @@ async function run$p() {
                 </figcaption>
               </figure>`
     );
-    insert_unused_table_rows(tbl, json);
+    // insert_unused_table_rows(tbl, json);
   });
 }
 
@@ -23473,6 +23474,8 @@ const name$B = "pcisig/regpict";
 
 const cssPromise$2 = loadStyle$4();
 
+const debugOverride = false;
+
 class Path$1 {
   constructor(container) {
     this.thePath = container.path();
@@ -23551,6 +23554,7 @@ class Path$1 {
     this.thePath.addClass(cls);
   }
 }
+
 async function loadStyle$4() {
   try {
     return (await Promise.resolve().then(function () { return examples$2; })).default;
@@ -23570,16 +23574,7 @@ let mergeCount = 0;
  */
 function mergeJSON$1(target, src) {
   const cnt = ++mergeCount;
-  const debug3 = debug;
   const json = typeof src !== "string" ? src : JSON.parse(src);
-  if (debug3) {
-    console.log(`
-
-before: mergeJSON(${cnt}).target=${JSON.stringify(target, null, 2)}`);
-    console.log(
-      `before: mergeJSON(${cnt}).json=${JSON.stringify(json, null, 2)}`
-    );
-  }
   if (Array.isArray(json.fields)) {
     json.fields = json.fields.reduce((obj, item) => {
       obj[item.name] = Object.assign(
@@ -23589,24 +23584,12 @@ before: mergeJSON(${cnt}).target=${JSON.stringify(target, null, 2)}`);
       );
       return obj;
     }, {});
-    if (debug3) {
-      console.log(
-        `mergeJSON(${cnt}) after Array reduction: json=${JSON.stringify(
-          json,
-          null,
-          2
-        )}`
-      );
-    }
   }
   Object.keys(json).forEach(prop => {
     if (json.hasOwnProperty(prop)) {
       if (prop !== "fields") {
         // everything except fields is a primitive value
         target[prop] = json[prop];
-        if (debug3) {
-          console.log(`copy: mergeJSON(${cnt}) "${prop}"="${json[prop]}`);
-        }
       } else {
         // ensure target.fields exists
         if (!target.hasOwnProperty("fields")) target.fields = {};
@@ -23615,30 +23598,6 @@ before: mergeJSON(${cnt}).target=${JSON.stringify(target, null, 2)}`);
         {
           // copy all fields in json.fields
           Object.keys(json.fields).forEach(name => {
-            if (debug3) {
-              console.log(
-                `copy: mergeJSON(${cnt}) object merge field "${name}"`
-              );
-              /* console.log(
-                `copy: mergeJSON(${cnt}) arg1=${JSON.stringify(
-                  target.fields[name],
-                  null,
-                  2
-                )}`
-              );
-              console.log(
-                `copy: mergeJSON(${cnt}) arg2=${JSON.stringify(
-                  json.fields[name],
-                  null,
-                  2
-                )}`
-              );
-              console.log(
-                `copy: mergeJSON(${cnt}) target.fields.hasOwnProperty("${name}")=${target.fields.hasOwnProperty(
-                  name
-                )}`
-              ); */
-            }
             target.fields[name] = Object.assign(
               {},
               target.fields.hasOwnProperty(name) ? target.fields[name] : {},
@@ -23649,15 +23608,6 @@ before: mergeJSON(${cnt}).target=${JSON.stringify(target, null, 2)}`);
       }
     }
   });
-  if (debug3) {
-    console.log(`after: mergeJSON(${cnt}).target=${JSON.stringify(
-      target,
-      null,
-      2
-    )}
-
-  `);
-  }
   return target;
 }
 
@@ -23665,31 +23615,23 @@ before: mergeJSON(${cnt}).target=${JSON.stringify(target, null, 2)}`);
  * Merges an HTMLElement containing JSON into an existing JSON object.
  * HTMLElement properties override existing properties.
  * @param {Object} result starting object (modified)
- * @param {HTMLElement} me element with json content to merge in
+ * @param {Element} me element with json content to merge in
  */
 function mergeElementJSON(result, me) {
   const cnt = ++mergeCount;
-  const debug2 = debug;
+  const debug2 = debugOverride;
   if (me && me instanceof HTMLElement) {
     if (me.hasAttribute("data-parents")) {
       me.getAttribute("data-parents")
         .split(/\s+/)
         .forEach(parent => {
           const temp = document.querySelector(`#${parent}`);
-          if (debug2) {
-            console.log(
-              `merging mergeElementJSON(${cnt}): #${parent} found=${!!temp}`
-            );
-          }
           result = mergeElementJSON(result, temp);
         });
     }
-    if (debug2) {
-      console.log(`before: mergeElementJSON(${cnt}): me="${me.textContent}"`);
-    }
     try {
       result = mergeJSON$1(result, me.textContent);
-      me.classList.add("hidden");
+      me.classList.add("hide");
       if (debug2) {
         console.log(
           `after: mergeElementJSON(${cnt}) result=${JSON.stringify(
@@ -23700,18 +23642,6 @@ function mergeElementJSON(result, me) {
         );
       }
     } catch (e) {
-      if (debug2) {
-        console.log(
-          `mergeElementJSON error: ${e.toString()} ${JSON.stringify(
-            result,
-            null,
-            2
-          )}`
-        );
-        console.log(
-          `mergeElementJSON(${cnt}) error: me.textContent ${me.textContent}`
-        );
-      }
       showInlineError(me, `Invalid JSON in element ${e.toString()}`, "");
     }
   }
@@ -23719,7 +23649,7 @@ function mergeElementJSON(result, me) {
 }
 
 /**
- * choose-defaults
+ * choose_defaults
  * Returns new JSON that's a copy of the input but fills in default values.
  *
  * @param   {Object} inputJSON
@@ -23784,11 +23714,12 @@ function choose_defaults(inputJSON) {
     return Boolean(pget(prop, def));
   }
 
+  const debug = pget_Boolean("debug", debugOverride);
   const json = {
     preClass: pget_String("preClass", "hide"),
     width: pget_Number("width", 32),
     wordWidth: pget_Number("wordWidth", 32),
-    debug: pget_Boolean("debug", false),
+    debug,
     defaultUnused: pget_String("defaultUnused", "RsvdP"),
     defaultAttr: pget_String("defaultAttr", "other"),
     cellWidth: pget_Number("cellWidth", 16),
@@ -23822,17 +23753,10 @@ function choose_defaults(inputJSON) {
     json.isMessage = false;
   }
 
-  if (json.isRegister) {
-    json.rowLabelTop = pget_Number("rowLabelTop", 20); // top of text for regLabel
-    json.cellValueTop = pget_Number("cellValueTop", 20); // top of text for regFieldValueInternal
-    json.cellBitValueTop = pget_Number("cellBitValueTop", 20); // top of text for regFieldBitValue
-    json.cellNameTop = pget_Number("cellNameTop", 16); // top of text for regFieldNameInternal
-  } else {
-    json.rowLabelTop = pget_Number("rowLabelTop", 20); // top of text for regLabel
-    json.cellValueTop = pget_Number("cellValueTop", 28); // top of text for regFieldValueInternal
-    json.cellBitValueTop = pget_Number("cellBitValueTop", 28); // top of text for regFieldBitValue
-    json.cellNameTop = pget_Number("cellNameTop", 14); // top of text for regFieldNameInternal
-  }
+  json.rowLabelTop = pget_Number("rowLabelTop", 20); // top of text for regLabel
+  json.cellValueTop = pget_Number("cellValueTop", 18); // top of text for regFieldValueInternal
+  json.cellBitValueTop = pget_Number("cellBitValueTop", 22); // top of text for regFieldBitValue
+  json.cellNameTop = pget_Number("cellNameTop", 18); // top of text for regFieldNameInternal
 
   json.left_to_right = pget_Boolean("leftToRight", json.isMessage);
   json.forceFit = pget_Boolean(
@@ -23864,6 +23788,7 @@ function choose_defaults(inputJSON) {
   }
   // copy fields element over and sanitize it
   for (const old_item_name in inputJSON.fields) {
+    // if (!inputJSON.hasOwnProperty(old_item_name)) continue;
     const item = Object.assign({}, inputJSON.fields[old_item_name]);
     if (debug) {
       console.log(
@@ -23937,8 +23862,6 @@ function choose_defaults(inputJSON) {
   return json;
 }
 
-let debug = false;
-
 /**
  * draw_regpict
  * Creates an SVG drawing for the register descriped by inputJSoN in the
@@ -23956,7 +23879,7 @@ function draw_regpict(divsvg, inputJSON) {
   const wordWidth = reg.wordWidth;
   const left_to_right = reg.left_to_right;
   const forceFit = reg.forceFit;
-  debug = reg.debug;
+  const debug = reg.debug;
   const preClass = reg.preClass;
   const defaultUnused = reg.defaultUnused;
   // const defaultAttr = reg.defaultAttr;
@@ -24178,12 +24101,14 @@ function draw_regpict(divsvg, inputJSON) {
     console.log(JSON.stringify(reg, null, " "));
     console.log(` forceFit=${forceFit} left_to_right=${left_to_right}`);
   }
-  divsvg.insertAdjacentHTML(
-    "beforebegin",
-    `<pre class="${preClass}">
+  if (debug) {
+    divsvg.insertAdjacentHTML(
+      "beforebegin",
+      `<pre class="${preClass}">
  ${JSON.stringify(reg, null, " ")}
  </pre>`
-  );
+    );
+  }
 
   let g;
   let p;
@@ -24207,9 +24132,7 @@ function draw_regpict(divsvg, inputJSON) {
         .y(cellTop - 20)
         .addClass("regBitNumMiddle");
       if (debug) {
-        console.log(
-          `bitnum-middle ${b} at x=${middleOf(b)} y=${cellTop - 18}`
-        );
+        console.log(`bitnum-middle ${b} at x=${middleOf(b)} y=${cellTop - 18}`);
       }
       pos = left_to_right ? leftOf(b) : rightOf(b);
       g.line(
@@ -24220,9 +24143,7 @@ function draw_regpict(divsvg, inputJSON) {
       ).addClass("regBitNumLine");
     }
     pos = left_to_right ? rightOf(wordWidth - 1) : leftOf(wordWidth - 1);
-    g.line(pos, cellTop, pos, cellTop - text_height).addClass(
-      "regBitNumLine"
-    );
+    g.line(pos, cellTop, pos, cellTop - text_height).addClass("regBitNumLine");
     g.text("Byte Offset")
       .x(rightOf(-1.5) - 6)
       .y(cellTop - 20)
@@ -24535,10 +24456,7 @@ function draw_regpict(divsvg, inputJSON) {
         }
         let hasValue = false;
         if ("value" in f) {
-          if (
-            Array.isArray(f.value) &&
-            f.value.length === f.msb - f.lsb + 1
-          ) {
+          if (Array.isArray(f.value) && f.value.length === f.msb - f.lsb + 1) {
             hasValue = true;
             for (item = 0; item < f.value.length; ++item) {
               const temp = g
@@ -24552,10 +24470,7 @@ function draw_regpict(divsvg, inputJSON) {
                 temp.addClass("regFieldBitValue-msb");
               }
             }
-          } else if (
-            typeof f.value === "string" ||
-            f.value instanceof String
-          ) {
+          } else if (typeof f.value === "string" || f.value instanceof String) {
             if (f.value.length > 0) {
               hasValue = true;
               g.text(f.value)
@@ -24630,7 +24545,7 @@ function draw_regpict(divsvg, inputJSON) {
             }
             text
               .x(rightOf(-0.5))
-              .y(nextBitLine)
+              .y(nextBitLine - 15)
               .addClass("regFieldName");
             p = new Path$1(g);
             p.move(boxLeft, cellTop + cellHeight * (startRow + 1));
@@ -24728,8 +24643,8 @@ function draw_regpict(divsvg, inputJSON) {
 
 /**
  * Copy indicated attribute from src Element to dest property if present.
- * @param {HTMLElement} dest starting object
- * @param {Object} src merging object
+ * @param {Object} dest starting object
+ * @param {Element} src merging object
  * @param {String} attribute name
  * @param {String} property
  */
@@ -24774,7 +24689,11 @@ ${css}
         isMemoryBlock = false;
         isCapability = false;
       }
-      let json = { fields: {} };
+
+      const debug = debugOverride;
+
+      let json = { fields: {}, debug };
+
       let figNum = 0;
       if (fig.getAttribute("id")) {
         json.figName = fig.getAttribute("id").replace(/^fig-/, "");
@@ -24785,11 +24704,6 @@ ${css}
           `unnamed-${++figNum}`;
       }
       addId(fig, "fig", json.figName);
-      if (debug) {
-        console.log(
-          `core/regpict begin: figure.register id="${fig.getAttribute("id")}"`
-        );
-      }
 
       if (fig.hasAttribute("data-json")) {
         try {
@@ -24808,22 +24722,14 @@ ${css}
       // copyAttribute(json, fig, "data-register", "register");
 
       fig.querySelectorAll("pre.json,div.json,span.json").forEach(pre => {
-        if (debug) {
-          console.log(
-            `run: found <${pre.nodeName.toLowerCase()}.${pre.className}>`
-          );
-          console.log(
-            `run: before: figure json=${JSON.stringify(json, null, 2)}`
-          );
-          console.log(`run: before pre=${pre.outerHTML}`);
-        }
         try {
           json = mergeElementJSON(json, pre);
-          pre.classList.add("hidden");
+          pre.classList.add("hide");
         } catch (e) {
           showInlineError(
             pre,
-            `Invalid JSON in pre.json, div.json, or span.json ${e.toString()}`
+            `Invalid JSON in pre.json, div.json, or span.json ${e.toString()}`,
+            ""
           );
         }
       });
@@ -24837,14 +24743,8 @@ ${css}
       const cap = fig.querySelector("figcaption");
       function create_divsvg() {
         if (cap) {
-          if (debug) {
-            console.log("inserting div.svg before <figcaption>");
-          }
           cap.insertAdjacentHTML("beforebegin", `<div class="svg"></div>`);
         } else {
-          if (debug) {
-            console.log("inserting div.svg at end of <figure>");
-          }
           fig.insertAdjacentHTML("beforeend", `<div class="svg"></div>`);
         }
         return fig.querySelector("div.svg:last-of-type");
@@ -24858,14 +24758,7 @@ ${css}
           draw_regpict(divsvg, temp);
         });
       } else {
-        if (json !== null) {
-          draw_regpict(create_divsvg(), json);
-        }
-      }
-      if (debug) {
-        console.log(
-          `core/regpict end: figure.register id="${fig.getAttribute("id")}"`
-        );
+        draw_regpict(create_divsvg(), json);
       }
     });
 }
@@ -24956,8 +24849,12 @@ function decorateFigure(figure, caption, i) {
   const title = caption.textContent;
   addId(figure, "fig", title);
   // set proper caption title
-  wrapInner(caption, hyperHTML$2`<span class='fig-title'>`);
-  caption.prepend(l10n$7.fig, hyperHTML$2`<bdi class='figno'>${i + 1}</bdi>`, " ");
+  wrapInner(caption, hyperHTML$2`<span class='fig-title'></span>`);
+  caption.prepend(
+    hyperHTML$2`<span class='fighdr'>${l10n$7.fig}</span>`,
+    hyperHTML$2`<bdi class='figno'>${i + 1}</bdi>`,
+    " "
+  );
 }
 
 /**
@@ -25115,8 +25012,12 @@ function decorateEquation(equation, caption, i) {
   const title = caption.textContent;
   addId(equation, "eqn", title);
   // set proper caption title
-  wrapInner(caption, hyperHTML$2`<span class='eqn-title'>`);
-  caption.prepend(l10n$8.eqn, hyperHTML$2`<bdi class='eqnno'>${i + 1}</bdi>`, " ");
+  wrapInner(caption, hyperHTML$2`<span class='eqn-title'></span>`);
+  caption.prepend(
+    hyperHTML$2`<span class='eqnhdr'>${l10n$8.eqn}</span>`,
+    hyperHTML$2`<bdi class='eqnno'>${i + 1}</bdi>`,
+    " "
+  );
 }
 
 /**
@@ -25272,8 +25173,12 @@ function decorateTable(table, caption, i) {
   const title = caption.textContent;
   addId(table, "tbl", title);
   // set proper caption title
-  wrapInner(caption, hyperHTML$2`<span class='tbl-title'>`);
-  caption.prepend(l10n$9.tbl, hyperHTML$2`<bdi class='tblno'>${i + 1}</bdi>`, " ");
+  wrapInner(caption, hyperHTML$2`<span class='tbl-title'></span>`);
+  caption.prepend(
+    hyperHTML$2`<span class='tblhdr'>${l10n$9.tbl}</span>`,
+    hyperHTML$2`<bdi class='tblno'>${i + 1}</bdi>`,
+    " "
+  );
 }
 
 /**
@@ -26878,12 +26783,21 @@ const name$L = "core/structure";
 const localizationStrings$9 = {
   en: {
     toc: "Table of Contents",
+    section: "Section ",
+    chapter: "Chapter ",
+    appendix: "Appendix ",
   },
   nl: {
     toc: "Inhoudsopgave",
+    section: "Section ", // TODO translate
+    chapter: "Chapter ", // TODO: translate
+    appendix: "Appendix ", // TODO: translate
   },
   es: {
     toc: "Tabla de Contenidos",
+    section: "Section ", // TODO: translate
+    chapter: "Chapter ", // TODO: translate
+    appendix: "Appendix ", // TODO: translate
   },
 };
 
@@ -26922,7 +26836,7 @@ function scanSections(sections, maxTocLevel, { prefix = "" } = {}) {
       : appendixMode
       ? appendixNumber(index - lastNonAppendix)
       : prefix + index;
-    const level = parents(section, "section").length + 1;
+    const level = parents(section.element, "section").length + 1;
     if (level === 1) {
       secno += ".";
       // if this is a top level item, insert
@@ -26930,10 +26844,19 @@ function scanSections(sections, maxTocLevel, { prefix = "" } = {}) {
       // paginate the output
       section.header.before(document.createComment("OddPage"));
     }
-
+    const secthdr =
+      level === 1
+        ? appendixMode
+          ? l10n$b.appendix
+          : l10n$b.chapter
+        : l10n$b.section;
+    wrapInner(section.header, hyperHTML$2`<span class='sect-title'>`);
     if (!section.isIntro) {
       index += 1;
-      section.header.prepend(hyperHTML$2`<bdi class='secno'>${secno} </bdi>`);
+      section.header.prepend(
+        hyperHTML$2`<span class='secthdr' hidden>${secthdr}</span>`,
+        hyperHTML$2`<bdi class='secno'>${secno} </bdi>`
+      );
     }
 
     if (level <= maxTocLevel) {
@@ -27221,7 +27144,7 @@ const name$O = "core/id-headers";
 function run$E(conf) {
   /** @type {NodeListOf<HTMLElement>} */
   const headings = document.querySelectorAll(
-    `section:not(.head):not(.introductory) h2, h3, h4, h5, h6`
+    `section:not(.head):not(.introductory) h2, h3, h4, h5, h6, figcaption, caption, div.impnote-title, div.note-title`
   );
   for (const h of headings) {
     addId(h);
@@ -28328,7 +28251,12 @@ var algorithms = /*#__PURE__*/Object.freeze({
 
 const name$Y = "core/anchor-expander";
 
-function run$N() {
+let sectionRefsByNumber = false;
+
+function run$N(conf) {
+  if (conf.hasOwnProperty("sectionRefsByNumber")) {
+    sectionRefsByNumber = conf.sectionRefsByNumber;
+  }
   /** @type {NodeListOf<HTMLElement>} */
   const anchorElements = document.querySelectorAll(
     "a[href^='#']:not(.self-link):not([href$='the-empty-string'])"
@@ -28352,7 +28280,8 @@ function run$N() {
         processHeading(matchingElement, a);
         break;
       }
-      case "section": {
+      case "section":
+      case "nav": {
         // find first heading in the section
         processSection(matchingElement, id, a);
         break;
@@ -28383,15 +28312,30 @@ function run$N() {
 
 function processBox(matchingElement, id, a) {
   const selfLink = matchingElement.querySelector(".marker .self-link");
-  if (!selfLink) {
-    a.textContent = a.getAttribute("href");
-    const msg = `Found matching element "${id}", but it has no title or marker.`;
-    showInlineError(a, msg, "Missing title.");
-    return;
+  if (
+    matchingElement.classList.contains("impnote") ||
+    matchingElement.classList.contains("note")
+  ) {
+    const marker = matchingElement.querySelector(".marker");
+    if (marker) {
+      const children = [...makeSafeCopy(marker).childNodes].filter(
+        node => !node.classList || !node.classList.contains("self-link")
+      );
+      a.append(...children);
+      if (selfLink) a.prepend("§\u00A0");
+      a.classList.add("note-ref");
+    }
+  } else {
+    if (!selfLink) {
+      a.textContent = a.getAttribute("href");
+      const msg = `Found matching element "${id}", but it has no title or marker.`;
+      showInlineError(a, msg, "Missing title.");
+      return;
+    }
+    const copy = makeSafeCopy(selfLink);
+    a.append(...copy.childNodes);
+    a.classList.add("box-ref");
   }
-  const copy = makeSafeCopy(selfLink);
-  a.append(...copy.childNodes);
-  a.classList.add("box-ref");
 }
 
 function processFigure(matchingElement, id, a) {
@@ -28405,13 +28349,20 @@ function processFigure(matchingElement, id, a) {
     showInlineError(a, msg, "Missing figcaption in referenced figure.");
     return;
   }
+  const hadSelfLink = figcaption.querySelector(".self-link");
   // remove the figure's title
   const children = [...makeSafeCopy(figcaption).childNodes].filter(
-    node => !node.classList || !node.classList.contains(`${figEqn}-title`)
+    node =>
+      !node.classList ||
+      !(
+        node.classList.contains(`${figEqn}-title`) ||
+        node.classList.contains("self-link")
+      )
   );
   // drop an empty space at the end.
   children.pop();
   a.append(...children);
+  if (hadSelfLink) a.prepend("§\u00A0");
   a.classList.add(`${figEqn}-ref`);
   const figTitle = figcaption.querySelector(`.${figEqn}-title`);
   if (!a.hasAttribute("title") && figTitle) {
@@ -28427,13 +28378,20 @@ function processTable(matchingElement, id, a) {
     showInlineError(a, msg, "Missing caption in referenced table.");
     return;
   }
+  const hadSelfLink = caption.querySelector(".self-link");
   // remove the table's title
   const children = [...makeSafeCopy(caption).childNodes].filter(
-    node => !node.classList || !node.classList.contains("tbl-title")
+    node =>
+      !node.classList ||
+      !(
+        node.classList.contains("tbl-title") ||
+        node.classList.contains("self-link")
+      )
   );
   // drop an empty space at the end.
   children.pop();
   a.append(...children);
+  if (hadSelfLink) a.prepend("§\u00A0");
   a.classList.add("tbl-ref");
   const tblTitle = caption.querySelector(".tbl-title");
   if (!a.hasAttribute("title") && tblTitle) {
@@ -28456,9 +28414,17 @@ function processSection(matchingElement, id, a) {
 
 function processHeading(heading, a) {
   const hadSelfLink = heading.querySelector(".self-link");
-  const children = [...makeSafeCopy(heading).childNodes].filter(
+  let children = [...makeSafeCopy(heading).childNodes].filter(
     node => !node.classList || !node.classList.contains("self-link")
   );
+  if (sectionRefsByNumber) {
+    children = children.filter(
+      node => !node.classList || !node.classList.contains("sect-title")
+    );
+    children.forEach(
+      node => node instanceof HTMLElement && node.removeAttribute("hidden")
+    );
+  }
   a.append(...children);
   if (hadSelfLink) a.prepend("§\u00A0");
   a.classList.add("sec-ref");
@@ -28519,7 +28485,7 @@ var ui$3 = /*#__PURE__*/Object.freeze({
   'default': ui$2
 });
 
-var respec2 = "/*****************************************************************\n * ReSpec 3 CSS\n * Robin Berjon - http://berjon.com/\n *****************************************************************/\n\n@keyframes pop {\n  0% {\n    transform: scale(1, 1);\n  }\n  25% {\n    transform: scale(1.25, 1.25);\n    opacity: 0.75;\n  }\n  100% {\n    transform: scale(1, 1);\n  }\n}\n\n/* Override code highlighter background */\n.hljs {\n  background: transparent !important;\n}\n\n/* --- INLINES --- */\nh1 abbr,\nh2 abbr,\nh3 abbr,\nh4 abbr,\nh5 abbr,\nh6 abbr,\na abbr {\n  border: none;\n}\n\ndfn {\n  font-weight: bold;\n}\n\na.internalDFN {\n  color: inherit;\n  border-bottom: 1px solid #99c;\n  text-decoration: none;\n}\n\na.externalDFN {\n  color: inherit;\n  border-bottom: 1px dotted #ccc;\n  text-decoration: none;\n}\n\na.bibref {\n  text-decoration: none;\n}\n\n.respec-offending-element:target {\n  animation: pop 0.25s ease-in-out 0s 1;\n}\n\n.respec-offending-element,\na[href].respec-offending-element {\n  text-decoration: red wavy underline;\n}\n@supports not (text-decoration: red wavy underline) {\n  .respec-offending-element:not(pre) {\n    display: inline-block;\n  }\n  .respec-offending-element {\n    /* Red squiggly line */\n    background: url(data:image/gif;base64,R0lGODdhBAADAPEAANv///8AAP///wAAACwAAAAABAADAEACBZQjmIAFADs=)\n      bottom repeat-x;\n  }\n}\n\n#references :target {\n  background: #eaf3ff;\n  animation: pop 0.4s ease-in-out 0s 1;\n}\n\ncite .bibref {\n  font-style: normal;\n}\n\ncode {\n  color: #c83500;\n}\n\nth code {\n  color: inherit;\n}\n\na[href].orcid {\n    padding-left: 4px;\n    padding-right: 4px;\n}\n\na[href].orcid > svg {\n    margin-bottom: -2px;\n}\n\n/* --- TOC --- */\n\n.toc a,\n.tof a {\n  text-decoration: none;\n}\n\na .secno,\na .figno {\n  color: #000;\n}\n\nul.tof,\nol.tof {\n  list-style: none outside none;\n}\n\n.caption {\n  margin-top: 0.5em;\n  font-style: italic;\n}\n\n/* --- TABLE --- */\n\ntable.simple {\n  border-spacing: 0;\n  border-collapse: collapse;\n  border-bottom: 3px solid #005a9c;\n}\n\n.simple th {\n  background: #005a9c;\n  color: #fff;\n  padding: 3px 5px;\n  text-align: left;\n}\n\n.simple th a {\n  color: #fff;\n  padding: 3px 5px;\n  text-align: left;\n}\n\n.simple th[scope=\"row\"] {\n  background: inherit;\n  color: inherit;\n  border-top: 1px solid #ddd;\n}\n\n.simple td {\n  padding: 3px 10px;\n  border-top: 1px solid #ddd;\n}\n\n.simple tr:nth-child(even) {\n  background: #f0f6ff;\n}\n\n/* --- DL --- */\n\n.section dd > p:first-child {\n  margin-top: 0;\n}\n\n.section dd > p:last-child {\n  margin-bottom: 0;\n}\n\n.section dd {\n  margin-bottom: 1em;\n}\n\n.section dl.attrs dd,\n.section dl.eldef dd {\n  margin-bottom: 0;\n}\n\n#issue-summary > ul,\n.respec-dfn-list {\n  column-count: 2;\n}\n\n#issue-summary li,\n.respec-dfn-list li {\n  list-style: none;\n}\n\ndetails.respec-tests-details {\n  margin-left: 1em;\n  display: inline-block;\n  vertical-align: top;\n}\n\ndetails.respec-tests-details > * {\n  padding-right: 2em;\n}\n\ndetails.respec-tests-details[open] {\n  z-index: 999999;\n  position: absolute;\n  border: thin solid #cad3e2;\n  border-radius: 0.3em;\n  background-color: white;\n  padding-bottom: 0.5em;\n}\n\ndetails.respec-tests-details[open] > summary {\n  border-bottom: thin solid #cad3e2;\n  padding-left: 1em;\n  margin-bottom: 1em;\n  line-height: 2em;\n}\n\ndetails.respec-tests-details > ul {\n  width: 100%;\n  margin-top: -0.3em;\n}\n\ndetails.respec-tests-details > li {\n  padding-left: 1em;\n}\n\na[href].self-link:hover {\n  opacity: 1;\n  text-decoration: none;\n  background-color: transparent;\n}\n\nh2,\nh3,\nh4,\nh5,\nh6 {\n  position: relative;\n}\n\naside.example .marker > a.self-link {\n  color: inherit;\n}\n\nh2 > a.self-link,\nh3 > a.self-link,\nh4 > a.self-link,\nh5 > a.self-link,\nh6 > a.self-link {\n  border: none;\n  color: inherit;\n  font-size: 83%;\n  height: 2em;\n  left: -1.6em;\n  opacity: 0.5;\n  position: absolute;\n  text-align: center;\n  text-decoration: none;\n  top: 0;\n  transition: opacity 0.2s;\n  width: 2em;\n}\n\nh2 > a.self-link::before,\nh3 > a.self-link::before,\nh4 > a.self-link::before,\nh5 > a.self-link::before,\nh6 > a.self-link::before {\n  content: \"§\";\n  display: block;\n}\n\n@media (max-width: 767px) {\n  dd {\n    margin-left: 0;\n  }\n\n  /* Don't position self-link in headings off-screen */\n  h2 > a.self-link,\n  h3 > a.self-link,\n  h4 > a.self-link,\n  h5 > a.self-link,\n  h6 > a.self-link {\n    left: auto;\n    top: auto;\n  }\n}\n\n@media print {\n  .removeOnSave {\n    display: none;\n  }\n}\n";
+var respec2 = "/*****************************************************************\n * ReSpec 3 CSS\n * Robin Berjon - http://berjon.com/\n *****************************************************************/\n\n@keyframes pop {\n  0% {\n    transform: scale(1, 1);\n  }\n  25% {\n    transform: scale(1.25, 1.25);\n    opacity: 0.75;\n  }\n  100% {\n    transform: scale(1, 1);\n  }\n}\n\n/* Override code highlighter background */\n.hljs {\n  background: transparent !important;\n}\n\n/* --- INLINES --- */\nh1 abbr,\nh2 abbr,\nh3 abbr,\nh4 abbr,\nh5 abbr,\nh6 abbr,\na abbr {\n  border: none;\n}\n\ndfn {\n  font-weight: bold;\n}\n\na.internalDFN {\n  color: inherit;\n  border-bottom: 1px solid #99c;\n  text-decoration: none;\n}\n\na.externalDFN {\n  color: inherit;\n  border-bottom: 1px dotted #ccc;\n  text-decoration: none;\n}\n\na.bibref {\n  text-decoration: none;\n}\n\n.respec-offending-element:target {\n  animation: pop 0.25s ease-in-out 0s 1;\n}\n\n.respec-offending-element,\na[href].respec-offending-element {\n  text-decoration: red wavy underline;\n}\n@supports not (text-decoration: red wavy underline) {\n  .respec-offending-element:not(pre) {\n    display: inline-block;\n  }\n  .respec-offending-element {\n    /* Red squiggly line */\n    background: url(data:image/gif;base64,R0lGODdhBAADAPEAANv///8AAP///wAAACwAAAAABAADAEACBZQjmIAFADs=)\n      bottom repeat-x;\n  }\n}\n\n#references :target {\n  background: #eaf3ff;\n  animation: pop 0.4s ease-in-out 0s 1;\n}\n\ncite .bibref {\n  font-style: normal;\n}\n\ncode {\n  color: #c83500;\n}\n\nth code {\n  color: inherit;\n}\n\na[href].orcid {\n    padding-left: 4px;\n    padding-right: 4px;\n}\n\na[href].orcid > svg {\n    margin-bottom: -2px;\n}\n\n/* --- TOC --- */\n\n.toc a,\n.tof a {\n  text-decoration: none;\n}\n\na .secno,\na .figno {\n  color: #000;\n}\n\nul.tof,\nol.tof {\n  list-style: none outside none;\n}\n\n.caption {\n  margin-top: 0.5em;\n  font-style: italic;\n}\n\n/* --- TABLE --- */\n\ntable.simple {\n  border-spacing: 0;\n  border-collapse: collapse;\n  border-bottom: 3px solid #005a9c;\n}\n\n.simple th {\n  background: #005a9c;\n  color: #fff;\n  padding: 3px 5px;\n  text-align: left;\n}\n\n.simple th a {\n  color: #fff;\n  padding: 3px 5px;\n  text-align: left;\n}\n\n.simple th[scope=\"row\"] {\n  background: inherit;\n  color: inherit;\n  border-top: 1px solid #ddd;\n}\n\n.simple td {\n  padding: 3px 10px;\n  border-top: 1px solid #ddd;\n}\n\n.simple tr:nth-child(even) {\n  background: #f0f6ff;\n}\n\n/* --- DL --- */\n\n.section dd > p:first-child {\n  margin-top: 0;\n}\n\n.section dd > p:last-child {\n  margin-bottom: 0;\n}\n\n.section dd {\n  margin-bottom: 1em;\n}\n\n.section dl.attrs dd,\n.section dl.eldef dd {\n  margin-bottom: 0;\n}\n\n#issue-summary > ul,\n.respec-dfn-list {\n  column-count: 2;\n}\n\n#issue-summary li,\n.respec-dfn-list li {\n  list-style: none;\n}\n\ndetails.respec-tests-details {\n  margin-left: 1em;\n  display: inline-block;\n  vertical-align: top;\n}\n\ndetails.respec-tests-details > * {\n  padding-right: 2em;\n}\n\ndetails.respec-tests-details[open] {\n  z-index: 999999;\n  position: absolute;\n  border: thin solid #cad3e2;\n  border-radius: 0.3em;\n  background-color: white;\n  padding-bottom: 0.5em;\n}\n\ndetails.respec-tests-details[open] > summary {\n  border-bottom: thin solid #cad3e2;\n  padding-left: 1em;\n  margin-bottom: 1em;\n  line-height: 2em;\n}\n\ndetails.respec-tests-details > ul {\n  width: 100%;\n  margin-top: -0.3em;\n}\n\ndetails.respec-tests-details > li {\n  padding-left: 1em;\n}\n\na[href].self-link:hover {\n  opacity: 1;\n  text-decoration: none;\n  background-color: transparent;\n}\n\nh2,\nh3,\nh4,\nh5,\nh6 {\n  position: relative;\n}\n\naside.example .marker > a.self-link {\n  color: inherit;\n}\n\nh2 > a.self-link,\nh3 > a.self-link,\nh4 > a.self-link,\nh5 > a.self-link,\nh6 > a.self-link,\ndiv.marker > a.self-link,\nfigcaption > a.self-link,\ncaption > a.self-link {\n  border: none;\n  color: inherit;\n  font-size: 83%;\n  height: 2em;\n  left: -1.6em;\n  opacity: 0.5;\n  position: absolute;\n  text-align: center;\n  text-decoration: none;\n  top: 0;\n  transition: opacity 0.2s;\n  width: 2em;\n}\n\nh2 > a.self-link::before,\nh3 > a.self-link::before,\nh4 > a.self-link::before,\nh5 > a.self-link::before,\nh6 > a.self-link::before,\ndiv.marker > a.self-link::before,\nfigcaption > a.self-link::before,\ncaption > a.self-link::before {\n  content: \"§\";\n  display: block;\n}\n\n@media (max-width: 767px) {\n  dd {\n    margin-left: 0;\n  }\n\n  /* Don't position self-link in headings off-screen */\n  h2 > a.self-link,\n  h3 > a.self-link,\n  h4 > a.self-link,\n  h5 > a.self-link,\n  h6 > a.self-link,\n  div.marker > a.self-link,\n  figcaption > a.self-link,\n  caption > a.self-link {\n    left: auto;\n    top: auto;\n  }\n}\n\n@media print {\n  .removeOnSave {\n    display: none;\n  }\n}\n";
 
 var respec2$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
