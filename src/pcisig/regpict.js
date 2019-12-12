@@ -238,7 +238,7 @@ function mergeElementJSON(result, me) {
     }
     try {
       result = mergeJSON(result, me.textContent);
-      me.classList.add("hidden");
+      me.classList.add("hide");
       if (debug2) {
         console.log(
           `after: mergeElementJSON(${cnt}) result=${JSON.stringify(
@@ -1355,7 +1355,7 @@ ${css}
         }
         try {
           json = mergeElementJSON(json, pre);
-          pre.classList.add("hidden");
+          pre.classList.add("hide");
         } catch (e) {
           showInlineError(
             pre,
