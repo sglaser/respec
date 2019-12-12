@@ -720,12 +720,14 @@ export function draw_regpict(divsvg, inputJSON) {
     console.log(JSON.stringify(reg, null, " "));
     console.log(` forceFit=${forceFit} left_to_right=${left_to_right}`);
   }
-  divsvg.insertAdjacentHTML(
-    "beforebegin",
-    `<pre class="${preClass}">
+  if (debug) {
+    divsvg.insertAdjacentHTML(
+      "beforebegin",
+      `<pre class="${preClass}">
  ${JSON.stringify(reg, null, " ")}
  </pre>`
-  );
+    );
+  }
 
   let g;
   let p;
