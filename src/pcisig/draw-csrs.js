@@ -253,6 +253,6 @@ export async function run() {
                 </figcaption>
               </figure>`
     );
-    insert_unused_table_rows(tbl, json);
+    // insert_unused_table_rows(tbl, json);
   });
 }
