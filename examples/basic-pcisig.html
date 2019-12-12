@@ -1,19 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="">
   <head>
     <meta charset="utf-8">
     <title>
       Basic ReSpec Evolution Example
     </title>
     <link href="../Spec/StyleSheets/2019/base.css"
-          rel="stylesheet">
-    <!--<script async="async"
+          rel="stylesheet"><!--<script async="async"
           class="remove"
           src="../builds/respec-pcisig.js"></script>-->
-    <script src='../js/profile-pcisig.js' async class='remove'></script>
 
+    <script async
+          class='remove'
+          src='../js/profile-pcisig.js'></script>
     <script class="remove">
-    var respecConfig = {
+    const respecConfig = {
       specStatus: "WD",
       specRevision: "1.0",
       specDraftLevel: "0.3",
@@ -33,21 +34,19 @@
     </script>
   </head>
   <body>
-    <nav id="toc">
-    </nav>
-    <nav id="tof">
-    </nav>
-    <nav id="toe">
-    </nav>
-    <nav id="tot">
-    </nav>
+    <nav id="toc"></nav>
+    <nav id="tof"></nav>
+    <nav id="toe"></nav>
+    <nav id="tot"></nav>
     <section class="introductory"
-             id="conformance">
-    </section>
+             id="conformance"></section>
     <section id="sotd">
-      <h2>Status of this Document</h2>
+      <h2>
+        Status of this Document
+      </h2>
     </section>
-    <section class="introductory" id="random-introductory-section">
+    <section class="introductory"
+             id="random-introductory-section">
       <h2>
         Random Introductory Section
       </h2>
@@ -72,33 +71,34 @@
       </section>
     </section>
     <section id="revision-history">
-      <h1>
+      <h2>
         Revision History
-      </h1>
+      </h2>
     </section>
     <section id="sect-example-figures-equations-and-tables">
       <h2>
         Example Figures, Equations, and Tables
       </h2>
-      <figure>
+      <figure id="first-figure">
         <code>First Figure</code>
         <figcaption>
           First Figure
         </figcaption>
       </figure>
-      <figure>
+      <figure id="second-figure">
         <code>Second Figure</code>
         <figcaption>
           Second Figure
         </figcaption>
       </figure>
-      <figure>
+      <figure id="third-figure">
         <code>Third Figure</code>
         <figcaption>
           Third Figure
         </figcaption>
       </figure>
-      <table class="data complex">
+      <table class="data complex"
+             id="first-table">
         <caption>
           First Table
         </caption>
@@ -123,7 +123,8 @@
           </tr>
         </tbody>
       </table>
-      <table class="data complex">
+      <table class="data complex"
+             id="second-table">
         <caption>
           Second Table
         </caption>
@@ -148,7 +149,8 @@
           </tr>
         </tbody>
       </table>
-      <table class="data complex">
+      <table class="data complex"
+             id="third-table">
         <caption>
           Third Table
         </caption>
@@ -210,7 +212,8 @@
           </tr>
         </tbody>
       </table>
-      <table class="data complex">
+      <table class="data complex"
+             id="fourth-table">
         <caption>
           Fourth Table
         </caption>
@@ -235,19 +238,22 @@
           </tr>
         </tbody>
       </table>
-      <figure class="equation">
+      <figure class="equation"
+              id="equation-one">
         <code>Equation One</code>
         <figcaption>
           Equation One
         </figcaption>
       </figure>
-      <figure class="equation">
+      <figure class="equation"
+              id="equation-two">
         <code>Equation Two</code>
         <figcaption>
           Equation Two
         </figcaption>
       </figure>
-      <figure class="equation">
+      <figure class="equation"
+              id="equation-three">
         <code>Equation Three</code>
         <figcaption>
           Equation Three
@@ -258,19 +264,20 @@
       <h2>
         Example Figures, Equations, and Tables #2
       </h2>
-      <figure>
+      <figure id="fourth-figure">
         <code>Fourth Figure</code>
         <figcaption>
           Fourth Figure
         </figcaption>
       </figure>
-      <figure>
+      <figure id="sixth-figure">
         <code>Sixth Figure</code>
         <figcaption>
           sixth Figure
         </figcaption>
       </figure>
-      <table class="data complex">
+      <table class="data complex"
+             id="fifth-table">
         <caption>
           Fifth Table
         </caption>
@@ -295,7 +302,8 @@
           </tr>
         </tbody>
       </table>
-      <table class="data complex">
+      <table class="data complex"
+             id="sixth-table">
         <caption>
           Sixth Table
         </caption>
@@ -320,19 +328,22 @@
           </tr>
         </tbody>
       </table>
-      <figure class="equation">
+      <figure class="equation"
+              id="qeuation-four">
         <code>Equation Four</code>
         <figcaption>
           Equation Four
         </figcaption>
       </figure>
-      <figure class="equation">
+      <figure class="equation"
+              id="equation-five">
         <code>Equation Five</code>
         <figcaption>
           Equation Five
         </figcaption>
       </figure>
       <div class="note"
+           id="note-this-is-the-first-note"
            title="This is the first note">
         <p>
           This is the body of an note.
@@ -354,6 +365,7 @@
         </p>
       </div>
       <div class="impnote"
+           id="impnote-this-is-the-first-implementation-note"
            title="This is the first implementation note">
         <p>
           This is the body of an implementation note.
@@ -593,7 +605,7 @@
         </figcaption>
       </figure>
       <table class="pcisig_reg register"
-             data-json='{"debug": true, "preClass": "hide"}'
+             data-json='{"debug": false, "preClass": "hide"}'
              data-width="24"
              id="tbl-pcisig-style-register-1">
         <caption>
@@ -802,9 +814,9 @@
         Dummy paragraph before PCISIG-Style Register #2
       </p>
       <table class="register pcisig_reg"
-             data-json='{"debug": true, "preClass": "hide"}'
-             data-width="16"
-             data-unused="RsvdZ">
+             data-json='{"debug": false, "preClass": "hide"}'
+             data-unused="RsvdZ"
+             data-width="16">
         <caption>
           PCISIG-Style Register #2
         </caption>
@@ -995,7 +1007,7 @@
           <dfn class="register">Device Capabilities 2 Register</dfn> (Offset 24h)
         </h2>
         <table class="pcisig_reg register"
-               data-json='{"debug": true, "preClass": "hide"}'
+               data-json='{"debug": false, "preClass": "hide"}'
                id="tbl-device-capabilities-2-register">
           <caption>
             Device Capabilities 2 Register
@@ -1126,7 +1138,9 @@
                 <p>
                   <dfn class="field">Completion Timeout Disable Supported</dfn> – A value of 1b indicates support for the Completion Timeout Disable mechanism.
                 </p>
-                <p><dfn class="field">Completion Timeout Disable Supported</dfn></p>
+                <p>
+                  <dfn class="field">Completion Timeout Disable Supported</dfn>
+                </p>
                 <p>
                   The Completion Timeout Disable mechanism is REQUIRED for Endpoints that issue Requests on their own behalf and PCI Express to PCI/PCI-X Bridges that take ownership of Requests issued on PCI Express.
                 </p>
@@ -1514,15 +1528,99 @@
         </p>
         <p class="impnote"
            id="impnote-use-of-the-no-ro-enabled-pr-pr-passing-bit"
-            title="Use of the No RO-enabled PR-PR Passing Bit">
+           title="Use of the No RO-enabled PR-PR Passing Bit">
           The No RO-enabled PR-PR Passing bit allows platforms to utilize PCI Express switching elements on the path between a requester and completer for requesters that could benefit from a slightly less 5 relaxed ordering model. An example is a device that cannot ensure that multiple overlapping posted writes to the same address are outstanding at the same time. The method by which such a device is enabled to utilize this mode is beyond the scope of this specification.
         </p>
         <section id="field-References">
           <h2>
             Field References
           </h2>
-          <p>Empty Reference to non-existent target '<a href="#bogus"></a>'.</p>
+          <p>
+            Empty Reference to non-existent target '<a href="#bogus"></a>'.
+          </p>
           <ul>
+            <li>toc: <a href="#toc"></a>
+            </li>
+            <li>tof: <a href="#tof"></a>
+            </li>
+            <li>toe: <a href="#toe"></a>
+            </li>
+            <li>tot: <a href="#tot"></a>
+            </li>
+            <li>conformance: <a href="#conformance"></a>
+            </li>
+            <li>sotd: <a href="#sotd"></a>
+            </li>
+            <li>random-introductory-section: <a href="#random-introductory-section"></a>
+            </li>
+            <li>inner-introductory-section: <a href="#inner-introductory-section"></a>
+            </li>
+            <li>other-inner-introductory-section: <a href="#other-inner-introductory-section"></a>
+            </li>
+            <li>revision-history: <a href="#revision-history"></a>
+            </li>
+            <li>sect-example-figures-equations-and-tables: <a href="#sect-example-figures-equations-and-tables"></a>
+            </li>
+            <li>first-figure: <a href="#first-figure"></a>
+            </li>
+            <li>second-figure: <a href="#second-figure"></a>
+            </li>
+            <li>third-figure: <a href="#third-figure"></a>
+            </li>
+            <li>first-table: <a href="#first-table"></a>
+            </li>
+            <li>second-table: <a href="#second-table"></a>
+            </li>
+            <li>third-table: <a href="#third-table"></a>
+            </li>
+            <li>fourth-table: <a href="#fourth-table"></a>
+            </li>
+            <li>equation-one: <a href="#equation-one"></a>
+            </li>
+            <li>equation-two: <a href="#equation-two"></a>
+            </li>
+            <li>sect-example-figures-equations-and-tables-2: <a href="#sect-example-figures-equations-and-tables-2"></a>
+            </li>
+            <li>fourth-figure: <a href="#fourth-figure"></a>
+            </li>
+            <li>sixth-figure: <a href="#sixth-figure"></a>
+            </li>
+            <li>fifth-table: <a href="#fifth-table"></a>
+            </li>
+            <li>sixth-table: <a href="#sixth-table"></a>
+            </li>
+            <li>qeuation-four: <a href="#qeuation-four"></a>
+            </li>
+            <li>equation-five: <a href="#equation-five"></a>
+            </li>
+            <li>note-this-is-the-first-note: <a href="#note-this-is-the-first-note"></a>
+            </li>
+            <li>impnote-this-is-the-first-implementation-note: <a href="#impnote-this-is-the-first-implementation-note"></a>
+            </li>
+            <li>json-capability: <a href="#json-capability"></a>
+            </li>
+            <li>json-message: <a href="#json-message"></a>
+            </li>
+            <li>json-register: <a href="#json-register"></a>
+            </li>
+            <li>tbl-pcisig-style-register-1: <a href="#tbl-pcisig-style-register-1"></a>
+            </li>
+            <li>sect-device-capabilities-2-register: <a href="#sect-device-capabilities-2-register"></a>
+            </li>
+            <li>tbl-device-capabilities-2-register: <a href="#tbl-device-capabilities-2-register"></a>
+            </li>
+            <li>note-use-of-the-no-ro-enabled-pr-pr-passing-bit: <a href="#note-use-of-the-no-ro-enabled-pr-pr-passing-bit"></a>
+            </li>
+            <li>impnote-use-of-the-no-ro-enabled-pr-pr-passing-bit: <a href="#impnote-use-of-the-no-ro-enabled-pr-pr-passing-bit"></a>
+            </li>
+            <li>field-References: <a href="#field-References"></a>
+            </li>
+            <li>inner-introductory-section: <a href="#inner-introductory-section"></a>
+            </li>
+            <li>impnote-use-of-the-no-ro-enabled-pr-pr-passing-bit: <a href="#impnote-use-of-the-no-ro-enabled-pr-pr-passing-bit"></a>
+            </li>
+            <li>note-use-of-the-no-ro-enabled-pr-pr-passing-bit: <a href="#note-use-of-the-no-ro-enabled-pr-pr-passing-bit"></a>
+            </li>
             <li>
               <a>PCISIG-Style Register #1.Ab</a>
             </li>
