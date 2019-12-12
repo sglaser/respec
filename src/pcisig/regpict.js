@@ -16,6 +16,8 @@ export const name = "pcisig/regpict";
 
 const cssPromise = loadStyle();
 
+const debugOverride = false;
+
 class Path {
   constructor(container) {
     this.thePath = container.path();
@@ -94,6 +96,7 @@ class Path {
     this.thePath.addClass(cls);
   }
 }
+
 async function loadStyle() {
   try {
     return (await import("text!../../assets/examples.css")).default;
@@ -113,7 +116,7 @@ let mergeCount = 0;
  */
 function mergeJSON(target, src) {
   const cnt = ++mergeCount;
-  const debug3 = debug;
+  const debug3 = debugOverride;
   const json = typeof src !== "string" ? src : JSON.parse(src);
   if (debug3) {
     console.log(`
@@ -211,11 +214,11 @@ before: mergeJSON(${cnt}).target=${JSON.stringify(target, null, 2)}`);
  * Merges an HTMLElement containing JSON into an existing JSON object.
  * HTMLElement properties override existing properties.
  * @param {Object} result starting object (modified)
- * @param {HTMLElement} me element with json content to merge in
+ * @param {Element} me element with json content to merge in
  */
 function mergeElementJSON(result, me) {
   const cnt = ++mergeCount;
-  const debug2 = debug;
+  const debug2 = debugOverride;
   if (me && me instanceof HTMLElement) {
     if (me.hasAttribute("data-parents")) {
       me.getAttribute("data-parents")
@@ -265,7 +268,7 @@ function mergeElementJSON(result, me) {
 }
 
 /**
- * choose-defaults
+ * choose_defaults
  * Returns new JSON that's a copy of the input but fills in default values.
  *
  * @param   {Object} inputJSON
@@ -330,11 +333,12 @@ function choose_defaults(inputJSON) {
     return Boolean(pget(prop, def));
   }
 
+  const debug = pget_Boolean("debug", debugOverride);
   const json = {
     preClass: pget_String("preClass", "hide"),
     width: pget_Number("width", 32),
     wordWidth: pget_Number("wordWidth", 32),
-    debug: pget_Boolean("debug", false),
+    debug,
     defaultUnused: pget_String("defaultUnused", "RsvdP"),
     defaultAttr: pget_String("defaultAttr", "other"),
     cellWidth: pget_Number("cellWidth", 16),
@@ -368,17 +372,10 @@ function choose_defaults(inputJSON) {
     json.isMessage = false;
   }
 
-  if (json.isRegister) {
-    json.rowLabelTop = pget_Number("rowLabelTop", 20); // top of text for regLabel
-    json.cellValueTop = pget_Number("cellValueTop", 20); // top of text for regFieldValueInternal
-    json.cellBitValueTop = pget_Number("cellBitValueTop", 20); // top of text for regFieldBitValue
-    json.cellNameTop = pget_Number("cellNameTop", 16); // top of text for regFieldNameInternal
-  } else {
-    json.rowLabelTop = pget_Number("rowLabelTop", 20); // top of text for regLabel
-    json.cellValueTop = pget_Number("cellValueTop", 28); // top of text for regFieldValueInternal
-    json.cellBitValueTop = pget_Number("cellBitValueTop", 28); // top of text for regFieldBitValue
-    json.cellNameTop = pget_Number("cellNameTop", 14); // top of text for regFieldNameInternal
-  }
+  json.rowLabelTop = pget_Number("rowLabelTop", 20); // top of text for regLabel
+  json.cellValueTop = pget_Number("cellValueTop", 18); // top of text for regFieldValueInternal
+  json.cellBitValueTop = pget_Number("cellBitValueTop", 22); // top of text for regFieldBitValue
+  json.cellNameTop = pget_Number("cellNameTop", 18); // top of text for regFieldNameInternal
 
   json.left_to_right = pget_Boolean("leftToRight", json.isMessage);
   json.forceFit = pget_Boolean(
@@ -410,6 +407,7 @@ function choose_defaults(inputJSON) {
   }
   // copy fields element over and sanitize it
   for (const old_item_name in inputJSON.fields) {
+    // if (!inputJSON.hasOwnProperty(old_item_name)) continue;
     const item = Object.assign({}, inputJSON.fields[old_item_name]);
     if (debug) {
       console.log(
@@ -483,8 +481,6 @@ function choose_defaults(inputJSON) {
   return json;
 }
 
-let debug = false;
-
 /**
  * draw_regpict
  * Creates an SVG drawing for the register descriped by inputJSoN in the
@@ -502,7 +498,7 @@ export function draw_regpict(divsvg, inputJSON) {
   const wordWidth = reg.wordWidth;
   const left_to_right = reg.left_to_right;
   const forceFit = reg.forceFit;
-  debug = reg.debug;
+  const debug = reg.debug;
   const preClass = reg.preClass;
   const defaultUnused = reg.defaultUnused;
   // const defaultAttr = reg.defaultAttr;
@@ -753,9 +749,7 @@ export function draw_regpict(divsvg, inputJSON) {
         .y(cellTop - 20)
         .addClass("regBitNumMiddle");
       if (debug) {
-        console.log(
-          `bitnum-middle ${b} at x=${middleOf(b)} y=${cellTop - 18}`
-        );
+        console.log(`bitnum-middle ${b} at x=${middleOf(b)} y=${cellTop - 18}`);
       }
       pos = left_to_right ? leftOf(b) : rightOf(b);
       g.line(
@@ -766,9 +760,7 @@ export function draw_regpict(divsvg, inputJSON) {
       ).addClass("regBitNumLine");
     }
     pos = left_to_right ? rightOf(wordWidth - 1) : leftOf(wordWidth - 1);
-    g.line(pos, cellTop, pos, cellTop - text_height).addClass(
-      "regBitNumLine"
-    );
+    g.line(pos, cellTop, pos, cellTop - text_height).addClass("regBitNumLine");
     g.text("Byte Offset")
       .x(rightOf(-1.5) - 6)
       .y(cellTop - 20)
@@ -1268,8 +1260,8 @@ export function draw_regpict(divsvg, inputJSON) {
 
 /**
  * Copy indicated attribute from src Element to dest property if present.
- * @param {HTMLElement} dest starting object
- * @param {Object} src merging object
+ * @param {Object} dest starting object
+ * @param {Element} src merging object
  * @param {String} attribute name
  * @param {String} property
  */
@@ -1314,7 +1306,11 @@ ${css}
         isMemoryBlock = false;
         isCapability = false;
       }
-      let json = { fields: {} };
+
+      const debug = debugOverride;
+
+      let json = { fields: {}, debug };
+
       let figNum = 0;
       if (fig.getAttribute("id")) {
         json.figName = fig.getAttribute("id").replace(/^fig-/, "");
@@ -1363,10 +1359,11 @@ ${css}
         } catch (e) {
           showInlineError(
             pre,
-            `Invalid JSON in pre.json, div.json, or span.json ${e.toString()}`
+            `Invalid JSON in pre.json, div.json, or span.json ${e.toString()}`,
+            ""
           );
         }
-        if (false && debug) {
+        if (debug) {
           console.log(`after merging <pre> ${JSON.stringify(json, null, 2)}`);
         }
       });
@@ -1401,9 +1398,7 @@ ${css}
           draw_regpict(divsvg, temp);
         });
       } else {
-        if (json !== null) {
-          draw_regpict(create_divsvg(), json);
-        }
+        draw_regpict(create_divsvg(), json);
       }
       if (debug) {
         console.log(

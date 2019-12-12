@@ -207,12 +207,12 @@ export function parse_table(tbl) {
  * Merges two JSON objects together.
  * Src object properties override existing target properties.
  * @param {Object} target starting object (modified)
- * @param {Object} src merging object
+ * @param {Object} inputSrc merging object
  * @returns {Object} modified target
  */
-function mergeJSON(target, src) {
-  const json = typeof src !== "string" ? src : JSON.parse(src);
-  for (const prop in Object.getOwnPropertyNames(json)) {
+function mergeJSON(target, inputSrc) {
+  const src = typeof inputSrc !== "string" ? inputSrc : JSON.parse(inputSrc);
+  for (const prop in src) {
     if (src.hasOwnProperty(prop)) {
       // if the value is a nested object, recursively copy all it's properties
       if (typeof src[prop] === "object" && !!src[prop]) {
