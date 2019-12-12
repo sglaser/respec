@@ -2487,6 +2487,11 @@ svg *.svg_error text:not(.regBitWidth):not(.regBitNumMiddle):not(.regBitNumEnd):
     font-family: monospace;
 }
 
+figure div.json.hide,
+figure pre.json.hide {
+  display: none;
+}
+
 figure div.json,
 figure pre.json {
     color: rgb(0,90,156);
