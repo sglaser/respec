@@ -40,10 +40,10 @@ const modules = [
   Promise.resolve().then(function () { return figures; }),
   Promise.resolve().then(function () { return equations; }),
   Promise.resolve().then(function () { return tables; }),
-  Promise.resolve().then(function () { return webidl; }),
+  // import("../src/core/webidl.js"),
   Promise.resolve().then(function () { return dataCite; }),
   Promise.resolve().then(function () { return biblio$1; }),
-  Promise.resolve().then(function () { return webidlIndex; }),
+  // import("../src/core/webidl-index.js"),
   Promise.resolve().then(function () { return linkToDfn; }),
   Promise.resolve().then(function () { return renderBiblio; }),
   Promise.resolve().then(function () { return contrib; }),
@@ -63,7 +63,7 @@ const modules = [
   Promise.resolve().then(function () { return seo; }),
   // import("../src/w3c/seo.js"),
   // import("../src/core/highlight.js"),
-  Promise.resolve().then(function () { return webidlClipboard; }),
+  // import("../src/core/webidl-clipboard.js"),
   Promise.resolve().then(function () { return dataTests; }),
   Promise.resolve().then(function () { return listSorter; }),
   // import("../src/core/highlight-vars.js"),
@@ -1671,2551 +1671,6 @@ var _idb = /*#__PURE__*/Object.freeze({
   deleteDB: deleteDB,
   unwrap: unwrap,
   wrap: wrap
-});
-
-/**
- * @param {string} text
- */
-function lastLine(text) {
-  const splitted = text.split("\n");
-  return splitted[splitted.length - 1];
-}
-
-/**
- * @typedef {object} WebIDL2ErrorOptions
- * @property {"error" | "warning"} [level]
- * @property {Function} [autofix]
- *
- * @param {string} message error message
- * @param {"Syntax" | "Validation"} kind error type
- * @param {WebIDL2ErrorOptions} [options]
- */
-function error(source, position, current, message, kind, { level = "error", autofix, ruleName } = {}) {
-  /**
-   * @param {number} count
-   */
-  function sliceTokens(count) {
-    return count > 0 ?
-      source.slice(position, position + count) :
-      source.slice(Math.max(position + count, 0), position);
-  }
-
-  function tokensToText(inputs, { precedes } = {}) {
-    const text = inputs.map(t => t.trivia + t.value).join("");
-    const nextToken = source[position];
-    if (nextToken.type === "eof") {
-      return text;
-    }
-    if (precedes) {
-      return text + nextToken.trivia;
-    }
-    return text.slice(nextToken.trivia.length);
-  }
-
-  const maxTokens = 5; // arbitrary but works well enough
-  const line =
-    source[position].type !== "eof" ? source[position].line :
-    source.length > 1 ? source[position - 1].line :
-    1;
-
-  const precedingLastLine = lastLine(
-    tokensToText(sliceTokens(-maxTokens), { precedes: true })
-  );
-
-  const subsequentTokens = sliceTokens(maxTokens);
-  const subsequentText = tokensToText(subsequentTokens);
-  const subsequentFirstLine = subsequentText.split("\n")[0];
-
-  const spaced = " ".repeat(precedingLastLine.length) + "^";
-  const sourceContext = precedingLastLine + subsequentFirstLine + "\n" + spaced;
-
-  const contextType = kind === "Syntax" ? "since" : "inside";
-  const inSourceName = source.name ? ` in ${source.name}` : "";
-  const grammaticalContext = (current && current.name) ? `, ${contextType} \`${current.partial ? "partial " : ""}${current.type} ${current.name}\`` : "";
-  const context = `${kind} error at line ${line}${inSourceName}${grammaticalContext}:\n${sourceContext}`;
-  return {
-    message: `${context} ${message}`,
-    bareMessage: message,
-    context,
-    line,
-    sourceName: source.name,
-    level,
-    ruleName,
-    autofix,
-    input: subsequentText,
-    tokens: subsequentTokens
-  };
-}
-
-/**
- * @param {string} message error message
- */
-function syntaxError(source, position, current, message) {
-  return error(source, position, current, message, "Syntax");
-}
-
-/**
- * @param {string} message error message
- * @param {WebIDL2ErrorOptions} [options]
- */
-function validationError(token, current, ruleName, message, options = {}) {
-  options.ruleName = ruleName;
-  return error(current.source, token.index, current, message, "Validation", options);
-}
-
-// @ts-check
-
-class Base {
-  /**
-   * @param {object} initializer
-   * @param {Base["source"]} initializer.source
-   * @param {Base["tokens"]} initializer.tokens
-   */
-  constructor({ source, tokens }) {
-    Object.defineProperties(this, {
-      source: { value: source },
-      tokens: { value: tokens },
-      parent: { value: null, writable: true },
-      this: { value: this } // useful when escaping from proxy
-    });
-  }
-
-  toJSON() {
-    const json = { type: undefined, name: undefined, inheritance: undefined };
-    let proto = this;
-    while (proto !== Object.prototype) {
-      const descMap = Object.getOwnPropertyDescriptors(proto);
-      for (const [key, value] of Object.entries(descMap)) {
-        if (value.enumerable || value.get) {
-          // @ts-ignore - allow indexing here
-          json[key] = this[key];
-        }
-      }
-      proto = Object.getPrototypeOf(proto);
-    }
-    return json;
-  }
-}
-
-// @ts-check
-
-/**
- * @typedef {import("../productions/dictionary.js").Dictionary} Dictionary
- *
- * @param {*} idlType
- * @param {import("../validator.js").Definitions} defs
- * @param {object} [options]
- * @param {boolean} [options.useNullableInner] use when the input idlType is nullable and you want to use its inner type
- * @return {{ reference: *, dictionary: Dictionary }} the type reference that ultimately includes dictionary.
- */
-function idlTypeIncludesDictionary(idlType, defs, { useNullableInner } = {}) {
-  if (!idlType.union) {
-    const def = defs.unique.get(idlType.idlType);
-    if (!def) {
-      return;
-    }
-    if (def.type === "typedef") {
-      const { typedefIncludesDictionary } = defs.cache;
-      if (typedefIncludesDictionary.has(def)) {
-        // Note that this also halts when it met indeterminate state
-        // to prevent infinite recursion
-        return typedefIncludesDictionary.get(def);
-      }
-      defs.cache.typedefIncludesDictionary.set(def, undefined); // indeterminate state
-      const result = idlTypeIncludesDictionary(def.idlType, defs);
-      defs.cache.typedefIncludesDictionary.set(def, result);
-      if (result) {
-        return {
-          reference: idlType,
-          dictionary: result.dictionary
-        };
-      }
-    }
-    if (def.type === "dictionary" && (useNullableInner || !idlType.nullable)) {
-      return {
-        reference: idlType,
-        dictionary: def
-      };
-    }
-  }
-  for (const subtype of idlType.subtype) {
-    const result = idlTypeIncludesDictionary(subtype, defs);
-    if (result) {
-      if (subtype.union) {
-        return result;
-      }
-      return {
-        reference: subtype,
-        dictionary: result.dictionary
-      };
-    }
-  }
-}
-
-/**
- * @param {*} dict dictionary type
- * @param {import("../validator.js").Definitions} defs
- * @return {boolean}
- */
-function dictionaryIncludesRequiredField(dict, defs) {
-  if (defs.cache.dictionaryIncludesRequiredField.has(dict)) {
-    return defs.cache.dictionaryIncludesRequiredField.get(dict);
-  }
-  defs.cache.dictionaryIncludesRequiredField.set(dict, undefined); // indeterminate
-  if (dict.inheritance) {
-    const superdict = defs.unique.get(dict.inheritance);
-    if (!superdict) {
-      return true;
-    }
-    if (dictionaryIncludesRequiredField(superdict, defs)) {
-      return true;
-    }
-  }
-  const result = dict.members.some(field => field.required);
-  defs.cache.dictionaryIncludesRequiredField.set(dict, result);
-  return result;
-}
-
-/**
- * @param {import("../tokeniser").Tokeniser} tokeniser
- * @param {string} typeName
- */
-function generic_type(tokeniser, typeName) {
-  const base = tokeniser.consume("FrozenArray", "Promise", "sequence", "record");
-  if (!base) {
-    return;
-  }
-  const ret = autoParenter(new Type({ source: tokeniser.source, tokens: { base } }));
-  ret.tokens.open = tokeniser.consume("<") || tokeniser.error(`No opening bracket after ${base.type}`);
-  switch (base.type) {
-    case "Promise": {
-      if (tokeniser.probe("[")) tokeniser.error("Promise type cannot have extended attribute");
-      const subtype = return_type(tokeniser, typeName) || tokeniser.error("Missing Promise subtype");
-      ret.subtype.push(subtype);
-      break;
-    }
-    case "sequence":
-    case "FrozenArray": {
-      const subtype = type_with_extended_attributes(tokeniser, typeName) || tokeniser.error(`Missing ${base.type} subtype`);
-      ret.subtype.push(subtype);
-      break;
-    }
-    case "record": {
-      if (tokeniser.probe("[")) tokeniser.error("Record key cannot have extended attribute");
-      const keyType = tokeniser.consume(...stringTypes) || tokeniser.error(`Record key must be one of: ${stringTypes.join(", ")}`);
-      const keyIdlType = new Type({ source: tokeniser.source, tokens: { base: keyType }});
-      keyIdlType.tokens.separator = tokeniser.consume(",") || tokeniser.error("Missing comma after record key type");
-      keyIdlType.type = typeName;
-      const valueType = type_with_extended_attributes(tokeniser, typeName) || tokeniser.error("Error parsing generic type record");
-      ret.subtype.push(keyIdlType, valueType);
-      break;
-    }
-  }
-  if (!ret.idlType) tokeniser.error(`Error parsing generic type ${base.type}`);
-  ret.tokens.close = tokeniser.consume(">") || tokeniser.error(`Missing closing bracket after ${base.type}`);
-  return ret.this;
-}
-
-/**
- * @param {import("../tokeniser").Tokeniser} tokeniser
- */
-function type_suffix(tokeniser, obj) {
-  const nullable = tokeniser.consume("?");
-  if (nullable) {
-    obj.tokens.nullable = nullable;
-  }
-  if (tokeniser.probe("?")) tokeniser.error("Can't nullable more than once");
-}
-
-/**
- * @param {import("../tokeniser").Tokeniser} tokeniser
- * @param {string} typeName
- */
-function single_type(tokeniser, typeName) {
-  let ret = generic_type(tokeniser, typeName) || primitive_type(tokeniser);
-  if (!ret) {
-    const base = tokeniser.consume("identifier", ...stringTypes, ...typeNameKeywords);
-    if (!base) {
-      return;
-    }
-    ret = new Type({ source: tokeniser.source, tokens: { base } });
-    if (tokeniser.probe("<")) tokeniser.error(`Unsupported generic type ${base.value}`);
-  }
-  if (ret.generic === "Promise" && tokeniser.probe("?")) {
-    tokeniser.error("Promise type cannot be nullable");
-  }
-  ret.type = typeName || null;
-  type_suffix(tokeniser, ret);
-  if (ret.nullable && ret.idlType === "any") tokeniser.error("Type `any` cannot be made nullable");
-  return ret;
-}
-
-/**
- * @param {import("../tokeniser").Tokeniser} tokeniser
- * @param {string} type
- */
-function union_type(tokeniser, type) {
-  const tokens = {};
-  tokens.open = tokeniser.consume("(");
-  if (!tokens.open) return;
-  const ret = autoParenter(new Type({ source: tokeniser.source, tokens }));
-  ret.type = type || null;
-  while (true) {
-    const typ = type_with_extended_attributes(tokeniser) || tokeniser.error("No type after open parenthesis or 'or' in union type");
-    if (typ.idlType === "any") tokeniser.error("Type `any` cannot be included in a union type");
-    if (typ.generic === "Promise") tokeniser.error("Type `Promise` cannot be included in a union type");
-    ret.subtype.push(typ);
-    const or = tokeniser.consume("or");
-    if (or) {
-      typ.tokens.separator = or;
-    }
-    else break;
-  }
-  if (ret.idlType.length < 2) {
-    tokeniser.error("At least two types are expected in a union type but found less");
-  }
-  tokens.close = tokeniser.consume(")") || tokeniser.error("Unterminated union type");
-  type_suffix(tokeniser, ret);
-  return ret.this;
-}
-
-class Type extends Base {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   * @param {string} typeName
-   */
-  static parse(tokeniser, typeName) {
-    return single_type(tokeniser, typeName) || union_type(tokeniser, typeName);
-  }
-
-  constructor({ source, tokens }) {
-    super({ source, tokens });
-    Object.defineProperty(this, "subtype", { value: [], writable: true });
-    this.extAttrs = [];
-  }
-
-  get generic() {
-    if (this.subtype.length && this.tokens.base) {
-      return this.tokens.base.value;
-    }
-    return "";
-  }
-  get nullable() {
-    return Boolean(this.tokens.nullable);
-  }
-  get union() {
-    return Boolean(this.subtype.length) && !this.tokens.base;
-  }
-  get idlType() {
-    if (this.subtype.length) {
-      return this.subtype;
-    }
-    // Adding prefixes/postfixes for "unrestricted float", etc.
-    const name = [
-      this.tokens.prefix,
-      this.tokens.base,
-      this.tokens.postfix
-    ].filter(t => t).map(t => t.value).join(" ");
-    return unescape(name);
-  }
-
-  *validate(defs) {
-    /*
-     * If a union is nullable, its subunions cannot include a dictionary
-     * If not, subunions may include dictionaries if each union is not nullable
-     */
-    const typedef = !this.union && defs.unique.get(this.idlType);
-    const target =
-      this.union ? this :
-      (typedef && typedef.type === "typedef") ? typedef.idlType :
-      undefined;
-    if (target && this.nullable) {
-      // do not allow any dictionary
-      const { reference } = idlTypeIncludesDictionary(target, defs) || {};
-      if (reference) {
-        const targetToken = (this.union ? reference : this).tokens.base;
-        const message = `Nullable union cannot include a dictionary type`;
-        yield validationError(targetToken, this, "no-nullable-union-dict", message);
-      }
-    } else {
-      // allow some dictionary
-      for (const subtype of this.subtype) {
-        yield* subtype.validate(defs);
-      }
-    }
-  }
-}
-
-class Default extends Base {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   */
-  static parse(tokeniser) {
-    const assign = tokeniser.consume("=");
-    if (!assign) {
-      return null;
-    }
-    const def = const_value(tokeniser) || tokeniser.consume("string", "null", "[", "{") || tokeniser.error("No value for default");
-    const expression = [def];
-    if (def.type === "[") {
-      const close = tokeniser.consume("]") || tokeniser.error("Default sequence value must be empty");
-      expression.push(close);
-    } else if (def.type === "{") {
-      const close = tokeniser.consume("}") || tokeniser.error("Default dictionary value must be empty");
-      expression.push(close);
-    }
-    return new Default({ source: tokeniser.source, tokens: { assign }, expression });
-  }
-
-  constructor({ source, tokens, expression }) {
-    super({ source, tokens });
-    expression.parent = this;
-    Object.defineProperty(this, "expression", { value: expression });
-  }
-
-  get type() {
-    return const_data(this.expression[0]).type;
-  }
-  get value() {
-    return const_data(this.expression[0]).value;
-  }
-  get negative() {
-    return const_data(this.expression[0]).negative;
-  }
-}
-
-// @ts-check
-
-class ArrayBase extends Array {
-  constructor({ source, tokens }) {
-    super();
-    Object.defineProperties(this, {
-      source: { value: source },
-      tokens: { value: tokens },
-      parent: { value: null, writable: true }
-    });
-  }
-}
-
-// @ts-check
-
-class Token extends Base {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   * @param {string} type
-   */
-  static parser(tokeniser, type) {
-    return () => {
-      const value = tokeniser.consume(type);
-      if (value) {
-        return new Token({ source: tokeniser.source, tokens: { value } });
-      }
-    };
-  }
-
-  get value() {
-    return unescape(this.tokens.value.value);
-  }
-}
-
-/**
- * @param {import("../tokeniser").Tokeniser} tokeniser
- * @param {string} tokenName
- */
-function tokens(tokeniser, tokenName) {
-  const toks = list(tokeniser, {
-    parser: Token.parser(tokeniser, tokenName),
-    listName: tokenName + " list"
-  });
-  return toks;
-}
-
-/**
- * This will allow a set of identifiers or strings to be parsed.
- * @param {import("../tokeniser").Tokeniser} tokeniser
- */
-function identifiersOrStrings(tokeniser) {
-  let toks = tokens(tokeniser, "identifier");
-  if (toks.length) {
-    return toks;
-  }
-  toks = tokens(tokeniser, "string");
-  if (toks.length) {
-    return toks;
-  }
-  tokeniser.error(`Expected identifiers or strings but none found`);
-}
-
-
-class ExtendedAttributeParameters extends Base {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   */
-  static parse(tokeniser) {
-    const tokens = { assign: tokeniser.consume("=") };
-    const ret = autoParenter(new ExtendedAttributeParameters({ source: tokeniser.source, tokens }));
-    if (tokens.assign) {
-      tokens.secondaryName = tokeniser.consume("identifier", "decimal", "integer", "string");
-    }
-    tokens.open = tokeniser.consume("(");
-    if (tokens.open) {
-      ret.list = ret.rhsIsList ?
-        // [Exposed=(Window,Worker)]
-        identifiersOrStrings(tokeniser) :
-        // [NamedConstructor=Audio(DOMString src)] or [Constructor(DOMString str)]
-        argument_list(tokeniser);
-      tokens.close = tokeniser.consume(")") || tokeniser.error("Unexpected token in extended attribute argument list");
-    } else if (ret.hasRhs && !tokens.secondaryName) {
-      tokeniser.error("No right hand side to extended attribute assignment");
-    }
-    return ret.this;
-  }
-
-  get rhsIsList() {
-    return this.tokens.assign && !this.tokens.secondaryName;
-  }
-
-  get rhsType() {
-    if (this.rhsIsList) {
-      return this.list[0].tokens.value.type + "-list";
-    }
-    if (this.tokens.secondaryName) {
-      return this.tokens.secondaryName.type;
-    }
-    return null;
-  }
-}
-
-class SimpleExtendedAttribute extends Base {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   */
-  static parse(tokeniser) {
-    const name = tokeniser.consume("identifier");
-    if (name) {
-      return new SimpleExtendedAttribute({
-        source: tokeniser.source,
-        tokens: { name },
-        params: ExtendedAttributeParameters.parse(tokeniser)
-      });
-    }
-  }
-
-  constructor({ source, tokens, params }) {
-    super({ source, tokens });
-    params.parent = this;
-    Object.defineProperty(this, "params", { value: params });
-  }
-
-  get type() {
-    return "extended-attribute";
-  }
-  get name() {
-    return this.tokens.name.value;
-  }
-  get rhs() {
-    const { rhsType: type, tokens, list } = this.params;
-    if (!type) {
-      return null;
-    }
-    const value = this.params.rhsIsList ? list : unescape(tokens.secondaryName.value);
-    return { type, value };
-  }
-  get arguments() {
-    const { rhsIsList, list } = this.params;
-    if (!list || rhsIsList) {
-      return [];
-    }
-    return list;
-  }
-
-  *validate(defs) {
-    if (this.name === "NoInterfaceObject") {
-      const message = `\`[NoInterfaceObject]\` extended attribute is an \
-undesirable feature that may be removed from Web IDL in the future. Refer to the \
-[relevant upstream PR](https://github.com/heycam/webidl/pull/609) for more \
-information.`;
-      yield validationError(this.tokens.name, this, "no-nointerfaceobject", message, { level: "warning" });
-    }
-    for (const arg of this.arguments) {
-      yield* arg.validate(defs);
-    }
-  }
-}
-
-// Note: we parse something simpler than the official syntax. It's all that ever
-// seems to be used
-class ExtendedAttributes extends ArrayBase {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   */
-  static parse(tokeniser) {
-    const tokens = {};
-    tokens.open = tokeniser.consume("[");
-    if (!tokens.open) return new ExtendedAttributes({});
-    const ret = new ExtendedAttributes({ source: tokeniser.source, tokens });
-    ret.push(...list(tokeniser, {
-      parser: SimpleExtendedAttribute.parse,
-      listName: "extended attribute"
-    }));
-    tokens.close = tokeniser.consume("]") || tokeniser.error("Unexpected closing token of extended attribute");
-    if (!ret.length) {
-      tokeniser.error("Found an empty extended attribute");
-    }
-    if (tokeniser.probe("[")) {
-      tokeniser.error("Illegal double extended attribute lists, consider merging them");
-    }
-    return ret;
-  }
-
-  *validate(defs) {
-    for (const extAttr of this) {
-      yield* extAttr.validate(defs);
-    }
-  }
-}
-
-// @ts-check
-
-class Argument extends Base {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   */
-  static parse(tokeniser) {
-    const start_position = tokeniser.position;
-    /** @type {Base["tokens"]} */
-    const tokens = {};
-    const ret = autoParenter(new Argument({ source: tokeniser.source, tokens }));
-    ret.extAttrs = ExtendedAttributes.parse(tokeniser);
-    tokens.optional = tokeniser.consume("optional");
-    ret.idlType = type_with_extended_attributes(tokeniser, "argument-type");
-    if (!ret.idlType) {
-      return tokeniser.unconsume(start_position);
-    }
-    if (!tokens.optional) {
-      tokens.variadic = tokeniser.consume("...");
-    }
-    tokens.name = tokeniser.consume("identifier", ...argumentNameKeywords);
-    if (!tokens.name) {
-      return tokeniser.unconsume(start_position);
-    }
-    ret.default = tokens.optional ? Default.parse(tokeniser) : null;
-    return ret.this;
-  }
-
-  get type() {
-    return "argument";
-  }
-  get optional() {
-    return !!this.tokens.optional;
-  }
-  get variadic() {
-    return !!this.tokens.variadic;
-  }
-  get name() {
-    return unescape(this.tokens.name.value);
-  }
-
-  /**
-   * @param {import("../validator.js").Definitions} defs
-   */
-  *validate(defs) {
-    yield* this.idlType.validate(defs);
-    const result = idlTypeIncludesDictionary(this.idlType, defs, { useNullableInner: true });
-    if (result) {
-      if (this.idlType.nullable) {
-        const message = `Dictionary arguments cannot be nullable.`;
-        yield validationError(this.tokens.name, this, "no-nullable-dict-arg", message);
-      } else if (!this.optional) {
-        if (this.parent && !dictionaryIncludesRequiredField(result.dictionary, defs) && isLastRequiredArgument(this)) {
-          const message = `Dictionary argument must be optional if it has no required fields`;
-          yield validationError(this.tokens.name, this, "dict-arg-optional", message, {
-            autofix: autofixDictionaryArgumentOptionality(this)
-          });
-        }
-      } else if (!this.default) {
-        const message = `Optional dictionary arguments must have a default value of \`{}\`.`;
-        yield validationError(this.tokens.name, this, "dict-arg-default", message, {
-          autofix: autofixOptionalDictionaryDefaultValue(this)
-        });
-      }
-    }
-  }
-}
-
-/**
- * @param {Argument} arg
- */
-function isLastRequiredArgument(arg) {
-  const list = arg.parent.arguments || arg.parent.list;
-  const index = list.indexOf(arg);
-  const requiredExists = list.slice(index + 1).some(a => !a.optional);
-  return !requiredExists;
-}
-
-/**
- * @param {Argument} arg
- */
-function autofixDictionaryArgumentOptionality(arg) {
-  return () => {
-    const firstToken = getFirstToken(arg.idlType);
-    arg.tokens.optional = { type: "optional", value: "optional", trivia: firstToken.trivia };
-    firstToken.trivia = " ";
-    autofixOptionalDictionaryDefaultValue(arg)();
-  };
-}
-
-/**
- * @param {Argument} arg
- */
-function autofixOptionalDictionaryDefaultValue(arg) {
-  return () => {
-    arg.default = Default.parse(new Tokeniser(" = {}"));
-  };
-}
-
-class Operation extends Base {
-  /**
-   * @typedef {import("../tokeniser.js").Token} Token
-   *
-   * @param {import("../tokeniser.js").Tokeniser} tokeniser
-   * @param {object} [options]
-   * @param {Token} [options.special]
-   * @param {Token} [options.regular]
-   */
-  static parse(tokeniser, { special, regular } = {}) {
-    const tokens = { special };
-    const ret = autoParenter(new Operation({ source: tokeniser.source, tokens }));
-    if (special && special.value === "stringifier") {
-      tokens.termination = tokeniser.consume(";");
-      if (tokens.termination) {
-        ret.arguments = [];
-        return ret;
-      }
-    }
-    if (!special && !regular) {
-      tokens.special = tokeniser.consume("getter", "setter", "deleter");
-    }
-    ret.idlType = return_type(tokeniser) || tokeniser.error("Missing return type");
-    tokens.name = tokeniser.consume("identifier", "includes");
-    tokens.open = tokeniser.consume("(") || tokeniser.error("Invalid operation");
-    ret.arguments = argument_list(tokeniser);
-    tokens.close = tokeniser.consume(")") || tokeniser.error("Unterminated operation");
-    tokens.termination = tokeniser.consume(";") || tokeniser.error("Unterminated operation, expected `;`");
-    return ret.this;
-  }
-
-  get type() {
-    return "operation";
-  }
-  get name() {
-    const { name } = this.tokens;
-    if (!name) {
-      return "";
-    }
-    return unescape(name.value);
-  }
-  get special() {
-    if (!this.tokens.special) {
-      return "";
-    }
-    return this.tokens.special.value;
-  }
-
-  *validate(defs) {
-    if (!this.name && ["", "static"].includes(this.special)) {
-      const message = `Regular or static operations must have both a return type and an identifier.`;
-      yield validationError(this.tokens.open, this, "incomplete-op", message);
-    }
-    if (this.idlType) {
-      yield* this.idlType.validate(defs);
-    }
-    for (const argument of this.arguments) {
-      yield* argument.validate(defs);
-    }
-  }
-}
-
-class Attribute extends Base {
-  /**
-   * @param {import("../tokeniser.js").Tokeniser} tokeniser
-   */
-  static parse(tokeniser, { special, noInherit = false, readonly = false } = {}) {
-    const start_position = tokeniser.position;
-    const tokens = { special };
-    const ret = autoParenter(new Attribute({ source: tokeniser.source, tokens }));
-    if (!special && !noInherit) {
-      tokens.special = tokeniser.consume("inherit");
-    }
-    if (ret.special === "inherit" && tokeniser.probe("readonly")) {
-      tokeniser.error("Inherited attributes cannot be read-only");
-    }
-    tokens.readonly = tokeniser.consume("readonly");
-    if (readonly && !tokens.readonly && tokeniser.probe("attribute")) {
-      tokeniser.error("Attributes must be readonly in this context");
-    }
-    tokens.base = tokeniser.consume("attribute");
-    if (!tokens.base) {
-      tokeniser.unconsume(start_position);
-      return;
-    }
-    ret.idlType = type_with_extended_attributes(tokeniser, "attribute-type") || tokeniser.error("Attribute lacks a type");
-    switch (ret.idlType.generic) {
-      case "sequence":
-      case "record": tokeniser.error(`Attributes cannot accept ${ret.idlType.generic} types`);
-    }
-    tokens.name = tokeniser.consume("identifier", "async", "required") || tokeniser.error("Attribute lacks a name");
-    tokens.termination = tokeniser.consume(";") || tokeniser.error("Unterminated attribute, expected `;`");
-    return ret.this;
-  }
-
-  get type() {
-    return "attribute";
-  }
-  get special() {
-    if (!this.tokens.special) {
-      return "";
-    }
-    return this.tokens.special.value;
-  }
-  get readonly() {
-    return !!this.tokens.readonly;
-  }
-  get name() {
-    return unescape(this.tokens.name.value);
-  }
-
-  *validate(defs) {
-    yield* this.idlType.validate(defs);
-  }
-}
-
-/**
- * @param {string} identifier
- */
-function unescape(identifier) {
-  return identifier.startsWith('_') ? identifier.slice(1) : identifier;
-}
-
-/**
- * Parses comma-separated list
- * @param {import("../tokeniser").Tokeniser} tokeniser
- * @param {object} args
- * @param {Function} args.parser parser function for each item
- * @param {boolean} [args.allowDangler] whether to allow dangling comma
- * @param {string} [args.listName] the name to be shown on error messages
- */
-function list(tokeniser, { parser, allowDangler, listName = "list" }) {
-  const first = parser(tokeniser);
-  if (!first) {
-    return [];
-  }
-  first.tokens.separator = tokeniser.consume(",");
-  const items = [first];
-  while (first.tokens.separator) {
-    const item = parser(tokeniser);
-    if (!item) {
-      if (!allowDangler) {
-        tokeniser.error(`Trailing comma in ${listName}`);
-      }
-      break;
-    }
-    item.tokens.separator = tokeniser.consume(",");
-    items.push(item);
-    if (!item.tokens.separator) break;
-  }
-  return items;
-}
-
-/**
- * @param {import("../tokeniser").Tokeniser} tokeniser
- */
-function const_value(tokeniser) {
-  return tokeniser.consume("true", "false", "Infinity", "-Infinity", "NaN", "decimal", "integer");
-}
-
-/**
- * @param {object} token
- * @param {string} token.type
- * @param {string} token.value
- */
-function const_data({ type, value }) {
-  switch (type) {
-    case "true":
-    case "false":
-      return { type: "boolean", value: type === "true" };
-    case "Infinity":
-    case "-Infinity":
-      return { type: "Infinity", negative: type.startsWith("-") };
-    case "[":
-      return { type: "sequence", value: [] };
-    case "{":
-      return { type: "dictionary" };
-    case "decimal":
-    case "integer":
-      return { type: "number", value };
-    case "string":
-      return { type: "string", value: value.slice(1, -1) };
-    default:
-      return { type };
-  }
-}
-
-/**
- * @param {import("../tokeniser").Tokeniser} tokeniser
- */
-function primitive_type(tokeniser) {
-  function integer_type() {
-    const prefix = tokeniser.consume("unsigned");
-    const base = tokeniser.consume("short", "long");
-    if (base) {
-      const postfix = tokeniser.consume("long");
-      return new Type({ source, tokens: { prefix, base, postfix } });
-    }
-    if (prefix) tokeniser.error("Failed to parse integer type");
-  }
-
-  function decimal_type() {
-    const prefix = tokeniser.consume("unrestricted");
-    const base = tokeniser.consume("float", "double");
-    if (base) {
-      return new Type({ source, tokens: { prefix, base } });
-    }
-    if (prefix) tokeniser.error("Failed to parse float type");
-  }
-
-  const { source } = tokeniser;
-  const num_type = integer_type() || decimal_type();
-  if (num_type) return num_type;
-  const base = tokeniser.consume("boolean", "byte", "octet");
-  if (base) {
-    return new Type({ source, tokens: { base } });
-  }
-}
-
-/**
- * @param {import("../tokeniser").Tokeniser} tokeniser
- */
-function argument_list(tokeniser) {
-  return list(tokeniser, { parser: Argument.parse, listName: "arguments list" });
-}
-
-/**
- * @param {import("../tokeniser").Tokeniser} tokeniser
- * @param {string} typeName
- */
-function type_with_extended_attributes(tokeniser, typeName) {
-  const extAttrs = ExtendedAttributes.parse(tokeniser);
-  const ret = Type.parse(tokeniser, typeName);
-  if (ret) autoParenter(ret).extAttrs = extAttrs;
-  return ret;
-}
-
-/**
- * @param {import("../tokeniser").Tokeniser} tokeniser
- * @param {string} typeName
- */
-function return_type(tokeniser, typeName) {
-  const typ = Type.parse(tokeniser, typeName || "return-type");
-  if (typ) {
-    return typ;
-  }
-  const voidToken = tokeniser.consume("void");
-  if (voidToken) {
-    const ret = new Type({ source: tokeniser.source, tokens: { base: voidToken } });
-    ret.type = "return-type";
-    return ret;
-  }
-}
-
-/**
- * @param {import("../tokeniser").Tokeniser} tokeniser
- */
-function stringifier(tokeniser) {
-  const special = tokeniser.consume("stringifier");
-  if (!special) return;
-  const member = Attribute.parse(tokeniser, { special }) ||
-    Operation.parse(tokeniser, { special }) ||
-    tokeniser.error("Unterminated stringifier");
-  return member;
-}
-
-/**
- * @param {string} str
- */
-function getLastIndentation(str) {
-  const lines = str.split("\n");
-  // the first line visually binds to the preceding token
-  if (lines.length) {
-    const match = lines[lines.length - 1].match(/^\s+/);
-    if (match) {
-      return match[0];
-    }
-  }
-  return "";
-}
-
-/**
- * @param {string} parentTrivia
- */
-function getMemberIndentation(parentTrivia) {
-  const indentation = getLastIndentation(parentTrivia);
-  const indentCh = indentation.includes("\t") ? "\t" : "  ";
-  return indentation + indentCh;
-}
-
-/**
- * @param {object} def
- * @param {import("./extended-attributes.js").ExtendedAttributes} def.extAttrs
- */
-function autofixAddExposedWindow(def) {
-  return () => {
-    if (def.extAttrs.length){
-      const tokeniser = new Tokeniser("Exposed=Window,");
-      const exposed = SimpleExtendedAttribute.parse(tokeniser);
-      exposed.tokens.separator = tokeniser.consume(",");
-      const existing = def.extAttrs[0];
-      if (!/^\s/.test(existing.tokens.name.trivia)) {
-        existing.tokens.name.trivia = ` ${existing.tokens.name.trivia}`;
-      }
-      def.extAttrs.unshift(exposed);
-    } else {
-      autoParenter(def).extAttrs = ExtendedAttributes.parse(new Tokeniser("[Exposed=Window]"));
-      const trivia = def.tokens.base.trivia;
-      def.extAttrs.tokens.open.trivia = trivia;
-      def.tokens.base.trivia = `\n${getLastIndentation(trivia)}`;
-    }
-  };
-}
-
-/**
- * Get the first syntax token for the given IDL object.
- * @param {*} data
- */
-function getFirstToken(data) {
-  if (data.extAttrs.length) {
-    return data.extAttrs.tokens.open;
-  }
-  if (data.type === "operation" && !data.special) {
-    return getFirstToken(data.idlType);
-  }
-  const tokens = Object.values(data.tokens).sort((x, y) => x.index - y.index);
-  return tokens[0];
-}
-
-/**
- * @template T
- * @param {T[]} array
- * @param {(item: T) => boolean} predicate
- */
-function findLastIndex(array, predicate) {
-  const index = array.slice().reverse().findIndex(predicate);
-  if (index === -1) {
-    return index;
-  }
-  return array.length - index - 1;
-}
-
-/**
- * Returns a proxy that auto-assign `parent` field.
- * @template T
- * @param {T} data
- * @param {*} [parent] The object that will be assigned to `parent`.
- *                     If absent, it will be `data` by default.
- * @return {T}
- */
-function autoParenter(data, parent) {
-  if (!parent) {
-    // Defaults to `data` unless specified otherwise.
-    parent = data;
-  }
-  if (!data) {
-    // This allows `autoParenter(undefined)` which again allows
-    // `autoParenter(parse())` where the function may return nothing.
-    return data;
-  }
-  return new Proxy(data, {
-    get(target, p) {
-      const value = target[p];
-      if (Array.isArray(value)) {
-        // Wraps the array so that any added items will also automatically
-        // get their `parent` values.
-        return autoParenter(value, target);
-      }
-      return value;
-    },
-    set(target, p, value) {
-      target[p] = value;
-      if (!value) {
-        return true;
-      } else if (Array.isArray(value)) {
-        // Assigning an array will add `parent` to its items.
-        for (const item of value) {
-          if (typeof item.parent !== "undefined") {
-            item.parent = parent;
-          }
-        }
-      } else if (typeof value.parent !== "undefined") {
-        value.parent = parent;
-      }
-      return true;
-    }
-  });
-}
-
-// These regular expressions use the sticky flag so they will only match at
-// the current location (ie. the offset of lastIndex).
-const tokenRe = {
-  // This expression uses a lookahead assertion to catch false matches
-  // against integers early.
-  "decimal": /-?(?=[0-9]*\.|[0-9]+[eE])(([0-9]+\.[0-9]*|[0-9]*\.[0-9]+)([Ee][-+]?[0-9]+)?|[0-9]+[Ee][-+]?[0-9]+)/y,
-  "integer": /-?(0([Xx][0-9A-Fa-f]+|[0-7]*)|[1-9][0-9]*)/y,
-  "identifier": /[_-]?[A-Za-z][0-9A-Z_a-z-]*/y,
-  "string": /"[^"]*"/y,
-  "whitespace": /[\t\n\r ]+/y,
-  "comment": /((\/(\/.*|\*([^*]|\*[^/])*\*\/)[\t\n\r ]*)+)/y,
-  "other": /[^\t\n\r 0-9A-Za-z]/y
-};
-
-const typeNameKeywords = [
-  "ArrayBuffer",
-  "DataView",
-  "Int8Array",
-  "Int16Array",
-  "Int32Array",
-  "Uint8Array",
-  "Uint16Array",
-  "Uint32Array",
-  "Uint8ClampedArray",
-  "Float32Array",
-  "Float64Array",
-  "any",
-  "object",
-  "symbol"
-];
-
-const stringTypes = [
-  "ByteString",
-  "DOMString",
-  "USVString"
-];
-
-const argumentNameKeywords = [
-  "async",
-  "attribute",
-  "callback",
-  "const",
-  "constructor",
-  "deleter",
-  "dictionary",
-  "enum",
-  "getter",
-  "includes",
-  "inherit",
-  "interface",
-  "iterable",
-  "maplike",
-  "namespace",
-  "partial",
-  "required",
-  "setlike",
-  "setter",
-  "static",
-  "stringifier",
-  "typedef",
-  "unrestricted"
-];
-
-const nonRegexTerminals = [
-  "-Infinity",
-  "FrozenArray",
-  "Infinity",
-  "NaN",
-  "Promise",
-  "boolean",
-  "byte",
-  "double",
-  "false",
-  "float",
-  "long",
-  "mixin",
-  "null",
-  "octet",
-  "optional",
-  "or",
-  "readonly",
-  "record",
-  "sequence",
-  "short",
-  "true",
-  "unsigned",
-  "void"
-].concat(argumentNameKeywords, stringTypes, typeNameKeywords);
-
-const punctuations = [
-  "(",
-  ")",
-  ",",
-  "...",
-  ":",
-  ";",
-  "<",
-  "=",
-  ">",
-  "?",
-  "[",
-  "]",
-  "{",
-  "}"
-];
-
-const reserved = [
-  // "constructor" is now a keyword
-  "_constructor",
-  "toString",
-  "_toString",
-];
-
-/**
- * @typedef {ArrayItemType<ReturnType<typeof tokenise>>} Token
- * @param {string} str
- */
-function tokenise(str) {
-  const tokens = [];
-  let lastCharIndex = 0;
-  let trivia = "";
-  let line = 1;
-  let index = 0;
-  while (lastCharIndex < str.length) {
-    const nextChar = str.charAt(lastCharIndex);
-    let result = -1;
-
-    if (/[\t\n\r ]/.test(nextChar)) {
-      result = attemptTokenMatch("whitespace", { noFlushTrivia: true });
-    } else if (nextChar === '/') {
-      result = attemptTokenMatch("comment", { noFlushTrivia: true });
-    }
-
-    if (result !== -1) {
-      const currentTrivia = tokens.pop().value;
-      line += (currentTrivia.match(/\n/g) || []).length;
-      trivia += currentTrivia;
-      index -= 1;
-    } else if (/[-0-9.A-Z_a-z]/.test(nextChar)) {
-      result = attemptTokenMatch("decimal");
-      if (result === -1) {
-        result = attemptTokenMatch("integer");
-      }
-      if (result === -1) {
-        result = attemptTokenMatch("identifier");
-        const lastIndex = tokens.length - 1;
-        const token = tokens[lastIndex];
-        if (result !== -1) {
-          if (reserved.includes(token.value)) {
-            const message = `${unescape(token.value)} is a reserved identifier and must not be used.`;
-            throw new WebIDLParseError(syntaxError(tokens, lastIndex, null, message));
-          } else if (nonRegexTerminals.includes(token.value)) {
-            token.type = token.value;
-          }
-        }
-      }
-    } else if (nextChar === '"') {
-      result = attemptTokenMatch("string");
-    }
-
-    for (const punctuation of punctuations) {
-      if (str.startsWith(punctuation, lastCharIndex)) {
-        tokens.push({ type: punctuation, value: punctuation, trivia, line, index });
-        trivia = "";
-        lastCharIndex += punctuation.length;
-        result = lastCharIndex;
-        break;
-      }
-    }
-
-    // other as the last try
-    if (result === -1) {
-      result = attemptTokenMatch("other");
-    }
-    if (result === -1) {
-      throw new Error("Token stream not progressing");
-    }
-    lastCharIndex = result;
-    index += 1;
-  }
-
-  // remaining trivia as eof
-  tokens.push({
-    type: "eof",
-    value: "",
-    trivia
-  });
-
-  return tokens;
-
-  /**
-   * @param {keyof typeof tokenRe} type
-   * @param {object} options
-   * @param {boolean} [options.noFlushTrivia]
-   */
-  function attemptTokenMatch(type, { noFlushTrivia } = {}) {
-    const re = tokenRe[type];
-    re.lastIndex = lastCharIndex;
-    const result = re.exec(str);
-    if (result) {
-      tokens.push({ type, value: result[0], trivia, line, index });
-      if (!noFlushTrivia) {
-        trivia = "";
-      }
-      return re.lastIndex;
-    }
-    return -1;
-  }
-}
-
-class Tokeniser {
-  /**
-   * @param {string} idl
-   */
-  constructor(idl) {
-    this.source = tokenise(idl);
-    this.position = 0;
-  }
-
-  /**
-   * @param {string} message
-   * @return {never}
-   */
-  error(message) {
-    throw new WebIDLParseError(syntaxError(this.source, this.position, this.current, message));
-  }
-
-  /**
-   * @param {string} type
-   */
-  probe(type) {
-    return this.source.length > this.position && this.source[this.position].type === type;
-  }
-
-  /**
-   * @param  {...string} candidates
-   */
-  consume(...candidates) {
-    for (const type of candidates) {
-      if (!this.probe(type)) continue;
-      const token = this.source[this.position];
-      this.position++;
-      return token;
-    }
-  }
-
-  /**
-   * @param {number} position
-   */
-  unconsume(position) {
-    this.position = position;
-  }
-}
-
-class WebIDLParseError extends Error {
-  /**
-   * @param {object} options
-   * @param {string} options.message
-   * @param {string} options.bareMessage
-   * @param {string} options.context
-   * @param {number} options.line
-   * @param {*} options.sourceName
-   * @param {string} options.input
-   * @param {*[]} options.tokens
-   */
-  constructor({ message, bareMessage, context, line, sourceName, input, tokens }) {
-    super(message);
-
-    this.name = "WebIDLParseError"; // not to be mangled
-    this.bareMessage = bareMessage;
-    this.context = context;
-    this.line = line;
-    this.sourceName = sourceName;
-    this.input = input;
-    this.tokens = tokens;
-  }
-}
-
-class EnumValue extends Token {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   */
-  static parse(tokeniser) {
-    const value = tokeniser.consume("string");
-    if (value) {
-      return new EnumValue({ source: tokeniser.source, tokens: { value } });
-    }
-  }
-
-  get type() {
-    return "enum-value";
-  }
-  get value() {
-    return super.value.slice(1, -1);
-  }
-}
-
-class Enum extends Base {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   */
-  static parse(tokeniser) {
-    /** @type {Base["tokens"]} */
-    const tokens = {};
-    tokens.base = tokeniser.consume("enum");
-    if (!tokens.base) {
-      return;
-    }
-    tokens.name = tokeniser.consume("identifier") || tokeniser.error("No name for enum");
-    const ret = autoParenter(new Enum({ source: tokeniser.source, tokens }));
-    tokeniser.current = ret.this;
-    tokens.open = tokeniser.consume("{") || tokeniser.error("Bodyless enum");
-    ret.values = list(tokeniser, {
-      parser: EnumValue.parse,
-      allowDangler: true,
-      listName: "enumeration"
-    });
-    if (tokeniser.probe("string")) {
-      tokeniser.error("No comma between enum values");
-    }
-    tokens.close = tokeniser.consume("}") || tokeniser.error("Unexpected value in enum");
-    if (!ret.values.length) {
-      tokeniser.error("No value in enum");
-    }
-    tokens.termination = tokeniser.consume(";") || tokeniser.error("No semicolon after enum");
-    return ret.this;
-  }
-
-  get type() {
-    return "enum";
-  }
-  get name() {
-    return unescape(this.tokens.name.value);
-  }
-}
-
-// @ts-check
-
-class Includes extends Base {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   */
-  static parse(tokeniser) {
-    const target = tokeniser.consume("identifier");
-    if (!target) {
-      return;
-    }
-    const tokens = { target };
-    tokens.includes = tokeniser.consume("includes");
-    if (!tokens.includes) {
-      tokeniser.unconsume(target.index);
-      return;
-    }
-    tokens.mixin = tokeniser.consume("identifier") || tokeniser.error("Incomplete includes statement");
-    tokens.termination = tokeniser.consume(";") || tokeniser.error("No terminating ; for includes statement");
-    return new Includes({ source: tokeniser.source, tokens });
-  }
-
-  get type() {
-    return "includes";
-  }
-  get target() {
-    return unescape(this.tokens.target.value);
-  }
-  get includes() {
-    return unescape(this.tokens.mixin.value);
-  }
-}
-
-class Typedef extends Base {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   */
-  static parse(tokeniser) {
-    /** @type {Base["tokens"]} */
-    const tokens = {};
-    const ret = autoParenter(new Typedef({ source: tokeniser.source, tokens }));
-    tokens.base = tokeniser.consume("typedef");
-    if (!tokens.base) {
-      return;
-    }
-    ret.idlType = type_with_extended_attributes(tokeniser, "typedef-type") || tokeniser.error("Typedef lacks a type");
-    tokens.name = tokeniser.consume("identifier") || tokeniser.error("Typedef lacks a name");
-    tokeniser.current = ret.this;
-    tokens.termination = tokeniser.consume(";") || tokeniser.error("Unterminated typedef, expected `;`");
-    return ret.this;
-  }
-
-  get type() {
-    return "typedef";
-  }
-  get name() {
-    return unescape(this.tokens.name.value);
-  }
-
-  *validate(defs) {
-    yield* this.idlType.validate(defs);
-  }
-}
-
-class CallbackFunction extends Base {
-  /**
-   * @param {import("../tokeniser.js").Tokeniser} tokeniser
-   */
-  static parse(tokeniser, base) {
-    const tokens = { base };
-    const ret = autoParenter(new CallbackFunction({ source: tokeniser.source, tokens }));
-    tokens.name = tokeniser.consume("identifier") || tokeniser.error("Callback lacks a name");
-    tokeniser.current = ret.this;
-    tokens.assign = tokeniser.consume("=") || tokeniser.error("Callback lacks an assignment");
-    ret.idlType = return_type(tokeniser) || tokeniser.error("Callback lacks a return type");
-    tokens.open = tokeniser.consume("(") || tokeniser.error("Callback lacks parentheses for arguments");
-    ret.arguments = argument_list(tokeniser);
-    tokens.close = tokeniser.consume(")") || tokeniser.error("Unterminated callback");
-    tokens.termination = tokeniser.consume(";") || tokeniser.error("Unterminated callback, expected `;`");
-    return ret.this;
-  }
-
-  get type() {
-    return "callback";
-  }
-  get name() {
-    return unescape(this.tokens.name.value);
-  }
-
-  *validate(defs) {
-    yield* this.idlType.validate(defs);
-  }
-}
-
-/**
- * @param {import("../tokeniser.js").Tokeniser} tokeniser
- */
-function inheritance(tokeniser) {
-  const colon = tokeniser.consume(":");
-  if (!colon) {
-    return {};
-  }
-  const inheritance = tokeniser.consume("identifier") || tokeniser.error("Inheritance lacks a type");
-  return { colon, inheritance };
-}
-
-class Container extends Base {
-    /**
-     * @template T
-     * @param {import("../tokeniser.js").Tokeniser} tokeniser
-     * @param {T} instance
-     * @param {*} args
-     */
-    static parse(tokeniser, instance, { type, inheritable, allowedMembers }) {
-      const { tokens } = instance;
-      tokens.name = tokeniser.consume("identifier") || tokeniser.error(`Missing name in ${instance.type}`);
-      tokeniser.current = instance;
-      instance = autoParenter(instance);
-      if (inheritable) {
-        Object.assign(tokens, inheritance(tokeniser));
-      }
-      tokens.open = tokeniser.consume("{") || tokeniser.error(`Bodyless ${type}`);
-      instance.members = [];
-      while (true) {
-        tokens.close = tokeniser.consume("}");
-        if (tokens.close) {
-          tokens.termination = tokeniser.consume(";") || tokeniser.error(`Missing semicolon after ${type}`);
-          return instance.this;
-        }
-        const ea = ExtendedAttributes.parse(tokeniser);
-        let mem;
-        for (const [parser, ...args] of allowedMembers) {
-          mem = autoParenter(parser(tokeniser, ...args));
-          if (mem) {
-            break;
-          }
-        }
-        if (!mem) {
-          tokeniser.error("Unknown member");
-        }
-        mem.extAttrs = ea;
-        instance.members.push(mem.this);
-      }
-    }
-
-    get partial() {
-      return !!this.tokens.partial;
-    }
-    get name() {
-      return unescape(this.tokens.name.value);
-    }
-    get inheritance() {
-      if (!this.tokens.inheritance) {
-        return null;
-      }
-      return unescape(this.tokens.inheritance.value);
-    }
-
-    *validate(defs) {
-      for (const member of this.members) {
-        if (member.validate) {
-          yield* member.validate(defs);
-        }
-      }
-    }
-  }
-
-class Constant extends Base {
-  /**
-   * @param {import("../tokeniser.js").Tokeniser} tokeniser
-   */
-  static parse(tokeniser) {
-    /** @type {Base["tokens"]} */
-    const tokens = {};
-    tokens.base = tokeniser.consume("const");
-    if (!tokens.base) {
-      return;
-    }
-    let idlType = primitive_type(tokeniser);
-    if (!idlType) {
-      const base = tokeniser.consume("identifier") || tokeniser.error("Const lacks a type");
-      idlType = new Type({ source: tokeniser.source, tokens: { base } });
-    }
-    if (tokeniser.probe("?")) {
-      tokeniser.error("Unexpected nullable constant type");
-    }
-    idlType.type = "const-type";
-    tokens.name = tokeniser.consume("identifier") || tokeniser.error("Const lacks a name");
-    tokens.assign = tokeniser.consume("=") || tokeniser.error("Const lacks value assignment");
-    tokens.value = const_value(tokeniser) || tokeniser.error("Const lacks a value");
-    tokens.termination = tokeniser.consume(";") || tokeniser.error("Unterminated const, expected `;`");
-    const ret = new Constant({ source: tokeniser.source, tokens });
-    autoParenter(ret).idlType = idlType;
-    return ret;
-  }
-
-  get type() {
-    return "const";
-  }
-  get name() {
-    return unescape(this.tokens.name.value);
-  }
-  get value() {
-    return const_data(this.tokens.value);
-  }
-}
-
-class IterableLike extends Base {
-  /**
-   * @param {import("../tokeniser.js").Tokeniser} tokeniser
-   */
-  static parse(tokeniser) {
-    const start_position = tokeniser.position;
-    const tokens = {};
-    const ret = autoParenter(new IterableLike({ source: tokeniser.source, tokens }));
-    tokens.readonly = tokeniser.consume("readonly");
-    if (!tokens.readonly) {
-      tokens.async = tokeniser.consume("async");
-    }
-    tokens.base =
-      tokens.readonly ? tokeniser.consume("maplike", "setlike") :
-      tokens.async ? tokeniser.consume("iterable") :
-      tokeniser.consume("iterable", "maplike", "setlike");
-    if (!tokens.base) {
-      tokeniser.unconsume(start_position);
-      return;
-    }
-
-    const { type } = ret;
-    const secondTypeRequired = type === "maplike" || ret.async;
-    const secondTypeAllowed = secondTypeRequired || type === "iterable";
-
-    tokens.open = tokeniser.consume("<") || tokeniser.error(`Missing less-than sign \`<\` in ${type} declaration`);
-    const first = type_with_extended_attributes(tokeniser) || tokeniser.error(`Missing a type argument in ${type} declaration`);
-    ret.idlType = [first];
-    if (secondTypeAllowed) {
-      first.tokens.separator = tokeniser.consume(",");
-      if (first.tokens.separator) {
-        ret.idlType.push(type_with_extended_attributes(tokeniser));
-      }
-      else if (secondTypeRequired) {
-        tokeniser.error(`Missing second type argument in ${type} declaration`);
-      }
-    }
-    tokens.close = tokeniser.consume(">") || tokeniser.error(`Missing greater-than sign \`>\` in ${type} declaration`);
-    tokens.termination = tokeniser.consume(";") || tokeniser.error(`Missing semicolon after ${type} declaration`);
-
-    return ret.this;
-  }
-
-  get type() {
-    return this.tokens.base.value;
-  }
-  get readonly() {
-    return !!this.tokens.readonly;
-  }
-  get async() {
-    return !!this.tokens.async;
-  }
-}
-
-// @ts-check
-
-function* checkInterfaceMemberDuplication(defs, i) {
-  const opNames = new Set(getOperations(i).map(op => op.name));
-  const partials = defs.partials.get(i.name) || [];
-  const mixins = defs.mixinMap.get(i.name) || [];
-  for (const ext of [...partials, ...mixins]) {
-    const additions = getOperations(ext);
-    yield* forEachExtension(additions, opNames, ext, i);
-    for (const addition of additions) {
-      opNames.add(addition.name);
-    }
-  }
-
-  function* forEachExtension(additions, existings, ext, base) {
-    for (const addition of additions) {
-      const { name } = addition;
-      if (name && existings.has(name)) {
-        const message = `The operation "${name}" has already been defined for the base interface "${base.name}" either in itself or in a mixin`;
-        yield validationError(addition.tokens.name, ext, "no-cross-overload", message);
-      }
-    }
-  }
-
-  function getOperations(i) {
-    return i.members
-      .filter(({type}) => type === "operation");
-  }
-}
-
-class Constructor extends Base {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   */
-  static parse(tokeniser) {
-    const base = tokeniser.consume("constructor");
-    if (!base) {
-      return;
-    }
-    /** @type {Base["tokens"]} */
-    const tokens = { base };
-    tokens.open = tokeniser.consume("(") || tokeniser.error("No argument list in constructor");
-    const args = argument_list(tokeniser);
-    tokens.close = tokeniser.consume(")") || tokeniser.error("Unterminated constructor");
-    tokens.termination = tokeniser.consume(";") || tokeniser.error("No semicolon after constructor");
-    const ret = new Constructor({ source: tokeniser.source, tokens });
-    autoParenter(ret).arguments = args;
-    return ret;
-  }
-
-  get type() {
-    return "constructor";
-  }
-
-  *validate(defs) {
-    if (this.idlType) {
-      yield* this.idlType.validate(defs);
-    }
-    for (const argument of this.arguments) {
-      yield* argument.validate(defs);
-    }
-  }
-}
-
-/**
- * @param {import("../tokeniser").Tokeniser} tokeniser
- */
-function static_member(tokeniser) {
-  const special = tokeniser.consume("static");
-  if (!special) return;
-  const member = Attribute.parse(tokeniser, { special }) ||
-    Operation.parse(tokeniser, { special }) ||
-    tokeniser.error("No body in static member");
-  return member;
-}
-
-class Interface extends Container {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   */
-  static parse(tokeniser, base, { partial = null } = {}) {
-    const tokens = { partial, base };
-    return Container.parse(tokeniser, new Interface({ source: tokeniser.source, tokens }), {
-      type: "interface",
-      inheritable: !partial,
-      allowedMembers: [
-        [Constant.parse],
-        [Constructor.parse],
-        [static_member],
-        [stringifier],
-        [IterableLike.parse],
-        [Attribute.parse],
-        [Operation.parse]
-      ]
-    });
-  }
-
-  get type() {
-    return "interface";
-  }
-
-  *validate(defs) {
-    yield* this.extAttrs.validate(defs);
-    if (
-      !this.partial &&
-      this.extAttrs.every(extAttr => extAttr.name !== "Exposed") &&
-      this.extAttrs.every(extAttr => extAttr.name !== "NoInterfaceObject")
-    ) {
-      const message = `Interfaces must have \`[Exposed]\` extended attribute. \
-To fix, add, for example, \`[Exposed=Window]\`. Please also consider carefully \
-if your interface should also be exposed in a Worker scope. Refer to the \
-[WebIDL spec section on Exposed](https://heycam.github.io/webidl/#Exposed) \
-for more information.`;
-      yield validationError(this.tokens.name, this, "require-exposed", message, {
-        autofix: autofixAddExposedWindow(this)
-      });
-    }
-    const oldConstructors = this.extAttrs.filter(extAttr => extAttr.name === "Constructor");
-    for (const constructor of oldConstructors) {
-      const message = `Constructors should now be represented as a \`constructor()\` operation on the interface \
-instead of \`[Constructor]\` extended attribute. Refer to the \
-[WebIDL spec section on constructor operations](https://heycam.github.io/webidl/#idl-constructors) \
-for more information.`;
-      yield validationError(constructor.tokens.name, this, "constructor-member", message, {
-        autofix: autofixConstructor(this, constructor)
-      });
-    }
-
-    const isGlobal = this.extAttrs.some(extAttr => extAttr.name === "Global");
-    if (isGlobal) {
-      const namedConstructors = this.extAttrs.filter(extAttr => extAttr.name === "NamedConstructor");
-      for (const named of namedConstructors) {
-        const message = `Interfaces marked as \`[Global]\` cannot have named constructors.`;
-        yield validationError(named.tokens.name, this, "no-constructible-global", message);
-      }
-
-      const constructors = this.members.filter(member => member.type === "constructor");
-      for (const named of constructors) {
-        const message = `Interfaces marked as \`[Global]\` cannot have constructors.`;
-        yield validationError(named.tokens.base, this, "no-constructible-global", message);
-      }
-    }
-
-    yield* super.validate(defs);
-    if (!this.partial) {
-      yield* checkInterfaceMemberDuplication(defs, this);
-    }
-  }
-}
-
-function autofixConstructor(interfaceDef, constructorExtAttr) {
-  interfaceDef = autoParenter(interfaceDef);
-  return () => {
-    const indentation = getLastIndentation(interfaceDef.extAttrs.tokens.open.trivia);
-    const memberIndent = interfaceDef.members.length ?
-      getLastIndentation(getFirstToken(interfaceDef.members[0]).trivia) :
-      getMemberIndentation(indentation);
-    const constructorOp = Constructor.parse(new Tokeniser(`\n${memberIndent}constructor();`));
-    constructorOp.extAttrs = [];
-    autoParenter(constructorOp).arguments = constructorExtAttr.arguments;
-
-    const existingIndex = findLastIndex(interfaceDef.members, m => m.type === "constructor");
-    interfaceDef.members.splice(existingIndex + 1, 0, constructorOp);
-
-    const { close }  = interfaceDef.tokens;
-    if (!close.trivia.includes("\n")) {
-      close.trivia += `\n${indentation}`;
-    }
-
-    const { extAttrs } = interfaceDef;
-    const index = extAttrs.indexOf(constructorExtAttr);
-    const removed = extAttrs.splice(index, 1);
-    if (!extAttrs.length) {
-      extAttrs.tokens.open = extAttrs.tokens.close = undefined;
-    } else if (extAttrs.length === index) {
-      extAttrs[index - 1].tokens.separator = undefined;
-    } else if (!extAttrs[index].tokens.name.trivia.trim()) {
-      extAttrs[index].tokens.name.trivia = removed[0].tokens.name.trivia;
-    }
-  };
-}
-
-class Mixin extends Container {
-  /**
-   * @typedef {import("../tokeniser.js").Token} Token
-   *
-   * @param {import("../tokeniser.js").Tokeniser} tokeniser
-   * @param {Token} base
-   * @param {object} [options]
-   * @param {Token} [options.partial]
-   */
-  static parse(tokeniser, base, { partial } = {}) {
-    const tokens = { partial, base };
-    tokens.mixin = tokeniser.consume("mixin");
-    if (!tokens.mixin) {
-      return;
-    }
-    return Container.parse(tokeniser, new Mixin({ source: tokeniser.source, tokens }), {
-      type: "interface mixin",
-      allowedMembers: [
-        [Constant.parse],
-        [stringifier],
-        [Attribute.parse, { noInherit: true }],
-        [Operation.parse, { regular: true }]
-      ]
-    });
-  }
-
-  get type() {
-    return "interface mixin";
-  }
-}
-
-class Field extends Base {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   */
-  static parse(tokeniser) {
-    /** @type {Base["tokens"]} */
-    const tokens = {};
-    const ret = autoParenter(new Field({ source: tokeniser.source, tokens }));
-    ret.extAttrs = ExtendedAttributes.parse(tokeniser);
-    tokens.required = tokeniser.consume("required");
-    ret.idlType = type_with_extended_attributes(tokeniser, "dictionary-type") || tokeniser.error("Dictionary member lacks a type");
-    tokens.name = tokeniser.consume("identifier") || tokeniser.error("Dictionary member lacks a name");
-    ret.default = Default.parse(tokeniser);
-    if (tokens.required && ret.default) tokeniser.error("Required member must not have a default");
-    tokens.termination = tokeniser.consume(";") || tokeniser.error("Unterminated dictionary member, expected `;`");
-    return ret.this;
-  }
-
-  get type() {
-    return "field";
-  }
-  get name() {
-    return unescape(this.tokens.name.value);
-  }
-  get required() {
-    return !!this.tokens.required;
-  }
-
-  *validate(defs) {
-    yield* this.idlType.validate(defs);
-  }
-}
-
-// @ts-check
-
-class Dictionary extends Container {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   * @param {object} [options]
-   * @param {import("../tokeniser.js").Token} [options.partial]
-   */
-  static parse(tokeniser, { partial } = {}) {
-    const tokens = { partial };
-    tokens.base = tokeniser.consume("dictionary");
-    if (!tokens.base) {
-      return;
-    }
-    return Container.parse(tokeniser, new Dictionary({ source: tokeniser.source, tokens }), {
-      type: "dictionary",
-      inheritable: !partial,
-      allowedMembers: [
-        [Field.parse],
-      ]
-    });
-  }
-
-  get type() {
-    return "dictionary";
-  }
-}
-
-class Namespace extends Container {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   * @param {object} [options]
-   * @param {import("../tokeniser.js").Token} [options.partial]
-   */
-  static parse(tokeniser, { partial } = {}) {
-    const tokens = { partial };
-    tokens.base = tokeniser.consume("namespace");
-    if (!tokens.base) {
-      return;
-    }
-    return Container.parse(tokeniser, new Namespace({ source: tokeniser.source, tokens }), {
-      type: "namespace",
-      allowedMembers: [
-        [Attribute.parse, { noInherit: true, readonly: true }],
-        [Operation.parse, { regular: true }]
-      ]
-    });
-  }
-
-  get type() {
-    return "namespace";
-  }
-
-  *validate(defs) {
-    if (!this.partial && this.extAttrs.every(extAttr => extAttr.name !== "Exposed")) {
-      const message = `Namespaces must have [Exposed] extended attribute. \
-To fix, add, for example, [Exposed=Window]. Please also consider carefully \
-if your namespace should also be exposed in a Worker scope. Refer to the \
-[WebIDL spec section on Exposed](https://heycam.github.io/webidl/#Exposed) \
-for more information.`;
-      yield validationError(this.tokens.name, this, "require-exposed", message, {
-        autofix: autofixAddExposedWindow(this)
-      });
-    }
-    yield* super.validate(defs);
-  }
-}
-
-// @ts-check
-
-class CallbackInterface extends Container {
-  /**
-   * @param {import("../tokeniser").Tokeniser} tokeniser
-   */
-  static parse(tokeniser, callback, { partial = null } = {}) {
-    const tokens = { callback };
-    tokens.base = tokeniser.consume("interface");
-    if (!tokens.base) {
-      return;
-    }
-    return Container.parse(tokeniser, new CallbackInterface({ source: tokeniser.source, tokens }), {
-      type: "callback interface",
-      inheritable: !partial,
-      allowedMembers: [
-        [Constant.parse],
-        [Operation.parse, { regular: true }]
-      ]
-    });
-  }
-
-  get type() {
-    return "callback interface";
-  }
-}
-
-/**
- * @param {Tokeniser} tokeniser
- * @param {object} options
- * @param {boolean} [options.concrete]
- */
-function parseByTokens(tokeniser, options) {
-  const source = tokeniser.source;
-
-  function error(str) {
-    tokeniser.error(str);
-  }
-
-  function consume(...candidates) {
-    return tokeniser.consume(...candidates);
-  }
-
-  function callback() {
-    const callback = consume("callback");
-    if (!callback) return;
-    if (tokeniser.probe("interface")) {
-      return CallbackInterface.parse(tokeniser, callback);
-    }
-    return CallbackFunction.parse(tokeniser, callback);
-  }
-
-  function interface_(opts) {
-    const base = consume("interface");
-    if (!base) return;
-    const ret = Mixin.parse(tokeniser, base, opts) ||
-      Interface.parse(tokeniser, base, opts) ||
-      error("Interface has no proper body");
-    return ret;
-  }
-
-  function partial() {
-    const partial = consume("partial");
-    if (!partial) return;
-    return Dictionary.parse(tokeniser, { partial }) ||
-      interface_({ partial }) ||
-      Namespace.parse(tokeniser, { partial }) ||
-      error("Partial doesn't apply to anything");
-  }
-
-  function definition() {
-    return callback() ||
-      interface_() ||
-      partial() ||
-      Dictionary.parse(tokeniser) ||
-      Enum.parse(tokeniser) ||
-      Typedef.parse(tokeniser) ||
-      Includes.parse(tokeniser) ||
-      Namespace.parse(tokeniser);
-  }
-
-  function definitions() {
-    if (!source.length) return [];
-    const defs = [];
-    while (true) {
-      const ea = ExtendedAttributes.parse(tokeniser);
-      const def = definition();
-      if (!def) {
-        if (ea.length) error("Stray extended attributes");
-        break;
-      }
-      autoParenter(def).extAttrs = ea;
-      defs.push(def);
-    }
-    const eof = consume("eof");
-    if (options.concrete) {
-      defs.push(eof);
-    }
-    return defs;
-  }
-  const res = definitions();
-  if (tokeniser.position < source.length) error("Unrecognised tokens");
-  return res;
-}
-
-/**
- * @param {string} str
- * @param {object} [options]
- * @param {*} [options.sourceName]
- * @param {boolean} [options.concrete]
- */
-function parse(str, options = {}) {
-  const tokeniser = new Tokeniser(str);
-  if (typeof options.sourceName !== "undefined") {
-    tokeniser.source.name = options.sourceName;
-  }
-  return parseByTokens(tokeniser, options);
-}
-
-function noop(arg) {
-  return arg;
-}
-
-const templates = {
-  wrap: items => items.join(""),
-  trivia: noop,
-  name: noop,
-  reference: noop,
-  type: noop,
-  generic: noop,
-  nameless: noop,
-  inheritance: noop,
-  definition: noop,
-  extendedAttribute: noop,
-  extendedAttributeReference: noop
-};
-
-function write(ast, { templates: ts = templates } = {}) {
-  ts = Object.assign({}, templates, ts);
-
-  function reference(raw, { unescaped, context }) {
-    if (!unescaped) {
-      unescaped = raw.startsWith("_") ? raw.slice(1) : raw;
-    }
-    return ts.reference(raw, unescaped, context);
-  }
-
-  function token(t, wrapper = noop, ...args) {
-    if (!t) {
-      return "";
-    }
-    const value = wrapper(t.value, ...args);
-    return ts.wrap([ts.trivia(t.trivia), value]);
-  }
-
-  function reference_token(t, context) {
-    return token(t, reference, { context });
-  }
-
-  function name_token(t, arg) {
-    return token(t, ts.name, arg);
-  }
-
-  function type_body(it) {
-    if (it.union || it.generic) {
-      return ts.wrap([
-        token(it.tokens.base, ts.generic),
-        token(it.tokens.open),
-        ...it.subtype.map(type),
-        token(it.tokens.close)
-      ]);
-    }
-    const firstToken = it.tokens.prefix || it.tokens.base;
-    const prefix = it.tokens.prefix ? [
-      it.tokens.prefix.value,
-      ts.trivia(it.tokens.base.trivia)
-    ] : [];
-    const ref = reference(ts.wrap([
-      ...prefix,
-      it.tokens.base.value,
-      token(it.tokens.postfix)
-    ]), { unescaped: it.idlType, context: it });
-    return ts.wrap([ts.trivia(firstToken.trivia), ref]);
-  }
-  function type(it) {
-    return ts.wrap([
-      extended_attributes(it.extAttrs),
-      type_body(it),
-      token(it.tokens.nullable),
-      token(it.tokens.separator)
-    ]);
-  }
-  function default_(def) {
-    if (!def) {
-      return "";
-    }
-    return ts.wrap([
-      token(def.tokens.assign),
-      ...def.expression.map(t => token(t))
-    ]);
-  }
-  function argument(arg) {
-    return ts.wrap([
-      extended_attributes(arg.extAttrs),
-      token(arg.tokens.optional),
-      ts.type(type(arg.idlType)),
-      token(arg.tokens.variadic),
-      name_token(arg.tokens.name, { data: arg }),
-      default_(arg.default),
-      token(arg.tokens.separator)
-    ]);
-  }
-  function string(str) {
-    return ts.wrap([
-      token(str.tokens.value),
-      token(str.tokens.separator)
-    ]);
-  }
-  function identifier(id, context) {
-    return ts.wrap([
-      reference_token(id.tokens.value, context),
-      token(id.tokens.separator)
-    ]);
-  }
-  function make_ext_at(it) {
-    const { rhsType } = it.params;
-    return ts.wrap([
-      ts.trivia(it.tokens.name.trivia),
-      ts.extendedAttribute(ts.wrap([
-        ts.extendedAttributeReference(it.name),
-        token(it.params.tokens.assign),
-        reference_token(it.params.tokens.secondaryName, it),
-        token(it.params.tokens.open),
-        ...!it.params.list ? [] :
-          it.params.list.map(
-            rhsType === "identifier-list" ? id => identifier(id, it) :
-            rhsType === "string-list" ? string :
-            argument
-          ),
-        token(it.params.tokens.close)
-      ])),
-      token(it.tokens.separator)
-    ]);
-  }
-  function extended_attributes(eats) {
-    if (!eats.length) return "";
-    return ts.wrap([
-      token(eats.tokens.open),
-      ...eats.map(make_ext_at),
-      token(eats.tokens.close)
-    ]);
-  }
-
-  function operation(it, parent) {
-    const body = it.idlType ? [
-      ts.type(type(it.idlType)),
-      name_token(it.tokens.name, { data: it, parent }),
-      token(it.tokens.open),
-      ts.wrap(it.arguments.map(argument)),
-      token(it.tokens.close),
-    ] : [];
-    return ts.definition(ts.wrap([
-      extended_attributes(it.extAttrs),
-      it.tokens.name ? token(it.tokens.special) : token(it.tokens.special, ts.nameless, { data: it, parent }),
-      ...body,
-      token(it.tokens.termination)
-    ]), { data: it, parent });
-  }
-
-  function attribute(it, parent) {
-    return ts.definition(ts.wrap([
-      extended_attributes(it.extAttrs),
-      token(it.tokens.special),
-      token(it.tokens.readonly),
-      token(it.tokens.base),
-      ts.type(type(it.idlType)),
-      name_token(it.tokens.name, { data: it, parent }),
-      token(it.tokens.termination)
-    ]), { data: it, parent });
-  }
-
-  function constructor(it, parent) {
-    return ts.definition(ts.wrap([
-      extended_attributes(it.extAttrs),
-      token(it.tokens.base, ts.nameless, { data: it, parent }),
-      token(it.tokens.open),
-      ts.wrap(it.arguments.map(argument)),
-      token(it.tokens.close),
-      token(it.tokens.termination)
-    ]), { data: it, parent });
-  }
-
-  function inheritance(inh) {
-    if (!inh.tokens.inheritance) {
-      return "";
-    }
-    return ts.wrap([
-      token(inh.tokens.colon),
-      ts.trivia(inh.tokens.inheritance.trivia),
-      ts.inheritance(reference(inh.tokens.inheritance.value, { context: inh }))
-    ]);
-  }
-
-  function container(it) {
-    return ts.definition(ts.wrap([
-      extended_attributes(it.extAttrs),
-      token(it.tokens.callback),
-      token(it.tokens.partial),
-      token(it.tokens.base),
-      token(it.tokens.mixin),
-      name_token(it.tokens.name, { data: it }),
-      inheritance(it),
-      token(it.tokens.open),
-      iterate(it.members, it),
-      token(it.tokens.close),
-      token(it.tokens.termination)
-    ]), { data: it });
-  }
-
-  function field(it, parent) {
-    return ts.definition(ts.wrap([
-      extended_attributes(it.extAttrs),
-      token(it.tokens.required),
-      ts.type(type(it.idlType)),
-      name_token(it.tokens.name, { data: it, parent }),
-      default_(it.default),
-      token(it.tokens.termination)
-    ]), { data: it, parent });
-  }
-  function const_(it, parent) {
-    return ts.definition(ts.wrap([
-      extended_attributes(it.extAttrs),
-      token(it.tokens.base),
-      ts.type(type(it.idlType)),
-      name_token(it.tokens.name, { data: it, parent }),
-      token(it.tokens.assign),
-      token(it.tokens.value),
-      token(it.tokens.termination)
-    ]), { data: it, parent });
-  }
-  function typedef(it) {
-    return ts.definition(ts.wrap([
-      extended_attributes(it.extAttrs),
-      token(it.tokens.base),
-      ts.type(type(it.idlType)),
-      name_token(it.tokens.name, { data: it }),
-      token(it.tokens.termination)
-    ]), { data: it });
-  }
-  function includes(it) {
-    return ts.definition(ts.wrap([
-      extended_attributes(it.extAttrs),
-      reference_token(it.tokens.target, it),
-      token(it.tokens.includes),
-      reference_token(it.tokens.mixin, it),
-      token(it.tokens.termination)
-    ]), { data: it });
-  }
-  function callback(it) {
-    return ts.definition(ts.wrap([
-      extended_attributes(it.extAttrs),
-      token(it.tokens.base),
-      name_token(it.tokens.name, { data: it }),
-      token(it.tokens.assign),
-      ts.type(type(it.idlType)),
-      token(it.tokens.open),
-      ...it.arguments.map(argument),
-      token(it.tokens.close),
-      token(it.tokens.termination),
-    ]), { data: it });
-  }
-  function enum_(it) {
-    return ts.definition(ts.wrap([
-      extended_attributes(it.extAttrs),
-      token(it.tokens.base),
-      name_token(it.tokens.name, { data: it }),
-      token(it.tokens.open),
-      iterate(it.values, it),
-      token(it.tokens.close),
-      token(it.tokens.termination)
-    ]), { data: it });
-  }
-  function enum_value(v, parent) {
-    return ts.wrap([
-      ts.trivia(v.tokens.value.trivia),
-      ts.definition(
-        ts.wrap(['"', ts.name(v.value, { data: v, parent }), '"']),
-        { data: v, parent }
-      ),
-      token(v.tokens.separator)
-    ]);
-  }
-  function iterable_like(it, parent) {
-    return ts.definition(ts.wrap([
-      extended_attributes(it.extAttrs),
-      token(it.tokens.readonly),
-      token(it.tokens.async),
-      token(it.tokens.base, ts.generic),
-      token(it.tokens.open),
-      ts.wrap(it.idlType.map(type)),
-      token(it.tokens.close),
-      token(it.tokens.termination)
-    ]), { data: it, parent });
-  }
-  function eof(it) {
-    return ts.trivia(it.trivia);
-  }
-
-  const table = {
-    interface: container,
-    "interface mixin": container,
-    namespace: container,
-    operation,
-    attribute,
-    constructor,
-    dictionary: container,
-    field,
-    const: const_,
-    typedef,
-    includes,
-    callback,
-    enum: enum_,
-    "enum-value": enum_value,
-    iterable: iterable_like,
-    maplike: iterable_like,
-    setlike: iterable_like,
-    "callback interface": container,
-    eof
-  };
-  function dispatch(it, parent) {
-    const dispatcher = table[it.type];
-    if (!dispatcher) {
-      throw new Error(`Type "${it.type}" is unsupported`);
-    }
-    return table[it.type](it, parent);
-  }
-  function iterate(things, parent) {
-    if (!things) return;
-    const results = things.map(thing => dispatch(thing, parent));
-    return ts.wrap(results);
-  }
-  return iterate(ast);
-}
-
-function getMixinMap(all, unique) {
-  const map = new Map();
-  const includes = all.filter(def => def.type === "includes");
-  for (const include of includes) {
-    const mixin = unique.get(include.includes);
-    if (!mixin) {
-      continue;
-    }
-    const array = map.get(include.target);
-    if (array) {
-      array.push(mixin);
-    } else {
-      map.set(include.target, [mixin]);
-    }
-  }
-  return map;
-}
-
-/**
- * @typedef {ReturnType<typeof groupDefinitions>} Definitions
- */
-function groupDefinitions(all) {
-  const unique = new Map();
-  const duplicates = new Set();
-  const partials = new Map();
-  for (const def of all) {
-    if (def.partial) {
-      const array = partials.get(def.name);
-      if (array) {
-        array.push(def);
-      } else {
-        partials.set(def.name, [def]);
-      }
-      continue;
-    }
-    if (!def.name) {
-      continue;
-    }
-    if (!unique.has(def.name)) {
-      unique.set(def.name, def);
-    } else {
-      duplicates.add(def);
-    }
-  }
-  return {
-    all,
-    unique,
-    partials,
-    duplicates,
-    mixinMap: getMixinMap(all, unique),
-    cache: {
-      typedefIncludesDictionary: new WeakMap(),
-      dictionaryIncludesRequiredField: new WeakMap()
-    },
-  };
-}
-
-function* checkDuplicatedNames({ unique, duplicates }) {
-  for (const dup of duplicates) {
-    const { name } = dup;
-    const message = `The name "${name}" of type "${unique.get(name).type}" was already seen`;
-    yield validationError(dup.tokens.name, dup, "no-duplicate", message);
-  }
-}
-
-function* validateIterable(ast) {
-  const defs = groupDefinitions(ast);
-  for (const def of defs.all) {
-    if (def.validate) {
-      yield* def.validate(defs);
-    }
-  }
-  yield* checkDuplicatedNames(defs);
-}
-
-// Remove this once all of our support targets expose `.flat()` by default
-function flatten$1(array) {
-  if (array.flat) {
-    return array.flat();
-  }
-  return [].concat(...array);
-}
-
-/**
- * @param {*} ast AST or array of ASTs
- */
-function validate(ast) {
-  return [...validateIterable(flatten$1(ast))];
-}
-
-
-
-var _webidl2 = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  parse: parse,
-  write: write,
-  validate: validate,
-  WebIDLParseError: WebIDLParseError
 });
 
 /*! (c) Andrea Giammarchi (ISC) */var hyperHTML$1=function(N){/*! (c) Andrea Giammarchi - ISC */var t={};try{t.WeakMap=WeakMap;}catch(e){t.WeakMap=function(t,e){var n=e.defineProperty,r=e.hasOwnProperty,i=a.prototype;return i.delete=function(e){return this.has(e)&&delete e[this._]},i.get=function(e){return this.has(e)?e[this._]:void 0},i.has=function(e){return r.call(e,this._)},i.set=function(e,t){return n(e,this._,{configurable:!0,value:t}),this},a;function a(e){n(this,"_",{value:"_@ungap/weakmap"+t++}),e&&e.forEach(o,this);}function o(e){this.set(e[0],e[1]);}}(Math.random(),Object);}var u=t.WeakMap,i={};
@@ -6447,7 +3902,6 @@ var pluralize = createCommonjsModule$1(function (module, exports) {
 /** @type {import("idb")} */
 // @ts-ignore
 const idb = _idb;
-const webidl2 = _webidl2;
 /** @type {import("hyperhtml").default} */
 // @ts-ignore
 const hyperHTML$2 = hyperHTML$1;
@@ -7836,11 +5290,11 @@ const pcisigDefaults = {
 
 function run$5(conf) {
   conf.respecRFC2119Keywords = conf.respecRFC2119Keywords || [
-    "\\bMUST(?:\\s+NOT)?(?:@64|@32|@16|@8)?\\b",
-    "\\bSHOULD(?:\\s+NOT)?(?:@64|@32|@16|@8)?\\b",
-    "\\bSHALL(?:\\s+NOT)?(?:@64|@32|@16|@8)?\\b",
+    "\\bMUST(?:\\s+NOT)?(?:@FLIT|@64|@32|@16|@8)?\\b",
+    "\\bSHOULD(?:\\s+NOT)?(?:@FLIT|@64|@32|@16|@8)?\\b",
+    "\\bSHALL(?:\\s+NOT)?(?:@FLIT|@64|@32|@16|@8)?\\b",
     "\\bMAY\\b",
-    "\\bIS\\s+(?:NOT\\s+)PERMITTED\\s+TO\\b",
+    "\\b(?:IS|ARE)(?:\\s+NOT)?\\s+PERMITTED\\s+TO\\b",
     "\\b(?:NOT\\s+)?REQUIRED\\b",
     "\\b(?:STRONGLY\\s+)?(?:NOT\\s+)?RECOMMENDED\\b",
     "\\b(?:INDEPENDENTLY\\s+)?OPTIONAL\\b",
@@ -11324,9 +8778,11 @@ function run$j() {
 
     // Only add `lt`s that are different from the text content
     if (titles.length === 1 && titles[0] === norm(dfn.textContent)) {
+      // console.log(`dfn.run #1 ${dfn.outerHTML}`);
       return;
     }
     dfn.dataset.lt = titles.join("|");
+    // console.log(`dfn.run #2 ${dfn.outerHTML}`);
   });
 }
 
@@ -11991,219 +9447,6 @@ var bestPractices = /*#__PURE__*/Object.freeze({
 
 // @ts-check
 
-const topLevelEntities = new Set([
-  "callback interface",
-  "callback",
-  "dictionary",
-  "enum",
-  "interface mixin",
-  "interface",
-  "typedef",
-]);
-
-/**
- * This function looks for a <dfn> element whose title is 'name' and
- * that is "for" 'parent', which is the empty string when 'name'
- * refers to a top-level entity. For top-level entities, <dfn>
- * elements that inherit a non-empty [dfn-for] attribute are also
- * counted as matching.
- *
- * When a matching <dfn> is found, it's given <code> formatting,
- * marked as an IDL definition, and returned. If no <dfn> is found,
- * the function returns 'undefined'.
- * @param {*} defn
- * @param {string} name
- */
-function findDfn(defn, name, { parent = "" } = {}) {
-  switch (defn.type) {
-    case "constructor":
-    case "operation":
-      return findOperationDfn(defn, parent, name);
-    default:
-      return findNormalDfn(defn, parent, name);
-  }
-}
-
-/**
- * @param {string} type
- * @param {string} parent
- * @param {string} name
- */
-function getAlternativeNames(type, parent, name) {
-  const asQualifiedName = `${parent}.${name}`;
-  switch (type) {
-    case "constructor":
-    case "operation": {
-      // Allow linking to both "method()" and "method" name.
-      const asMethodName = `${name}()`;
-      const asFullyQualifiedName = `${asQualifiedName}()`;
-      return [asFullyQualifiedName, asQualifiedName, asMethodName, name];
-    }
-    case "attribute":
-      return [asQualifiedName, name];
-  }
-}
-
-/**
- * @param {*} defn
- * @param {string} parent
- * @param {string} name
- */
-function findOperationDfn(defn, parent, name) {
-  // Overloads all have unique names
-  if (name.includes("!overload")) {
-    return findNormalDfn(defn, parent, name);
-  }
-  const asMethodName = `${name}()`;
-  return findNormalDfn(defn, parent, asMethodName, name);
-}
-
-/**
- * @param {HTMLElement} dfn
- * @param {string[]} names
- */
-function addAlternativeNames(dfn, names) {
-  const lt = dfn.dataset.lt ? dfn.dataset.lt.split("|") : [];
-  lt.push(...names);
-  dfn.dataset.lt = [...new Set(lt)].join("|");
-  registerDefinition(dfn, names);
-}
-
-/**
- * @param {*} defn
- * @param {string} parent
- * @param {...string} names
- */
-function findNormalDfn(defn, parent, ...names) {
-  for (const name of names) {
-    let resolvedName =
-      defn.type === "enum-value" && name === ""
-        ? "the-empty-string"
-        : name.toLowerCase();
-    let dfnForArray = definitionMap[resolvedName];
-    let dfns = getDfns(dfnForArray, parent, name, defn.type);
-    // If we haven't found any definitions with explicit [for]
-    // and [title], look for a dotted definition, "parent.name".
-    if (dfns.length === 0 && parent !== "") {
-      resolvedName = `${parent}.${resolvedName}`;
-      dfnForArray = definitionMap[resolvedName.toLowerCase()];
-      if (dfnForArray !== undefined && dfnForArray.length === 1) {
-        dfns = dfnForArray;
-        // Found it: register with its local name
-        delete definitionMap[resolvedName];
-        registerDefinition(dfns[0], [resolvedName]);
-      }
-    } else {
-      resolvedName = name;
-    }
-    if (dfns.length > 1) {
-      const msg = `WebIDL identifier \`${name}\` ${
-        parent ? `for \`${parent}\`` : ""
-      } is defined multiple times`;
-      showInlineError(dfns, msg, "Duplicate definition.");
-    }
-    if (dfns.length) {
-      if (name !== resolvedName) {
-        dfns[0].dataset.lt = resolvedName;
-      }
-      return dfns[0];
-    }
-  }
-}
-
-/**
- * @param {HTMLElement} dfn
- * @param {*} defn
- * @param {string} parent
- * @param {string} name
- */
-function decorateDfn(dfn, defn, parent, name) {
-  if (!dfn.id) {
-    const lCaseParent = parent.toLowerCase();
-    const middle = lCaseParent ? `${lCaseParent}-` : "";
-    let last = name
-      .toLowerCase()
-      .replace(/[()]/g, "")
-      .replace(/\s/g, "-");
-    if (last === "") last = "the-empty-string";
-    dfn.id = `dom-${middle}${last}`;
-  }
-  dfn.dataset.idl = defn.type;
-  dfn.dataset.title = dfn.textContent;
-  dfn.dataset.dfnFor = parent;
-  // Derive the data-type for dictionary members, interface attributes,
-  // and methods
-  switch (defn.type) {
-    case "operation":
-    case "attribute":
-    case "field":
-      dfn.dataset.type = getDataType(defn);
-      break;
-  }
-
-  // Mark the definition as code.
-  if (!dfn.querySelector("code") && !dfn.closest("code") && dfn.children) {
-    const code = dfn.ownerDocument.createElement("code");
-    code.classList.add("code-dfn");
-    wrapInner(dfn, code);
-  }
-
-  // Add data-lt values and register them
-  switch (defn.type) {
-    case "attribute":
-    case "constructor":
-    case "operation":
-      addAlternativeNames(dfn, getAlternativeNames(defn.type, parent, name));
-      break;
-  }
-
-  return dfn;
-}
-
-/**
- * @param {HTMLElement[]} dfnForArray
- * @param {string} parent data-dfn-for
- * @param {string} originalName
- * @param {string} type
- */
-function getDfns(dfnForArray, parent, originalName, type) {
-  if (!dfnForArray) {
-    return [];
-  }
-  // Definitions that have a name and [data-dfn-for] that exactly match the
-  // IDL entity:
-  const dfns = dfnForArray.filter(dfn => {
-    /** @type {HTMLElement} */
-    const closestDfnFor = dfn.closest(`[data-dfn-for]`);
-    return closestDfnFor && closestDfnFor.dataset.dfnFor === parent;
-  });
-
-  if (dfns.length === 0 && parent === "" && dfnForArray.length === 1) {
-    // Make sure the name exactly matches
-    return dfnForArray[0].textContent === originalName ? dfnForArray : [];
-  } else if (topLevelEntities.has(type) && dfnForArray.length) {
-    const dfn = dfnForArray.find(
-      dfn => dfn.textContent.trim() === originalName
-    );
-    if (dfn) return [dfn];
-  }
-  return dfns;
-}
-
-/**
- * @return {string}
- */
-function getDataType(idlStruct) {
-  const { idlType, generic, union } = idlStruct;
-  if (typeof idlType === "string") return idlType;
-  if (generic) return generic;
-  // join on "|" handles for "unsigned short" etc.
-  if (union) return idlType.map(getDataType).join("|");
-  return getDataType(idlType);
-}
-
-// @ts-check
-
 const name$A = "pcisig/draw-csrs";
 
 /**
@@ -12356,17 +9599,11 @@ function parse_table(tbl) {
           dfn = desc.querySelector("dfn:first-of-type");
         }
         fieldName = dfn.textContent.trim();
-        if (!dfn.hasAttribute("class")) dfn.classList.add("field");
-        // dfn.setAttribute("data-dfn-for", lt);
-        dfn.setAttribute("data-dfn-type", "field");
         addId(dfn, "field", `${tblName}-${fieldName.toLowerCase()}`);
-        decorateDfn(
-          dfn,
-          { type: "field", generic: "field" },
-          tblName,
-          fieldName
-        );
-        // console.log(`decorateDfn(${dfn.outerHTML})`);
+        dfn.classList.add("field");
+        // dfn.dataset.dfnFor = tblName;
+        dfn.dataset.type = "field";
+        tbl.dataset.linkFor = tblName;
         const val = desc.querySelector("span.value:first-of-type");
         let value = "";
         if (val) {
@@ -15166,7 +12403,7 @@ function _classCallCheck(instance, Constructor) {
   }
 }
 
-var Base$1 = function Base() {
+var Base = function Base() {
   _classCallCheck(this, Base);
 };
 
@@ -15178,7 +12415,7 @@ function create(name) {
   return globals.document.createElementNS(ns, name);
 }
 function makeInstance(element) {
-  if (element instanceof Base$1) return element;
+  if (element instanceof Base) return element;
 
   if (_typeof(element) === 'object') {
     return adopter(element);
@@ -15207,7 +12444,7 @@ function adopt(node) {
   // check for presence of node
   if (!node) return null; // make sure a node isn't already adopted
 
-  if (node.instance instanceof Base$1) return node.instance; // initialize variables
+  if (node.instance instanceof Base) return node.instance; // initialize variables
 
   var className = capitalize(node.nodeName || 'Dom'); // Make sure that gradients are adopted correctly
 
@@ -17841,12 +15078,12 @@ extend(List, {
     return Array.prototype.concat.apply([], this);
   }
 });
-var reserved$1 = ['toArray', 'constructor', 'each'];
+var reserved = ['toArray', 'constructor', 'each'];
 
 List.extend = function (methods) {
   methods = methods.reduce(function (obj, name) {
     // Don't overwrite own methods
-    if (reserved$1.includes(name)) return obj; // Don't add private methods
+    if (reserved.includes(name)) return obj; // Don't add private methods
 
     if (name[0] === '_') return obj; // Relay every call to each()
 
@@ -17957,10 +15194,10 @@ function (_Base) {
   }]);
 
   return EventTarget;
-}(Base$1);
+}(Base);
 register(EventTarget, 'EventTarget');
 
-function noop$1() {} // Default animation values
+function noop() {} // Default animation values
 
 var timeline = {
   duration: 400,
@@ -19162,7 +16399,7 @@ registerMethods({
 });
 register(Circle, 'Circle');
 
-var Container$1 =
+var Container =
 /*#__PURE__*/
 function (_Element) {
   _inherits(Container, _Element);
@@ -19198,7 +16435,7 @@ function (_Element) {
 
   return Container;
 }(Element);
-register(Container$1, 'Container');
+register(Container, 'Container');
 
 var Defs =
 /*#__PURE__*/
@@ -19224,7 +16461,7 @@ function (_Container) {
   }]);
 
   return Defs;
-}(Container$1);
+}(Container);
 register(Defs, 'Defs');
 
 var Ellipse =
@@ -19381,7 +16618,7 @@ function (_Container) {
   }]);
 
   return Gradient;
-}(Container$1);
+}(Container);
 extend(Gradient, gradiented);
 registerMethods({
   Container: {
@@ -19456,7 +16693,7 @@ function (_Container) {
   }]);
 
   return Pattern;
-}(Container$1);
+}(Container);
 registerMethods({
   Container: {
     // Create pattern element in defs
@@ -19821,7 +17058,7 @@ function (_Container) {
   }]);
 
   return Marker;
-}(Container$1);
+}(Container);
 registerMethods({
   Container: {
     marker: function marker() {
@@ -21694,8 +18931,8 @@ function (_EventTarget) {
     key: "queue",
     value: function queue(initFn, runFn, retargetFn, isTransform) {
       this._queue.push({
-        initialiser: initFn || noop$1,
-        runner: runFn || noop$1,
+        initialiser: initFn || noop,
+        runner: runFn || noop,
         retarget: retargetFn,
         isTransform: isTransform,
         initialised: false,
@@ -22611,7 +19848,7 @@ function (_Container) {
   }]);
 
   return Svg;
-}(Container$1);
+}(Container);
 registerMethods({
   Container: {
     // Create nested svg document
@@ -22635,7 +19872,7 @@ function (_Container) {
   }
 
   return _Symbol;
-}(Container$1);
+}(Container);
 registerMethods({
   Container: {
     symbol: wrapWithAttrCheck(function () {
@@ -22666,7 +19903,7 @@ var textable = ({
 	length: length
 });
 
-var Text$1 =
+var Text =
 /*#__PURE__*/
 function (_Shape) {
   _inherits(Text, _Shape);
@@ -22862,20 +20099,20 @@ function (_Shape) {
 
   return Text;
 }(Shape);
-extend(Text$1, textable);
+extend(Text, textable);
 registerMethods({
   Container: {
     // Create text element
     text: wrapWithAttrCheck(function (text) {
-      return this.put(new Text$1()).text(text);
+      return this.put(new Text()).text(text);
     }),
     // Create plain text element
     plain: wrapWithAttrCheck(function (text) {
-      return this.put(new Text$1()).plain(text);
+      return this.put(new Text()).plain(text);
     })
   }
 });
-register(Text$1, 'Text');
+register(Text, 'Text');
 
 var Tspan =
 /*#__PURE__*/
@@ -22929,7 +20166,7 @@ function (_Text) {
     key: "newLine",
     value: function newLine() {
       // fetch text parent
-      var t = this.parent(Text$1); // mark new line
+      var t = this.parent(Text); // mark new line
 
       this.dom.newLined = true;
       var fontSize = globals.window.getComputedStyle(this.node).getPropertyValue('font-size');
@@ -22940,7 +20177,7 @@ function (_Text) {
   }]);
 
   return Tspan;
-}(Text$1);
+}(Text);
 extend(Tspan, textable);
 registerMethods({
   Tspan: {
@@ -22989,7 +20226,7 @@ function (_Container) {
   }]);
 
   return ClipPath;
-}(Container$1);
+}(Container);
 registerMethods({
   Container: {
     // Create clipping element
@@ -23131,7 +20368,7 @@ function (_Container) {
   }]);
 
   return G;
-}(Container$1);
+}(Container);
 registerMethods({
   Container: {
     // Create a group element
@@ -23168,7 +20405,7 @@ function (_Container) {
   }]);
 
   return A;
-}(Container$1);
+}(Container);
 registerMethods({
   Container: {
     // Create a hyperlink element
@@ -23224,7 +20461,7 @@ function (_Container) {
   }]);
 
   return Mask;
-}(Container$1);
+}(Container);
 registerMethods({
   Container: {
     mask: wrapWithAttrCheck(function () {
@@ -23354,12 +20591,12 @@ function (_Text) {
   }]);
 
   return TextPath;
-}(Text$1);
+}(Text);
 registerMethods({
   Container: {
     textPath: wrapWithAttrCheck(function (text, path) {
       // Convert text to instance if needed
-      if (!(text instanceof Text$1)) {
+      if (!(text instanceof Text)) {
         text = this.text(text);
       }
 
@@ -23400,8 +20637,8 @@ registerMethods({
     // creates a textPath from this path
     text: wrapWithAttrCheck(function (text) {
       // Convert text to instance if needed
-      if (!(text instanceof Text$1)) {
-        text = new Text$1().addTo(this.parent()).text(text);
+      if (!(text instanceof Text)) {
+        text = new Text().addTo(this.parent()).text(text);
       } // Create textPath from text and path and return
 
 
@@ -23451,17 +20688,17 @@ register(Use, 'Use');
 var SVG = makeInstance;
 extend([Svg, _Symbol, Image, Pattern, Marker], getMethodsFor('viewbox'));
 extend([Line, Polyline, Polygon, Path], getMethodsFor('marker'));
-extend(Text$1, getMethodsFor('Text'));
+extend(Text, getMethodsFor('Text'));
 extend(Path, getMethodsFor('Path'));
 extend(Defs, getMethodsFor('Defs'));
-extend([Text$1, Tspan], getMethodsFor('Tspan'));
+extend([Text, Tspan], getMethodsFor('Tspan'));
 extend([Rect, Ellipse, Circle, Gradient], getMethodsFor('radius'));
 extend(EventTarget, getMethodsFor('EventTarget'));
 extend(Dom, getMethodsFor('Dom'));
 extend(Element, getMethodsFor('Element'));
 extend(Shape, getMethodsFor('Shape')); // extend(Element, getConstructor('Memory'))
 
-extend(Container$1, getMethodsFor('Container'));
+extend(Container, getMethodsFor('Container'));
 extend(Runner, getMethodsFor('Runner'));
 List.extend(getMethodNames());
 registerMorphableType([SVGNumber, Color, Box, Matrix, SVGArray, PointArray, PathArray]);
@@ -23905,7 +21142,7 @@ function draw_regpict(divsvg, inputJSON) {
   const isMultiRow = isMessage || isMemoryBlock;
 
   if (debug) {
-    console.log(`start draw_regpicg(${figName} width=${width}`);
+    console.log(`start draw_regpic(${figName} width=${width}`);
   }
   const bitarray = []; // Array indexed by bit # in register range 0:width
   // bitarray[N] == fields[x] where field x contains bit N
@@ -25265,384 +22502,8 @@ var tables = /*#__PURE__*/Object.freeze({
   run: run$t
 });
 
-// Module core/webidl
-
-const name$F = "core/webidl";
-
-const operationNames = {};
-const idlPartials = {};
-
-const templates$1 = {
-  wrap(items) {
-    return items
-      .reduce(flatten, [])
-      .filter(x => x !== "")
-      .map(x => (typeof x === "string" ? new Text(x) : x));
-  },
-  trivia(t) {
-    if (!t.trim()) {
-      return t;
-    }
-    return hyperHTML$2`<span class='idlSectionComment'>${t}</span>`;
-  },
-  generic(keyword) {
-    // Shepherd classifies "interfaces" as starting with capital letters,
-    // like Promise, FrozenArray, etc.
-    return /^[A-Z]/.test(keyword)
-      ? hyperHTML$2`<a data-xref-type="interface" data-cite="WebIDL">${keyword}</a>`
-      : // Other keywords like sequence, maplike, etc...
-        hyperHTML$2`<a data-xref-type="dfn" data-cite="WebIDL">${keyword}</a>`;
-  },
-  reference(wrapped, unescaped, context) {
-    if (context.type === "extended-attribute" && context.name !== "Exposed") {
-      return wrapped;
-    }
-    let type = "_IDL_";
-    let cite = null;
-    let lt;
-    switch (unescaped) {
-      case "Window":
-        type = "interface";
-        cite = "HTML";
-        break;
-      case "object":
-        type = "interface";
-        cite = "WebIDL";
-        break;
-      default: {
-        const isWorkerType = unescaped.includes("Worker");
-        if (isWorkerType && context.type === "extended-attribute") {
-          lt = `${unescaped}GlobalScope`;
-          type = "interface";
-          cite = ["Worker", "DedicatedWorker", "SharedWorker"].includes(
-            unescaped
-          )
-            ? "HTML"
-            : null;
-        }
-      }
-    }
-    return hyperHTML$2`<a
-      data-xref-type="${type}" data-cite="${cite}" data-lt="${lt}">${wrapped}</a>`;
-  },
-  name(escaped, { data, parent }) {
-    if (data.idlType && data.idlType.type === "argument-type") {
-      return hyperHTML$2`<span class="idlParamName">${escaped}</span>`;
-    }
-    const idlLink = defineIdlName(escaped, data, parent);
-    if (data.type !== "enum-value") {
-      const className = parent ? "idlName" : "idlID";
-      idlLink.classList.add(className);
-    }
-    return idlLink;
-  },
-  nameless(escaped, { data, parent }) {
-    switch (data.type) {
-      case "constructor":
-        return defineIdlName(escaped, data, parent);
-      default:
-        return escaped;
-    }
-  },
-  type(contents) {
-    return hyperHTML$2`<span class="idlType">${contents}</span>`;
-  },
-  inheritance(contents) {
-    return hyperHTML$2`<span class="idlSuperclass">${contents}</span>`;
-  },
-  definition(contents, { data, parent }) {
-    const className = getIdlDefinitionClassName(data);
-    switch (data.type) {
-      case "includes":
-      case "enum-value":
-        return hyperHTML$2`<span class='${className}'>${contents}</span>`;
-    }
-    const parentName = parent ? parent.name : "";
-    const { name, idlId } = getNameAndId(data, parentName);
-    return hyperHTML$2`<span class='${className}' id='${idlId}' data-idl data-title='${name}'>${contents}</span>`;
-  },
-  extendedAttribute(contents) {
-    const result = hyperHTML$2`<span class="extAttr">${contents}</span>`;
-    return result;
-  },
-  extendedAttributeReference(name) {
-    return hyperHTML$2`<a data-xref-type="extended-attribute">${name}</a>`;
-  },
-};
-
-/**
- * Returns a link to existing <dfn> or creates one if doesn’t exists.
- */
-function defineIdlName(escaped, data, parent) {
-  const parentName = parent ? parent.name : "";
-  const { name } = getNameAndId(data, parentName);
-  const dfn = findDfn(data, name, {
-    parent: parentName,
-  });
-  const linkType = getDfnType(data.type);
-  if (dfn) {
-    if (!data.partial) {
-      dfn.dataset.export = "";
-      dfn.dataset.dfnType = linkType;
-    }
-    decorateDfn(dfn, data, parentName, name);
-    const href = `#${dfn.id}`;
-    return hyperHTML$2`<a
-      data-link-for="${parentName}"
-      data-link-type="${linkType}"
-      href="${href}"
-      class="internalDFN"
-      ><code>${escaped}</code></a>`;
-  }
-
-  const isDefaultJSON =
-    data.type === "operation" &&
-    data.name === "toJSON" &&
-    data.extAttrs.some(({ name }) => name === "Default");
-  if (isDefaultJSON) {
-    return hyperHTML$2`<a
-     data-link-type="dfn"
-     data-lt="default toJSON operation">${escaped}</a>`;
-  }
-  if (!data.partial) {
-    const dfn = hyperHTML$2`<dfn data-export data-dfn-type="${linkType}">${escaped}</dfn>`;
-    registerDefinition(dfn, [name]);
-    decorateDfn(dfn, data, parentName, name);
-    return dfn;
-  }
-
-  const unlinkedAnchor = hyperHTML$2`<a
-    data-idl="${data.partial ? "partial" : null}"
-    data-link-type="${linkType}"
-    data-title="${data.name}"
-    data-xref-type="${linkType}"
-    >${escaped}</a>`;
-
-  const showWarnings =
-    name && data.type !== "typedef" && !(data.partial && !dfn);
-  if (showWarnings) {
-    const styledName = data.type === "operation" ? `${name}()` : name;
-    const ofParent = parentName ? ` \`${parentName}\`'s` : "";
-    const msg = `Missing \`<dfn>\` for${ofParent} \`${styledName}\` ${data.type}. [More info](https://github.com/w3c/respec/wiki/WebIDL-thing-is-not-defined).`;
-    showInlineWarning(unlinkedAnchor, msg, "");
-  }
-  return unlinkedAnchor;
-}
-
-/**
- * Map to Shepherd types, for export.
- * @see https://tabatkins.github.io/bikeshed/#dfn-types
- */
-function getDfnType(idlType) {
-  switch (idlType) {
-    case "operation":
-      return "method";
-    case "field":
-      return "dict-member";
-    case "callback interface":
-    case "interface mixin":
-      return "interface";
-    default:
-      return idlType;
-  }
-}
-
-function getIdlDefinitionClassName(defn) {
-  switch (defn.type) {
-    case "callback interface":
-      return "idlInterface";
-    case "operation":
-      return "idlMethod";
-    case "field":
-      return "idlMember";
-    case "enum-value":
-      return "idlEnumItem";
-    case "callback function":
-      return "idlCallback";
-  }
-  return `idl${defn.type[0].toUpperCase()}${defn.type.slice(1)}`;
-}
-
-const nameResolverMap = new WeakMap();
-function getNameAndId(defn, parent = "") {
-  if (nameResolverMap.has(defn)) {
-    return nameResolverMap.get(defn);
-  }
-  const result = resolveNameAndId(defn, parent);
-  nameResolverMap.set(defn, result);
-  return result;
-}
-
-function resolveNameAndId(defn, parent) {
-  let name = getDefnName(defn);
-  let idlId = getIdlId(name, parent);
-  switch (defn.type) {
-    // Top-level entities with linkable members.
-    case "callback interface":
-    case "dictionary":
-    case "interface":
-    case "interface mixin": {
-      idlId += resolvePartial(defn);
-      break;
-    }
-    case "constructor":
-    case "operation": {
-      const overload = resolveOverload(name, parent);
-      if (overload) {
-        name += overload;
-        idlId += overload;
-      } else if (defn.arguments.length) {
-        idlId += defn.arguments
-          .map(arg => `-${arg.name.toLowerCase()}`)
-          .join("");
-      }
-      break;
-    }
-  }
-  return { name, idlId };
-}
-
-function resolvePartial(defn) {
-  if (!defn.partial) {
-    return "";
-  }
-  if (!idlPartials[defn.name]) {
-    idlPartials[defn.name] = 0;
-  }
-  idlPartials[defn.name] += 1;
-  return `-partial-${idlPartials[defn.name]}`;
-}
-
-function resolveOverload(name, parentName) {
-  const qualifiedName = `${parentName}.${name}`;
-  const fullyQualifiedName = `${qualifiedName}()`;
-  let overload;
-  if (!operationNames[fullyQualifiedName]) {
-    operationNames[fullyQualifiedName] = 0;
-  }
-  if (!operationNames[qualifiedName]) {
-    operationNames[qualifiedName] = 0;
-  } else {
-    overload = `!overload-${operationNames[qualifiedName]}`;
-  }
-  operationNames[fullyQualifiedName] += 1;
-  operationNames[qualifiedName] += 1;
-  return overload || "";
-}
-
-function getIdlId(name, parentName) {
-  if (!parentName) {
-    return `idl-def-${name.toLowerCase()}`;
-  }
-  return `idl-def-${parentName.toLowerCase()}-${name.toLowerCase()}`;
-}
-
-function getDefnName(defn) {
-  switch (defn.type) {
-    case "enum-value":
-      return defn.value;
-    case "operation":
-      return defn.name;
-    default:
-      return defn.name || defn.type;
-  }
-}
-
-function renderWebIDL(idlElement, index) {
-  let parse;
-  try {
-    parse = webidl2.parse(idlElement.textContent, {
-      sourceName: String(index),
-    });
-  } catch (e) {
-    showInlineError(
-      idlElement,
-      `Failed to parse WebIDL: ${e.bareMessage}.`,
-      e.bareMessage,
-      { details: `<pre>${e.context}</pre>` }
-    );
-    // Skip this <pre> and move on to the next one.
-    return [];
-  }
-  idlElement.classList.add("def", "idl");
-  const html = webidl2.write(parse, { templates: templates$1 });
-  const render = hyperHTML$2.bind(idlElement);
-  render`${html}`;
-  idlElement.querySelectorAll("[data-idl]").forEach(elem => {
-    if (elem.dataset.dfnFor) {
-      return;
-    }
-    const title = elem.dataset.title;
-    // Select the nearest ancestor element that can contain members.
-    const parent = elem.parentElement.closest("[data-idl][data-title]");
-    if (parent) {
-      elem.dataset.dfnFor = parent.dataset.title;
-    }
-    registerDefinition(elem, [title]);
-  });
-  // cross reference
-  const closestCite = idlElement.closest("[data-cite], body");
-  const { dataset } = closestCite;
-  if (!dataset.cite) dataset.cite = "WebIDL";
-  // includes webidl in some form
-  if (!/\bwebidl\b/i.test(dataset.cite)) {
-    const cites = dataset.cite.trim().split(/\s+/);
-    dataset.cite = ["WebIDL", ...cites].join(" ");
-  }
-  return parse;
-}
-
-const cssPromise$3 = loadStyle$5();
-
-async function loadStyle$5() {
-  try {
-    return (await Promise.resolve().then(function () { return webidl$2; })).default;
-  } catch {
-    return fetchAsset("webidl.css");
-  }
-}
-
-async function run$u() {
-  const idls = document.querySelectorAll("pre.idl");
-  if (!idls.length) {
-    return;
-  }
-  if (!document.querySelector(".idl:not(pre)")) {
-    const link = document.querySelector("head link");
-    if (link) {
-      const style = document.createElement("style");
-      style.textContent = await cssPromise$3;
-      link.before(style);
-    }
-  }
-  const astArray = [...idls].map(renderWebIDL);
-
-  const validations = webidl2.validate(astArray);
-  for (const validation of validations) {
-    let details = `<pre>${validation.context}</pre>`;
-    if (validation.autofix) {
-      validation.autofix();
-      details += `Try fixing as:
-      <pre>${webidl2.write(astArray[validation.sourceName])}</pre>`;
-    }
-    showInlineError(
-      idls[validation.sourceName],
-      `WebIDL validation error: ${validation.bareMessage}`,
-      validation.bareMessage,
-      { details }
-    );
-  }
-  document.normalize();
-}
-
-var webidl = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  name: name$F,
-  run: run$u
-});
-
 // @ts-check
-const name$G = "core/data-cite";
+const name$F = "core/data-cite";
 
 function requestLookup(conf) {
   const toCiteDetails = citeDetailsConverter(conf);
@@ -25777,7 +22638,7 @@ function citeDetailsConverter(conf) {
   };
 }
 
-async function run$v(conf) {
+async function run$u(conf) {
   const toCiteDetails = citeDetailsConverter(conf);
   /** @type {NodeListOf<HTMLElement>} */
   const cites = document.querySelectorAll("dfn[data-cite], a[data-cite]");
@@ -25833,82 +22694,9 @@ async function linkInlineCitations(doc, conf = respecConfig) {
 
 var dataCite = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$G,
-  run: run$v,
+  name: name$F,
+  run: run$u,
   linkInlineCitations: linkInlineCitations
-});
-
-// @ts-check
-/**
- * Module: core/webidl-index
- * constructs a summary of WebIDL in the document by
- * cloning all the generated WebIDL nodes and
- * appending them to pre element.
- *
- * Usage
- * Add a <section id="idl-index"> to the document.
- * It also supports title elements to generate a header.
- * Or if a header element is an immediate child, then
- * that is preferred.
- */
-const name$H = "core/webidl-index";
-
-function run$w() {
-  /** @type {HTMLElement | null} */
-  const idlIndexSec = document.querySelector("section#idl-index");
-  if (!idlIndexSec) {
-    return;
-  }
-  // Query for decedents headings, e.g., "h2:first-child, etc.."
-  const query = [2, 3, 4, 5, 6].map(level => `h${level}:first-child`).join(",");
-  if (!idlIndexSec.querySelector(query)) {
-    const header = document.createElement("h2");
-    if (idlIndexSec.title) {
-      header.textContent = idlIndexSec.title;
-      idlIndexSec.removeAttribute("title");
-    } else {
-      header.textContent = "IDL Index";
-    }
-    idlIndexSec.prepend(header);
-  }
-
-  // filter out the IDL marked with class="exclude" and the IDL in non-normative sections
-  const idlIndex = Array.from(
-    document.querySelectorAll("pre.def.idl:not(.exclude)")
-  ).filter(idl => !idl.closest(nonNormativeSelector));
-
-  if (idlIndex.length === 0) {
-    const text = "This specification doesn't declare any Web IDL.";
-    idlIndexSec.append(text);
-    return;
-  }
-
-  const pre = document.createElement("pre");
-  pre.classList.add("idl", "def");
-  pre.id = "actual-idl-index";
-  idlIndex
-    .map(elem => {
-      const fragment = document.createDocumentFragment();
-      for (const child of elem.children) {
-        fragment.appendChild(child.cloneNode(true));
-      }
-      return fragment;
-    })
-    .forEach(elem => {
-      if (pre.lastChild) {
-        pre.append("\n\n");
-      }
-      pre.appendChild(elem);
-    });
-  // Remove duplicate IDs
-  pre.querySelectorAll("*[id]").forEach(elem => elem.removeAttribute("id"));
-  idlIndexSec.appendChild(pre);
-}
-
-var webidlIndex = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  name: name$H,
-  run: run$w
 });
 
 // @ts-check
@@ -26023,7 +22811,7 @@ if (
  * @param {Object} conf respecConfig
  * @param {HTMLElement[]} elems possibleExternalLinks
  */
-async function run$x(conf, elems) {
+async function run$v(conf, elems) {
   const xref = normalizeConfig(conf.xref);
   if (xref.specs) {
     const bodyCite = document.body.dataset.cite
@@ -26386,7 +23174,7 @@ function bufferToHexString(buffer) {
 }
 
 // @ts-check
-const name$I = "core/link-to-dfn";
+const name$G = "core/link-to-dfn";
 const l10n$a = {
   en: {
     /**
@@ -26429,7 +23217,7 @@ class CaseInsensitiveMap extends Map {
   }
 }
 
-async function run$y(conf) {
+async function run$w(conf) {
   const titleToDfns = mapTitleToDfns();
   /** @type {HTMLElement[]} */
   const possibleExternalLinks = [];
@@ -26459,7 +23247,7 @@ async function run$y(conf) {
   if (conf.xref) {
     possibleExternalLinks.push(...findExplicitExternalLinks());
     try {
-      await run$x(conf, possibleExternalLinks);
+      await run$v(conf, possibleExternalLinks);
     } catch (error) {
       console.error(error);
       showLinkingError(possibleExternalLinks);
@@ -26480,7 +23268,7 @@ function mapTitleToDfns() {
     const { result, duplicates } = collectDfns(title);
     titleToDfns.set(title, result);
     if (duplicates.length > 0) {
-      console.log(`mapTitleToDfns: duplicates=${JSON.stringify(duplicates)}`);
+      console.log(`mapTitleToDfns: duplicates=${duplicates.toString()}`);
       showInlineError(
         duplicates,
         l10n$a[lang$h].duplicateMsg(title),
@@ -26491,6 +23279,7 @@ function mapTitleToDfns() {
   return titleToDfns;
 }
 
+let seq=0;
 /**
  * @param {string} title
  */
@@ -26498,8 +23287,14 @@ function collectDfns(title) {
   /** @type {Map<string, HTMLElement>} */
   const result = new Map();
   const duplicates = [];
+  seq++;
   definitionMap[title].forEach(dfn => {
     const { dfnFor = "" } = dfn.dataset;
+    console.log(
+      `collectDfns#${seq}(${title}) dfnFor="${dfnFor}" ${
+        dfn.outerHTML
+      } duplicates=${duplicates.toString()}`
+    );
     if (result.has(dfnFor)) {
       // We want <dfn> definitions to take precedence over
       // definitions from WebIDL. WebIDL definitions wind
@@ -26517,6 +23312,11 @@ function collectDfns(title) {
     result.set(dfnFor, dfn);
     addId(dfn, "dfn", title);
   });
+  console.log(
+    `collectDfns result=${JSON.stringify(
+      result.entries()
+    )} duplicates=${duplicates.toString()}`
+  );
   return { result, duplicates };
 }
 
@@ -26643,21 +23443,21 @@ function showLinkingError(elems) {
     showInlineWarning(
       elem,
       `Found linkless \`<a>\` element with text "${elem.textContent}" but no matching \`<dfn>\``,
-      "Linking error: not matching `<dfn>`"
+      "Linking error: no matching `<dfn>`"
     );
   });
 }
 
 var linkToDfn = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$I,
-  run: run$y
+  name: name$G,
+  run: run$w
 });
 
 // @ts-check
-const name$J = "core/contrib";
+const name$H = "core/contrib";
 
-async function run$z(conf) {
+async function run$x(conf) {
   const ghContributors = document.getElementById("gh-contributors");
   if (!ghContributors) {
     return;
@@ -26740,15 +23540,15 @@ function toHTML(contributors, element) {
 
 var contrib = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$J,
-  run: run$z
+  name: name$H,
+  run: run$x
 });
 
 // @ts-check
 
-const name$K = "core/fix-headers";
+const name$I = "core/fix-headers";
 
-function run$A() {
+function run$y() {
   [...document.querySelectorAll("section:not(.introductory)")]
     .map(sec => sec.querySelector("h1, h2, h3, h4, h5, h6"))
     .filter(h => h)
@@ -26769,8 +23569,8 @@ function getParents(el, selector) {
 
 var fixHeaders = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$K,
-  run: run$A
+  name: name$I,
+  run: run$y
 });
 
 // @ts-check
@@ -26778,7 +23578,7 @@ var fixHeaders = /*#__PURE__*/Object.freeze({
 const lowerHeaderTags = ["h2", "h3", "h4", "h5", "h6"];
 const headerTags = ["h1", ...lowerHeaderTags];
 
-const name$L = "core/structure";
+const name$J = "core/structure";
 
 const localizationStrings$9 = {
   en: {
@@ -26946,7 +23746,7 @@ function filterHeader(h) {
   );
 }
 
-function run$B(conf) {
+function run$z(conf) {
   if ("tocIntroductory" in conf === false) {
     conf.tocIntroductory = false;
   }
@@ -27036,8 +23836,8 @@ function appendixNumber(index) {
 
 var structure$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$L,
-  run: run$B
+  name: name$J,
+  run: run$z
 });
 
 // Module pcisig/fig-tbl-eqn-numbering
@@ -27047,7 +23847,7 @@ var structure$1 = /*#__PURE__*/Object.freeze({
 // 1. core/figures runs before core/structure and thus doesn't know Chapter and Appendix numbers
 // 2. A second pass means that this plugin is not part of the src/core.
 
-const name$M = "pcisig/fig-tbl-eqn-numbering";
+const name$K = "pcisig/fig-tbl-eqn-numbering";
 
 function numberItems(sec, chapter, map, selector) {
   // Process Figure Captions, populating figNumMap
@@ -27069,7 +23869,7 @@ function renumberItems(selector, map) {
   });
 }
 
-function run$C(conf) {
+function run$A(conf) {
   if (conf.numberByChapter) {
     const chapterSecnos = document.querySelectorAll(
       "body > section:not(.introductory) h2:first-child bdi.secno"
@@ -27098,13 +23898,13 @@ function run$C(conf) {
 
 var figTblEqnNumbering = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$M,
-  run: run$C
+  name: name$K,
+  run: run$A
 });
 
 // @ts-check
 
-const name$N = "core/informative";
+const name$L = "core/informative";
 
 const localizationStrings$a = {
   en: {
@@ -27119,7 +23919,7 @@ const lang$j = lang in localizationStrings$a ? lang : "en";
 
 const l10n$c = localizationStrings$a[lang$j];
 
-function run$D() {
+function run$B() {
   Array.from(document.querySelectorAll("section.informative"))
     .map(informative => informative.querySelector("h2, h3, h4, h5, h6"))
     .filter(heading => heading)
@@ -27130,8 +23930,8 @@ function run$D() {
 
 var informative = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$N,
-  run: run$D
+  name: name$L,
+  run: run$B
 });
 
 // @ts-check
@@ -27139,9 +23939,9 @@ var informative = /*#__PURE__*/Object.freeze({
 // All headings are expected to have an ID, unless their immediate container has one.
 // This is currently in core though it comes from a W3C rule. It may move in the future.
 
-const name$O = "core/id-headers";
+const name$M = "core/id-headers";
 
-function run$E(conf) {
+function run$C(conf) {
   /** @type {NodeListOf<HTMLElement>} */
   const headings = document.querySelectorAll(
     `section:not(.head):not(.introductory) h2, h3, h4, h5, h6, figcaption, caption, div.impnote-title, div.note-title`
@@ -27158,13 +23958,13 @@ function run$E(conf) {
 
 var idHeaders = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$O,
-  run: run$E
+  name: name$M,
+  run: run$C
 });
 
 // @ts-check
 
-const name$P = "core/caniuse";
+const name$N = "core/caniuse";
 
 const API_URL$1 = "https://respec.org/caniuse/";
 
@@ -27208,9 +24008,9 @@ if (
   document.head.appendChild(link);
 }
 
-const caniuseCssPromise = loadStyle$6();
+const caniuseCssPromise = loadStyle$5();
 
-async function loadStyle$6() {
+async function loadStyle$5() {
   try {
     return (await Promise.resolve().then(function () { return caniuse$2; })).default;
   } catch {
@@ -27218,7 +24018,7 @@ async function loadStyle$6() {
   }
 }
 
-async function run$F(conf) {
+async function run$D(conf) {
   if (!conf.caniuse) {
     return; // nothing to do.
   }
@@ -27366,13 +24166,13 @@ function addBrowser([browserName, browserData]) {
 
 var caniuse = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$P,
-  run: run$F
+  name: name$N,
+  run: run$D
 });
 
 // @ts-check
 
-const name$Q = "core/mdn-annoatation";
+const name$O = "core/mdn-annoatation";
 
 const SPEC_MAP_URL =
   "https://raw.githubusercontent.com/w3c/mdn-spec-links/master/SPECMAP.json";
@@ -27400,9 +24200,9 @@ const MDN_BROWSERS = {
   webview_android: "WebView Android",
 };
 
-const mdnCssPromise = loadStyle$7();
+const mdnCssPromise = loadStyle$6();
 
-async function loadStyle$7() {
+async function loadStyle$6() {
   try {
     return (await Promise.resolve().then(function () { return mdnAnnotation$2; })).default;
   } catch {
@@ -27497,7 +24297,7 @@ function buildBrowserSupportTable(support) {
   return innerHTML;
 }
 
-async function run$G(conf) {
+async function run$E(conf) {
   const { shortName, mdn } = conf;
   if (!shortName || !mdn) {
     // Nothing to do if shortName is not provided
@@ -27549,8 +24349,8 @@ async function run$G(conf) {
 
 var mdnAnnotation = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$Q,
-  run: run$G
+  name: name$O,
+  run: run$E
 });
 
 // @ts-check
@@ -27640,7 +24440,7 @@ expose("core/exporter", { rsDocToDataURL });
 
 // @ts-check
 
-const name$R = "ui/save-html";
+const name$P = "ui/save-html";
 
 // Create and download an EPUB 3 version of the content
 // Using (by default) the EPUB 3 conversion service set up at labs.w3.org/epub-generator
@@ -27734,7 +24534,7 @@ function exportDocument(_, mimeType) {
 
 var saveHtml = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$R,
+  name: name$P,
   exportDocument: exportDocument
 });
 
@@ -27864,9 +24664,9 @@ var aboutRespec = /*#__PURE__*/Object.freeze({
  * first paragraph of the abstract.
  */
 
-const name$S = "core/seo";
+const name$Q = "core/seo";
 
-function run$H() {
+function run$F() {
   // This is not critical, so let's continue other processing first
   (async () => {
     await document.respecIsReady;
@@ -27890,68 +24690,8 @@ function insertMetaDescription(firstParagraph) {
 
 var seo = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$S,
-  run: run$H
-});
-
-// @ts-check
-const name$T = "core/webidl-clipboard";
-
-const copyButtonPromise = createButton();
-
-async function loadSVG() {
-  try {
-    return (await Promise.resolve().then(function () { return clipboard$1; })).default;
-  } catch {
-    return fetchAsset("clipboard.svg");
-  }
-}
-
-async function createButton() {
-  const copyButton = document.createElement("button");
-  copyButton.innerHTML = await loadSVG();
-  copyButton.title = "Copy IDL to clipboard";
-  copyButton.classList.add("respec-button-copy-paste", "removeOnSave");
-  return copyButton;
-}
-
-async function run$I() {
-  // This button serves a prototype that we clone as needed.
-  const copyButton = await copyButtonPromise;
-  for (const pre of document.querySelectorAll("pre.idl")) {
-    const button = copyButton.cloneNode(true);
-    button.addEventListener("click", () => {
-      clipboardWriteText(pre.textContent);
-    });
-    pre.prepend(button);
-  }
-}
-
-/**
- * Mocks navigator.clipboard.writeText()
- * @param {string} text
- */
-function clipboardWriteText(text) {
-  if (navigator.clipboard) {
-    return navigator.clipboard.writeText(text);
-  }
-  return new Promise(resolve => {
-    document.addEventListener(
-      "copy",
-      ev => {
-        ev.clipboardData.setData("text/plain", text);
-        resolve();
-      },
-      { once: true }
-    );
-    document.execCommand("copy");
-  });
-}
-
-var webidlClipboard = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  name: name$T,
-  run: run$I
+  name: name$Q,
+  run: run$F
 });
 
 // @ts-check
@@ -27965,7 +24705,7 @@ const l10n$d = {
   },
 };
 
-const name$U = "core/data-tests";
+const name$R = "core/data-tests";
 
 const lang$k = lang in l10n$d ? lang : "en";
 
@@ -28013,7 +24753,7 @@ function toListItem(href) {
   return testList;
 }
 
-function run$J(conf) {
+function run$G(conf) {
   /** @type {NodeListOf<HTMLElement>} */
   const testables = document.querySelectorAll("[data-tests]");
   if (!testables.length) {
@@ -28071,12 +24811,12 @@ function run$J(conf) {
 
 var dataTests = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$U,
-  run: run$J
+  name: name$R,
+  run: run$G
 });
 
 // @ts-check
-const name$V = "core/list-sorter";
+const name$S = "core/list-sorter";
 
 function makeSorter(direction) {
   return ({ textContent: a }, { textContent: b }) => {
@@ -28129,7 +24869,7 @@ function sortDefinitionTerms(dl, dir) {
   return sortedElements;
 }
 
-function run$K() {
+function run$H() {
   /** @type {NodeListOf<HTMLElement>} */
   const sortables = document.querySelectorAll("[data-sort]");
   for (const elem of sortables) {
@@ -28161,19 +24901,19 @@ function run$K() {
 
 var listSorter = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$V,
+  name: name$S,
   sortListItems: sortListItems,
   sortDefinitionTerms: sortDefinitionTerms,
-  run: run$K
+  run: run$H
 });
 
 // @ts-check
 
-const name$W = "core/data-type";
+const name$T = "core/data-type";
 
-const tooltipStylePromise = loadStyle$8();
+const tooltipStylePromise = loadStyle$7();
 
-async function loadStyle$8() {
+async function loadStyle$7() {
   try {
     return (await Promise.resolve().then(function () { return datatype$1; })).default;
   } catch {
@@ -28181,7 +24921,7 @@ async function loadStyle$8() {
   }
 }
 
-async function run$L(conf) {
+async function run$I(conf) {
   if (!conf.highlightVars) {
     return;
   }
@@ -28211,17 +24951,17 @@ async function run$L(conf) {
 
 var dataType = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$W,
-  run: run$L
+  name: name$T,
+  run: run$I
 });
 
 // @ts-check
 
-const name$X = "core/algorithms";
+const name$U = "core/algorithms";
 
-const cssPromise$4 = loadStyle$9();
+const cssPromise$3 = loadStyle$8();
 
-async function loadStyle$9() {
+async function loadStyle$8() {
   try {
     return (await Promise.resolve().then(function () { return algorithms$2; })).default;
   } catch {
@@ -28229,31 +24969,31 @@ async function loadStyle$9() {
   }
 }
 
-async function run$M() {
+async function run$J() {
   const elements = Array.from(document.querySelectorAll("ol.algorithm li"));
   elements
     .filter(li => li.textContent.trim().startsWith("Assert: "))
     .forEach(li => li.classList.add("assert"));
   if (document.querySelector(".assert")) {
     const style = document.createElement("style");
-    style.textContent = await cssPromise$4;
+    style.textContent = await cssPromise$3;
     document.head.appendChild(style);
   }
 }
 
 var algorithms = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$X,
-  run: run$M
+  name: name$U,
+  run: run$J
 });
 
 // @ts-check
 
-const name$Y = "core/anchor-expander";
+const name$V = "core/anchor-expander";
 
 let sectionRefsByNumber = false;
 
-function run$N(conf) {
+function run$K(conf) {
   if (conf.hasOwnProperty("sectionRefsByNumber")) {
     sectionRefsByNumber = conf.sectionRefsByNumber;
   }
@@ -28456,15 +25196,15 @@ function localize(matchingElement, newElement) {
 
 var anchorExpander = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$Y,
-  run: run$N
+  name: name$V,
+  run: run$K
 });
 
 // @ts-check
 
-const name$Z = "pcisig/include-final-config";
+const name$W = "pcisig/include-final-config";
 
-function run$O(conf) {
+function run$L(conf) {
   const script = document.createElement("script");
   script.id = "finalUserConfig";
   script.type = "application/json";
@@ -28474,8 +25214,8 @@ function run$O(conf) {
 
 var includeFinalConfig = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$Z,
-  run: run$O
+  name: name$W,
+  run: run$L
 });
 
 var ui$2 = "#respec-ui {\n  position: fixed;\n  display: flex;\n  flex-direction: row-reverse;\n  top: 20px;\n  right: 20px;\n  width: 202px;\n  text-align: right;\n  z-index: 9000;\n}\n\n#respec-pill,\n.respec-info-button {\n  background: #fff;\n  height: 2.5em;\n  color: rgb(120, 120, 120);\n  border: 1px solid #ccc;\n  box-shadow: 1px 1px 8px 0 rgba(100, 100, 100, 0.5);\n}\n\n.respec-info-button {\n  border: none;\n  opacity: 0.75;\n  border-radius: 2em;\n  margin-right: 1em;\n  min-width: 3.5em;\n}\n\n.respec-info-button:focus,\n.respec-info-button:hover {\n  opacity: 1;\n  transition: opacity 0.2s;\n}\n\n#respec-pill:disabled {\n  font-size: 2.8px;\n  text-indent: -9999em;\n  border-top: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-right: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-bottom: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-left: 1.1em solid #ffffff;\n  transform: translateZ(0);\n  animation: respec-spin 0.5s infinite linear;\n  box-shadow: none;\n}\n\n#respec-pill:disabled,\n#respec-pill:disabled:after {\n  border-radius: 50%;\n  width: 10em;\n  height: 10em;\n}\n\n@keyframes respec-spin {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n\n.respec-hidden {\n  visibility: hidden;\n  opacity: 0;\n  transition: visibility 0s 0.2s, opacity 0.2s linear;\n}\n\n.respec-visible {\n  visibility: visible;\n  opacity: 1;\n  transition: opacity 0.2s linear;\n}\n\n#respec-pill:hover,\n#respec-pill:focus {\n  color: rgb(0, 0, 0);\n  background-color: rgb(245, 245, 245);\n  transition: color 0.2s;\n}\n\n#respec-menu {\n  position: absolute;\n  margin: 0;\n  padding: 0;\n  font-family: sans-serif;\n  background: #fff;\n  box-shadow: 1px 1px 8px 0 rgba(100, 100, 100, 0.5);\n  width: 200px;\n  display: none;\n  text-align: left;\n  margin-top: 32px;\n  font-size: 0.8em;\n}\n\n#respec-menu:not([hidden]) {\n  display: block;\n}\n\n#respec-menu li {\n  list-style-type: none;\n  margin: 0;\n  padding: 0;\n}\n\n.respec-save-buttons {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(47%, 2fr));\n  grid-gap: 0.5cm;\n  padding: 0.5cm;\n}\n\n.respec-save-button:link {\n  padding-top: 16px;\n  color: rgb(240, 240, 240);\n  background: rgb(42, 90, 168);\n  justify-self: stretch;\n  height: 1cm;\n  text-decoration: none;\n  text-align: center;\n  font-size: inherit;\n  border: none;\n  border-radius: 0.2cm;\n}\n\n.respec-save-button:link:hover {\n  color: white;\n  background: rgb(42, 90, 168);\n  padding: 0;\n  margin: 0;\n  border: 0;\n  padding-top: 16px;\n}\n\n#respec-ui button:focus,\n#respec-pill:focus,\n.respec-option:focus {\n  outline: 0;\n  outline-style: none;\n}\n\n#respec-pill-error {\n  background-color: red;\n  color: white;\n}\n\n#respec-pill-warning {\n  background-color: orange;\n  color: white;\n}\n\n.respec-warning-list,\n.respec-error-list {\n  margin: 0;\n  padding: 0;\n  list-style: none;\n  font-family: sans-serif;\n  background-color: rgb(255, 251, 230);\n  font-size: 0.85em;\n}\n\n.respec-warning-list > li,\n.respec-error-list > li {\n  padding: 0.4em 0.7em;\n}\n\n.respec-warning-list > li::before {\n  content: \"⚠️\";\n  padding-right: 0.5em;\n}\n.respec-warning-list p,\n.respec-error-list p {\n  padding: 0;\n  margin: 0;\n}\n\n.respec-warning-list li {\n  color: rgb(92, 59, 0);\n  border-bottom: thin solid rgb(255, 245, 194);\n}\n\n.respec-error-list,\n.respec-error-list li {\n  background-color: rgb(255, 240, 240);\n}\n\n.respec-error-list li::before {\n  content: \"💥\";\n  padding-right: 0.5em;\n}\n\n.respec-error-list li {\n  padding: 0.4em 0.7em;\n  color: rgb(92, 59, 0);\n  border-bottom: thin solid rgb(255, 215, 215);\n}\n\n.respec-error-list li > p {\n  margin: 0;\n  padding: 0;\n  display: inline-block;\n}\n\n#respec-overlay {\n  display: block;\n  position: fixed;\n  z-index: 10000;\n  top: 0px;\n  left: 0px;\n  height: 100%;\n  width: 100%;\n  background: #000;\n}\n\n.respec-show-overlay {\n  transition: opacity 0.2s linear;\n  opacity: 0.5;\n}\n\n.respec-hide-overlay {\n  transition: opacity 0.2s linear;\n  opacity: 0;\n}\n\n.respec-modal {\n  display: block;\n  position: fixed;\n  z-index: 11000;\n  margin: auto;\n  top: 10%;\n  background: #fff;\n  border: 5px solid #666;\n  min-width: 20%;\n  width: 79%;\n  padding: 0;\n  max-height: 80%;\n  overflow-y: auto;\n  margin: 0 -0.5cm;\n}\n\n@media screen and (min-width: 78em) {\n  .respec-modal {\n    width: 62%;\n  }\n}\n\n.respec-modal h3 {\n  margin: 0;\n  padding: 0.2em;\n  text-align: center;\n  color: black;\n  background: linear-gradient(\n    to bottom,\n    rgba(238, 238, 238, 1) 0%,\n    rgba(238, 238, 238, 1) 50%,\n    rgba(204, 204, 204, 1) 100%\n  );\n  font-size: 1em;\n}\n\n.respec-modal .inside div p {\n  padding-left: 1cm;\n}\n\n#respec-menu button.respec-option {\n  background: white;\n  padding: 0 0.2cm;\n  border: none;\n  width: 100%;\n  text-align: left;\n  font-size: inherit;\n  padding: 1.2em 1.2em;\n}\n\n#respec-menu button.respec-option:hover,\n#respec-menu button:focus {\n  background-color: #eeeeee;\n}\n\n.respec-cmd-icon {\n  padding-right: 0.5em;\n}\n\n#respec-ui button.respec-option:last-child {\n  border: none;\n  border-radius: inherit;\n}\n\n.respec-button-copy-paste {\n  position: absolute;\n  height: 28px;\n  width: 40px;\n  cursor: pointer;\n  background-image: linear-gradient(#fcfcfc, #eee);\n  border: 1px solid rgb(144, 184, 222);\n  border-left: 0;\n  border-radius: 0px 0px 3px 0;\n  -webkit-user-select: none;\n  user-select: none;\n  -webkit-appearance: none;\n  top: 0;\n  left: 127px;\n}\n\n#specref-ui {\n  margin: 0 2%;\n  margin-bottom: 0.5cm;\n}\n\n#specref-ui header {\n  font-size: 0.7em;\n  background-color: #eee;\n  text-align: center;\n  padding: 0.2cm;\n  margin-bottom: 0.5cm;\n  border-radius: 0 0 0.2cm 0.2cm;\n}\n\n#specref-ui header h1 {\n  padding: 0;\n  margin: 0;\n  color: black;\n}\n\n#specref-ui p {\n  padding: 0;\n  margin: 0;\n  font-size: 0.8em;\n  text-align: center;\n}\n\n#specref-ui p.state {\n  margin: 1cm;\n}\n\n#specref-ui .searchcomponent {\n  font-size: 16px;\n  display: grid;\n  grid-template-columns: auto 2cm;\n}\n#specref-ui .searchcomponent:focus {\n}\n\n#specref-ui input,\n#specref-ui button {\n  border: 0;\n  padding: 6px 12px;\n}\n\n#specref-ui label {\n  font-size: 0.6em;\n  grid-column-end: 3;\n  text-align: right;\n  grid-column-start: 1;\n}\n\n#specref-ui input[type=\"search\"] {\n  -webkit-appearance: none;\n  font-size: 16px;\n  border-radius: 0.1cm 0 0 0.1cm;\n  border: 1px solid rgb(204, 204, 204);\n}\n\n#specref-ui button[type=\"submit\"] {\n  color: white;\n  border-radius: 0 0.1cm 0.1cm 0;\n  background-color: rgb(51, 122, 183);\n}\n\n#specref-ui button[type=\"submit\"]:hover {\n  background-color: #286090;\n  border-color: #204d74;\n}\n\n#specref-ui .result-stats {\n  margin: 0;\n  padding: 0;\n  color: rgb(128, 128, 128);\n  font-size: 0.7em;\n  font-weight: bold;\n}\n\n#specref-ui .specref-results {\n  font-size: 0.8em;\n}\n\n#specref-ui .specref-results dd + dt {\n  margin-top: 0.51cm;\n}\n\n#specref-ui .specref-results a {\n  text-transform: capitalize;\n}\n#specref-ui .specref-results .authors {\n  display: block;\n  color: #006621;\n}\n\n@media print {\n  #respec-ui {\n    display: none;\n  }\n}\n\n#xref-ui {\n  width: 100%;\n  min-height: 550px;\n  height: 100%;\n  overflow: hidden;\n  padding: 0;\n  margin: 0;\n  border: 0;\n}\n\n#xref-ui:not(.ready) {\n  background: url(\"https://respec.org/xref/loader.gif\") no-repeat center;\n}\n";
@@ -28506,13 +25246,6 @@ var issuesNotes$2 = /*#__PURE__*/Object.freeze({
   'default': issuesNotes$1
 });
 
-var webidl$1 = "/* --- WEB IDL --- */\n\npre.idl {\n  padding: 1em;\n  position: relative;\n}\n\n@media print {\n  pre.idl {\n    white-space: pre-wrap;\n  }\n}\n\npre.idl::before {\n  content: \"WebIDL\";\n  display: block;\n  width: 150px;\n  background: #90b8de;\n  color: #fff;\n  font-family: sans-serif;\n  font-weight: bold;\n  margin: -1em 0 1em -1em;\n  height: 28px;\n  line-height: 28px;  \n}\n\n.idlID {\n  font-weight: bold;\n  color: #005a9c;\n}\n\n.idlType {\n  color: #005a9c;\n}\n\n.idlName {\n  color: #ff4500;\n}\n\n.idlName a {\n  color: #ff4500;\n  border-bottom: 1px dotted #ff4500;\n  text-decoration: none;\n}\n\na.idlEnumItem {\n  color: #000;\n  border-bottom: 1px dotted #ccc;\n  text-decoration: none;\n}\n\n.idlSuperclass {\n  font-style: italic;\n  color: #005a9c;\n}\n\n\n/*.idlParam*/\n\n.idlParamName,\n.idlDefaultValue {\n  font-style: italic;\n}\n\n.extAttr {\n  color: #666;\n}\n\n\n/*.idlSectionComment*/\n\n.idlSectionComment {\n  color: gray;\n}\n\n.idlIncludes a {\n  font-weight: bold;\n}\n\n.respec-button-copy-paste:focus {\n  text-decoration: none;\n  border-color: #51a7e8;\n  outline: none;\n  box-shadow: 0 0 5px rgba(81, 167, 232, 0.5);\n}\n\n.respec-button-copy-paste:focus:hover,\n.respec-button-copy-paste.selected:focus {\n  border-color: #51a7e8;\n}\n\n.respec-button-copy-paste:hover,\n.respec-button-copy-paste:active,\n.respec-button-copy-paste.zeroclipboard-is-hover,\n.respec-button-copy-paste.zeroclipboard-is-active {\n  text-decoration: none;\n  background-color: #ddd;\n  background-image: linear-gradient(#eee, #ddd);\n  border-color: #ccc;\n}\n\n.respec-button-copy-paste:active,\n.respec-button-copy-paste.selected,\n.respec-button-copy-paste.zeroclipboard-is-active {\n  background-color: #dcdcdc;\n  background-image: none;\n  border-color: #b5b5b5;\n  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15)\n}\n\n.respec-button-copy-paste.selected:hover {\n  background-color: #cfcfcf;\n}\n\n.respec-button-copy-paste:disabled,\n.respec-button-copy-paste:disabled:hover,\n.respec-button-copy-paste.disabled,\n.respec-button-copy-paste.disabled:hover {\n  color: rgba(102, 102, 102, 0.5);\n  cursor: default;\n  background-color: rgba(229, 229, 229, 0.5);\n  background-image: none;\n  border-color: rgba(197, 197, 197, 0.5);\n  box-shadow: none;\n}\n\n@media print {\n  .respec-button-copy-paste {\n    visibility: hidden;\n  }\n}\n";
-
-var webidl$2 = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  'default': webidl$1
-});
-
 var caniuse$1 = "/* container for stats */\n.caniuse-stats {\n  display: flex;\n  flex-wrap: wrap;\n  justify-content: flex-start;\n  align-items: baseline;\n  cursor: pointer;\n}\n\nbutton.caniuse-cell {\n  margin: 1px 1px 0 0;\n  border: none;\n}\n\n.caniuse-browser {\n  position: relative;\n}\n\n/* handle case when printing */\n@media print {\n  .caniuse-cell.y::before {\n    content: \"✔️\";\n    padding: 0.5em;\n  }\n\n  .caniuse-cell.n::before{\n    content: \"❌\";\n    padding: 0.5em;\n  }\n\n  .caniuse-cell.d::before,\n  .caniuse-cell.a::before,\n  .caniuse-cell.x::before,\n  .caniuse-cell.p::before {\n    content: \"⚠️\";\n    padding: 0.5em;\n  }\n}\n\n/* reset styles, hide old versions by default */\n.caniuse-browser ul {\n  display: none;\n  margin: 0;\n  padding: 0;\n  list-style: none;\n  position: absolute;\n  left: 0;\n  z-index: 2;\n  background: #fff;\n  margin-top: 1px;\n}\n\n.caniuse-stats a {\n  white-space: nowrap;\n  align-self: center;\n  margin-left: .5em;\n}\n\n/* a browser version */\n.caniuse-cell {\n  display: flex;\n  color: rgba(0, 0, 0, 0.8);\n  font-size: 90%;\n  height: 0.8cm;\n  margin-right: 1px;\n  margin-top: 0;\n  min-width: 3cm;\n  overflow: visible;\n  justify-content: center;\n  align-items: center;\n}\n\nli.caniuse-cell {\n  margin-bottom: 1px;\n}\n\n.caniuse-cell:focus {\n  outline: none;\n}\n\n.caniuse-cell:hover {\n  color: rgba(0, 0, 0, 1);\n}\n\n/* supports */\n.caniuse-cell.y {\n  background: #8bc34a;\n}\n\n/* no support */\n.caniuse-cell.n {\n  background: #e53935;\n}\n\n/* not supported by default / partial support etc\nsee https://github.com/Fyrd/caniuse/blob/master/CONTRIBUTING.md for stats */\n.caniuse-cell.d,\n.caniuse-cell.a,\n.caniuse-cell.x,\n.caniuse-cell.p {\n  background: #ffc107;\n}\n\n/* show rest of the browser versions */\n.caniuse-stats button:focus + ul,\n.caniuse-stats .caniuse-browser:hover > ul {\n  display: block;\n}\n";
 
 var caniuse$2 = /*#__PURE__*/Object.freeze({
@@ -28525,13 +25258,6 @@ var mdnAnnotation$1 = ".mdn {\n  display: block;\n  font: 12px sans-serif;\n  po
 var mdnAnnotation$2 = /*#__PURE__*/Object.freeze({
   __proto__: null,
   'default': mdnAnnotation$1
-});
-
-var clipboard = "<svg height=\"16\" viewBox=\"0 0 14 16\" width=\"14\"><path fill-rule=\"evenodd\" d=\"M2 13h4v1H2v-1zm5-6H2v1h5V7zm2 3V8l-3 3 3 3v-2h5v-2H9zM4.5 9H2v1h2.5V9zM2 12h2.5v-1H2v1zm9 1h1v2c-.02.28-.11.52-.3.7-.19.18-.42.28-.7.3H1c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1h3c0-1.11.89-2 2-2 1.11 0 2 .89 2 2h3c.55 0 1 .45 1 1v5h-1V6H1v9h10v-2zM2 5h8c0-.55-.45-1-1-1H8c-.55 0-1-.45-1-1s-.45-1-1-1-1 .45-1 1-.45 1-1 1H3c-.55 0-1 .45-1 1z\"/></svg>";
-
-var clipboard$1 = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  'default': clipboard
 });
 
 var datatype = "var {\n  position: relative;\n  cursor: pointer;\n}\n\nvar[data-type]::before,\nvar[data-type]::after {\n  position: absolute;\n  left: 50%;\n  top: -6px;\n  opacity: 0;\n  transition: opacity 0.4s;\n  pointer-events: none;\n}\n\n/* the triangle or arrow or caret or whatever */\nvar[data-type]::before {\n  content: \"\";\n  transform: translateX(-50%);\n  border-width: 4px 6px 0 6px;\n  border-style: solid;\n  border-color: transparent;\n  border-top-color: #000;\n}\n\n/* actual text */\nvar[data-type]::after {\n  content: attr(data-type);\n  transform: translateX(-50%) translateY(-100%);\n  background: #000;\n  text-align: center;\n  /* additional styling */\n  font-family: \"Dank Mono\", \"Fira Code\", monospace;\n  font-style: normal;\n  padding: 6px;\n  border-radius: 3px;\n  color: #daca88;\n  text-indent: 0;\n  font-weight: normal;\n}\n\nvar[data-type]:hover::after,\nvar[data-type]:hover::before {\n  opacity: 1;\n}\n";

@@ -12170,9 +12170,11 @@ function run$i() {
 
     // Only add `lt`s that are different from the text content
     if (titles.length === 1 && titles[0] === norm(dfn.textContent)) {
+      // console.log(`dfn.run #1 ${dfn.outerHTML}`);
       return;
     }
     dfn.dataset.lt = titles.join("|");
+    // console.log(`dfn.run #2 ${dfn.outerHTML}`);
   });
 }
 
@@ -14446,7 +14448,7 @@ function mapTitleToDfns() {
     const { result, duplicates } = collectDfns(title);
     titleToDfns.set(title, result);
     if (duplicates.length > 0) {
-      console.log(`mapTitleToDfns: duplicates=${JSON.stringify(duplicates)}`);
+      console.log(`mapTitleToDfns: duplicates=${duplicates.toString()}`);
       showInlineError(
         duplicates,
         l10n$8[lang$f].duplicateMsg(title),
@@ -14457,6 +14459,7 @@ function mapTitleToDfns() {
   return titleToDfns;
 }
 
+let seq=0;
 /**
  * @param {string} title
  */
@@ -14464,8 +14467,14 @@ function collectDfns(title) {
   /** @type {Map<string, HTMLElement>} */
   const result = new Map();
   const duplicates = [];
+  seq++;
   definitionMap[title].forEach(dfn => {
     const { dfnFor = "" } = dfn.dataset;
+    console.log(
+      `collectDfns#${seq}(${title}) dfnFor="${dfnFor}" ${
+        dfn.outerHTML
+      } duplicates=${duplicates.toString()}`
+    );
     if (result.has(dfnFor)) {
       // We want <dfn> definitions to take precedence over
       // definitions from WebIDL. WebIDL definitions wind
@@ -14483,6 +14492,11 @@ function collectDfns(title) {
     result.set(dfnFor, dfn);
     addId(dfn, "dfn", title);
   });
+  console.log(
+    `collectDfns result=${JSON.stringify(
+      result.entries()
+    )} duplicates=${duplicates.toString()}`
+  );
   return { result, duplicates };
 }
 
@@ -14609,7 +14623,7 @@ function showLinkingError(elems) {
     showInlineWarning(
       elem,
       `Found linkless \`<a>\` element with text "${elem.textContent}" but no matching \`<dfn>\``,
-      "Linking error: not matching `<dfn>`"
+      "Linking error: no matching `<dfn>`"
     );
   });
 }
