@@ -524,7 +524,7 @@ export function draw_regpict(divsvg, inputJSON) {
   const isMultiRow = isMessage || isMemoryBlock;
 
   if (debug) {
-    console.log(`start draw_regpicg(${figName} width=${width}`);
+    console.log(`start draw_regpic(${figName} width=${width}`);
   }
   const bitarray = []; // Array indexed by bit # in register range 0:width
   // bitarray[N] == fields[x] where field x contains bit N
