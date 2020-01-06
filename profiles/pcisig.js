@@ -30,7 +30,6 @@ const modules = [
   import("../src/core/pluralize.js"),
   import("../src/core/examples.js"),
   import("../src/core/issues-notes.js"),
-  import("../src/core/requirements.js"),
   import("../src/core/best-practices.js"),
   import("../src/pcisig/draw-csrs.js"),
   import("../src/pcisig/regpict.js"),
@@ -64,10 +63,12 @@ const modules = [
   import("../src/core/data-tests.js"),
   import("../src/core/list-sorter.js"),
   // import("../src/core/highlight-vars.js"),
+  import("../src/core/dfn-panel.js"),
   import("../src/core/data-type.js"),
   import("../src/core/algorithms.js"),
   import("../src/core/anchor-expander.js"),
   import("../src/pcisig/include-final-config.js"),
+  import("../src/core/custom-elements/index.js"),
   /* Linter must be the last thing to run */
   import("../src/core/linter.js"),
 ];
