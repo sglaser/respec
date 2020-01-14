@@ -66,10 +66,12 @@ const modules = [
   Promise.resolve().then(function () { return dataTests; }),
   Promise.resolve().then(function () { return listSorter; }),
   // import("../src/core/highlight-vars.js"),
+  Promise.resolve().then(function () { return dfnPanel; }),
   Promise.resolve().then(function () { return dataType; }),
   Promise.resolve().then(function () { return algorithms; }),
   Promise.resolve().then(function () { return anchorExpander; }),
   Promise.resolve().then(function () { return includeFinalConfig; }),
+  Promise.resolve().then(function () { return index; }),
   /* Linter must be the last thing to run */
   Promise.resolve().then(function () { return linter$1; }),
 ];
@@ -6140,9 +6142,6 @@ var showPeople = (items = []) => {
 // @ts-check
 
 const ccLicense = "https://creativecommons.org/licenses/by/3.0/";
-const pcisigLicense = "https://members.pcisig.com/wg/PCI-SIG/document/";
-const legalDisclaimer = "https://members.pcisig.com/wg/PCI-SIG/document/";
-const pcisigTrademark = "https://members.pcisig.com/wg/PCI-SIG/document/1103";
 
 function getSpecTitleElem(conf) {
   const specTitleElem =
@@ -6152,12 +6151,6 @@ function getSpecTitleElem(conf) {
   } else {
     specTitleElem.textContent = conf.title;
     specTitleElem.id = "title";
-  }
-  if (conf.isPreview && conf.prNumber) {
-    const { childNodes } = hyperHTML$2`
-      Preview of PR <a href="${conf.prUrl}">#${conf.prNumber}</a>:
-    `;
-    specTitleElem.prepend(...childNodes);
   }
   conf.title = norm(specTitleElem.textContent);
   specTitleElem.classList.add("title", "p-name");
@@ -6188,159 +6181,163 @@ function getSpecSubTitleElem(conf) {
 
 var headersTmpl = conf => {
   return hyperHTML$2`
-    <div class="head">
-      ${conf.logos.map(showLogo)} ${getSpecTitleElem(conf)}
-      ${getSpecSubTitleElem(conf)}
-      <h2>
-        ${conf.prependPCISIG ? "PCI-SIG " : ""}${conf.textStatus}
-        <time class="dt-published" datetime="${conf.dashDate}"
-          >${conf.publishHumanDate}</time
-        >
-      </h2>
-      <dl>
-        ${
-          !conf.isNoTrack
-            ? hyperHTML$2`
-              <dt>${conf.l10n.this_version}</dt>
-              <dd>
-                <a class="u-url" href="${conf.thisVersion}"
-                  >${conf.thisVersion}</a
-                >
-              </dd>
-              <dt>${conf.l10n.latest_published_version}</dt>
-              <dd>
-                ${
-                  conf.latestVersion
-                    ? hyperHTML$2`
-                      <a href="${conf.latestVersion}">${conf.latestVersion}</a>
-                    `
-                    : "none"
-                }
-              </dd>
-            `
-            : ""
-        }
-        ${
-          conf.edDraftURI
-            ? hyperHTML$2`
-              <dt>${conf.l10n.latest_editors_draft}</dt>
-              <dd><a href="${conf.edDraftURI}">${conf.edDraftURI}</a></dd>
-            `
-            : ""
-        }
-        ${
-          conf.testSuiteURI
-            ? hyperHTML$2`
-              <dt>Test suite:</dt>
-              <dd><a href="${conf.testSuiteURI}">${conf.testSuiteURI}</a></dd>
-            `
-            : ""
-        }
-        ${
-          conf.implementationReportURI
-            ? hyperHTML$2`
-              <dt>Implementation report:</dt>
-              <dd>
-                <a href="${conf.implementationReportURI}"
-                  >${conf.implementationReportURI}</a
-                >
-              </dd>
-            `
-            : ""
-        }
-        ${
-          conf.bugTrackerHTML
-            ? hyperHTML$2`
-              <dt>${conf.l10n.bug_tracker}</dt>
-              <dd>${[conf.bugTrackerHTML]}</dd>
-            `
-            : ""
-        }
-        ${
-          conf.isED && conf.prevED
-            ? hyperHTML$2`
-              <dt>Previous editor's draft:</dt>
-              <dd><a href="${conf.prevED}">${conf.prevED}</a></dd>
-            `
-            : ""
-        }
-        ${
-          conf.showPreviousVersion
-            ? hyperHTML$2`
-              <dt>Previous version:</dt>
-              <dd><a href="${conf.prevVersion}">${conf.prevVersion}</a></dd>
-            `
-            : ""
-        }
-        ${
-          !conf.prevRecURI
-            ? ""
-            : conf.isRec
-            ? hyperHTML$2`
-              <dt>Previous Recommendation:</dt>
-              <dd><a href="${conf.prevRecURI}">${conf.prevRecURI}</a></dd>
-            `
-            : hyperHTML$2`
-              <dt>Latest Recommendation:</dt>
-              <dd><a href="${conf.prevRecURI}">${conf.prevRecURI}</a></dd>
-            `
-        }
-        <dt>${conf.multipleEditors ? conf.l10n.editors : conf.l10n.editor}</dt>
-        ${showPeople(conf.editors)}
-        ${
-          Array.isArray(conf.formerEditors) && conf.formerEditors.length > 0
-            ? hyperHTML$2`
-              <dt>
-                ${
-                  conf.multipleFormerEditors
-                    ? conf.l10n.former_editors
-                    : conf.l10n.former_editor
-                }
-              </dt>
-              ${showPeople(conf.formerEditors)}
-            `
-            : ""
-        }
-        ${
-          conf.authors
-            ? hyperHTML$2`
-              <dt>
-                ${conf.multipleAuthors ? conf.l10n.authors : conf.l10n.author}
-              </dt>
-              ${showPeople(conf.authors)}
-            `
-            : ""
-        }
-        ${conf.otherLinks ? conf.otherLinks.map(showLink) : ""}
-      </dl>
+  <div id="respec-banner">
+    <span id="respec-banner-status">${conf.maturity}</span>&nbsp;&mdash;&nbsp;
+    <span id="respec-banner-spec-name">${conf.title}</span>
+  </div>
+  <div class="head">
+    ${conf.logos.map(showLogo)} ${getSpecTitleElem(conf)}
+    ${getSpecSubTitleElem(conf)}
+    <h2>
+      ${conf.prependPCISIG ? "PCI-SIG " : ""}${conf.textStatus}
+      <time class="dt-published" datetime="${conf.dashDate}"
+        >${conf.publishHumanDate}</time
+      >
+    </h2>
+    <dl>
       ${
-        conf.errata
+        !conf.isNoTrack
           ? hyperHTML$2`
-            <p>
-              Please check the
-              <a href="${conf.errata}"><strong>errata</strong></a> for any
-              errors or issues reported since publication.
-            </p>
-          `
-          : ""
-      }
-      ${
-        conf.alternateFormats
-          ? hyperHTML$2`
-            <p>
+            <dt>${conf.l10n.this_version}</dt>
+            <dd>
+              <a class="u-url" href="${conf.thisVersion}"
+                >${conf.thisVersion}</a
+              >
+            </dd>
+            <dt>${conf.l10n.latest_published_version}</dt>
+            <dd>
               ${
-                conf.multipleAlternates
-                  ? "This document is also available in these non-normative formats:"
-                  : "This document is also available in this non-normative format:"
+                conf.latestVersion
+                  ? hyperHTML$2`
+                    <a href="${conf.latestVersion}">${conf.latestVersion}</a>
+                  `
+                  : "none"
               }
-              ${[conf.alternatesHTML]}
-            </p>
+            </dd>
           `
           : ""
       }
-      ${renderCopyright(conf)}
-      <hr title="Separator for header" />
-    </div>
+      ${
+        conf.edDraftURI
+          ? hyperHTML$2`
+            <dt>${conf.l10n.latest_editors_draft}</dt>
+            <dd><a href="${conf.edDraftURI}">${conf.edDraftURI}</a></dd>
+          `
+          : ""
+      }
+      ${
+        conf.testSuiteURI
+          ? hyperHTML$2`
+            <dt>Test suite:</dt>
+            <dd><a href="${conf.testSuiteURI}">${conf.testSuiteURI}</a></dd>
+          `
+          : ""
+      }
+      ${
+        conf.implementationReportURI
+          ? hyperHTML$2`
+            <dt>Implementation report:</dt>
+            <dd>
+              <a href="${conf.implementationReportURI}"
+                >${conf.implementationReportURI}</a
+              >
+            </dd>
+          `
+          : ""
+      }
+      ${
+        conf.bugTrackerHTML
+          ? hyperHTML$2`
+            <dt>${conf.l10n.bug_tracker}</dt>
+            <dd>${[conf.bugTrackerHTML]}</dd>
+          `
+          : ""
+      }
+      ${
+        conf.isED && conf.prevED
+          ? hyperHTML$2`
+            <dt>Previous editor's draft:</dt>
+            <dd><a href="${conf.prevED}">${conf.prevED}</a></dd>
+          `
+          : ""
+      }
+      ${
+        conf.showPreviousVersion
+          ? hyperHTML$2`
+            <dt>Previous version:</dt>
+            <dd><a href="${conf.prevVersion}">${conf.prevVersion}</a></dd>
+          `
+          : ""
+      }
+      ${
+        !conf.prevRecURI
+          ? ""
+          : conf.isRec
+          ? hyperHTML$2`
+            <dt>Previous Recommendation:</dt>
+            <dd><a href="${conf.prevRecURI}">${conf.prevRecURI}</a></dd>
+          `
+          : hyperHTML$2`
+            <dt>Latest Recommendation:</dt>
+            <dd><a href="${conf.prevRecURI}">${conf.prevRecURI}</a></dd>
+          `
+      }
+      <dt>${conf.multipleEditors ? conf.l10n.editors : conf.l10n.editor}</dt>
+      ${showPeople(conf.editors)}
+      ${
+        Array.isArray(conf.formerEditors) && conf.formerEditors.length > 0
+          ? hyperHTML$2`
+            <dt>
+              ${
+                conf.multipleFormerEditors
+                  ? conf.l10n.former_editors
+                  : conf.l10n.former_editor
+              }
+            </dt>
+            ${showPeople(conf.formerEditors)}
+          `
+          : ""
+      }
+      ${
+        conf.authors
+          ? hyperHTML$2`
+            <dt>
+              ${conf.multipleAuthors ? conf.l10n.authors : conf.l10n.author}
+            </dt>
+            ${showPeople(conf.authors)}
+          `
+          : ""
+      }
+      ${conf.otherLinks ? conf.otherLinks.map(showLink) : ""}
+    </dl>
+    ${
+      conf.errata
+        ? hyperHTML$2`
+          <p>
+            Please check the
+            <a href="${conf.errata}"><strong>errata</strong></a> for any
+            errors or issues reported since publication.
+          </p>
+        `
+        : ""
+    }
+    ${
+      conf.alternateFormats
+        ? hyperHTML$2`
+          <p>
+            ${
+              conf.multipleAlternates
+                ? "This document is also available in these non-normative formats:"
+                : "This document is also available in this non-normative format:"
+            }
+            ${[conf.alternatesHTML]}
+          </p>
+        `
+        : ""
+    }
+    ${renderCopyright(conf)}
+    <hr title="Separator for header" />
+  </div>
   `;
 };
 
@@ -6393,42 +6390,37 @@ function renderOfficialCopyright(conf) {
           `
           : ""
       }
-      <a href="https://www.pcisig.com/"
-        ><abbr title="PCI Special Interest Group">PCI-SIG</abbr></a
-      ><sup>&reg;</sup>. ${noteIfDualLicense(conf)}
-      PCI-SIG <a href="${legalDisclaimer}">liability</a>,
-      <a href="${pcisigTrademark}">trademark</a> and ${linkDocumentUse(
-    conf
-  )} rules apply.
-    </p>
+    <dl class="copyright">
+      <dt>Web Site</dt>
+      <dd><a href="http://www.pcisig.com">http://www.pcisig.com</a></dd>
+      <dt>Membership Services</dt>
+      <dd><a href="mailto:administration@pcisig.com">administration@pcisig.com</a></dd>
+      <dd><a href="tel:+1-503-619-0569">+1-503-619-0569</a> (Phone)</dd>
+      <dd><a href="tel:+1-503-644-6708">+1-503-644-6708</a> (Fax)</dd>
+      <dt>Technical Support</dt>
+      <dd><a href="mailto:techsupp@pcisig.com">techsupp@pcisig.com</a></dd>
+      </dl>
+      <p class="copyright">PCI-SIG disclaims all warranties and liability for the use of this document
+        and the information contained herein and assumes no responsibility
+        for any errors that may appear in this document, nor does PCI-SIG make a commitment
+        to update the information contained herein.
+      </p>
+      <p class="copyright">
+        This PCI Specification is provided “as is” without any warranties of any kind,
+        including any warranty of merchantability, non-infringement, fitness for any
+        particular purpose, or any warranty otherwise arising out of any proposal,
+        specification, or sample. PCI-SIG disclaims all liability for infringement
+        of proprietary rights, relating to use of information in this specification.
+        This document itself may not be modified in any way, including by removing the
+        copyright notice or references to PCI-SIG.
+        No license, express or implied, by estoppel or otherwise, to any intellectual
+        property rights is granted herein.
+        PCI, PCI Express, PCIe, and PCI-SIG are trademarks or registered trademarks of
+        PCI-SIG.
+        All other product names are trademarks, registered trademarks, or servicemarks of
+        their respective owners.
+      </p>
   `;
-}
-
-function noteIfDualLicense(conf) {
-  if (!conf.isCCBY) {
-    return;
-  }
-  return hyperHTML$2`
-    Some Rights Reserved: this document is dual-licensed,
-    ${linkLicense("CC-BY", ccLicense)} and
-    ${linkLicense("PCISIG Document License", pcisigLicense)}.
-  `;
-}
-
-function linkDocumentUse(conf) {
-  if (conf.isCCBY) {
-    return linkLicense(
-      "document use",
-      "https://www.pcisig.com/Consortium/Legal/2013/copyright-documents-dual.html"
-    );
-  }
-  if (conf.ispcisigSoftAndDocLicense) {
-    return linkLicense(
-      "permissive document license",
-      "https://www.pcisig.com/Consortium/Legal/2015/copyright-software-and-document"
-    );
-  }
-  return linkLicense("document use", pcisigLicense);
 }
 
 // @ts-check
@@ -25175,13 +25167,183 @@ var listSorter = /*#__PURE__*/Object.freeze({
   run: run$G
 });
 
-// @ts-check
+// Constructs "dfn panels" which show all the local references to a dfn and a
 
-const name$S = "core/data-type";
+const name$S = "core/dfn-panel";
 
-const tooltipStylePromise = loadStyle$7();
+async function run$H() {
+  const css = await loadStyle$7();
+  document.head.insertBefore(
+    hyperHTML$2`<style>${css}</style>`,
+    document.querySelector("link")
+  );
+
+  /** @type {HTMLElement} */
+  let panel;
+  document.body.addEventListener("click", event => {
+    /** @type {HTMLElement} */
+    const el = event.target;
+
+    const action = deriveAction(el);
+    switch (action) {
+      case "show": {
+        if (panel) panel.remove();
+        const dfn = el.closest("dfn");
+        panel = createPanel(dfn);
+        displayPanel(dfn, panel);
+        break;
+      }
+      case "dock": {
+        panel.classList.add("docked");
+        break;
+      }
+      case "hide": {
+        panel.remove();
+        break;
+      }
+    }
+  });
+}
+
+/** @param {HTMLElement} clickTarget */
+function deriveAction(clickTarget) {
+  const hitALink = !!clickTarget.closest("a");
+  if (clickTarget.closest("dfn")) {
+    return hitALink ? null : "show";
+  }
+  if (clickTarget.closest("#dfn-panel")) {
+    if (hitALink) {
+      const clickedSelfLink = clickTarget.classList.contains("self-link");
+      return clickedSelfLink ? "hide" : "dock";
+    }
+    const panel = clickTarget.closest("#dfn-panel");
+    return panel.classList.contains("docked") ? "hide" : null;
+  }
+  if (document.getElementById("dfn-panel")) {
+    return "hide";
+  }
+  return null;
+}
+
+/** @param {HTMLElement} dfn */
+function createPanel(dfn) {
+  const { id } = dfn;
+  const href = `#${id}`;
+  const links = document.querySelectorAll(`a[href="${href}"]`);
+
+  /** @type {HTMLElement} */
+  const panel = hyperHTML$2`
+    <aside class="dfn-panel" id="dfn-panel">
+      <b><a class="self-link" href="${href}">Permalink</a></b>
+      <b>Referenced in:</b>
+      ${referencesToHTML(id, links)}
+    </aside>
+  `;
+  return panel;
+}
+
+/**
+ * @param {string} id dfn id
+ * @param {NodeListOf<HTMLLinkElement>} links
+ * @returns {HTMLUListElement}
+ */
+function referencesToHTML(id, links) {
+  if (!links.length) {
+    return hyperHTML$2`<ul><li>Not referenced in this document.</li></ul>`;
+  }
+
+  /** @type {Map<string, string[]>} */
+  const titleToIDs = new Map();
+  links.forEach((link, i) => {
+    const linkID = link.id || `ref-for-${id}-${i + 1}`;
+    if (!link.id) link.id = linkID;
+    const title = getReferenceTitle(link);
+    const ids = titleToIDs.get(title) || titleToIDs.set(title, []).get(title);
+    ids.push(linkID);
+  });
+
+  /**
+   * Returns a list that is easier to render in `listItemToHTML`.
+   * @param {[string, string[]]} entry an entry from `titleToIDs`
+   * @returns {{ title: string, id: string }[]} The first list item contains
+   * title from `getReferenceTitle`, rest of items contain strings like `(2)`,
+   * `(3)` as title.
+   */
+  const toLinkProps = ([title, ids]) => {
+    return [{ title, id: ids[0] }].concat(
+      ids.slice(1).map((id, i) => ({ title: `(${i + 2})`, id }))
+    );
+  };
+
+  /**
+   * @param {[string, string[]]} entry
+   * @returns {HTMLLIElement}
+   */
+  const listItemToHTML = entry =>
+    hyperHTML$2`<li>${toLinkProps(entry).map(
+      link => hyperHTML$2`<a href="#${link.id}">${link.title}</a>${" "}`
+    )}</li>`;
+
+  return hyperHTML$2`<ul>${[...titleToIDs.entries()].map(listItemToHTML)}</ul>`;
+}
+
+/** @param {HTMLAnchorElement} link */
+function getReferenceTitle(link) {
+  const section = link.closest("section");
+  if (!section) return null;
+  const heading = section.querySelector("h1, h2, h3, h4, h5, h6");
+  if (!heading) return null;
+  return norm(heading.textContent);
+}
+
+/**
+ * @param {HTMLElement} dfn
+ * @param {HTMLElement} panel
+ */
+function displayPanel(dfn, panel) {
+  document.body.appendChild(panel);
+
+  const dfnRect = dfn.getBoundingClientRect();
+  const panelRect = panel.getBoundingClientRect();
+  const panelWidth = panelRect.right - panelRect.left;
+
+  let top = window.scrollY + dfnRect.top;
+  let left = dfnRect.left + dfnRect.width + 5;
+  if (left + panelWidth > document.body.scrollWidth) {
+    // Reposition, because the panel is overflowing
+    left = dfnRect.left - (panelWidth + 5);
+    if (left < 0) {
+      left = dfnRect.left;
+      top += dfnRect.height;
+    }
+  }
+
+  // Allows ".docked" rule to override the position, unlike `style.left = left`.
+  panel.style.setProperty("--left", `${left}px`);
+  panel.style.setProperty("--top", `${top}px`);
+}
 
 async function loadStyle$7() {
+  try {
+    return (await Promise.resolve().then(function () { return dfnPanel$2; })).default;
+  } catch {
+    return fetchAsset("dfn-panel.css");
+  }
+}
+
+var dfnPanel = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  name: name$S,
+  run: run$H
+});
+
+// @ts-check
+
+const name$T = "core/data-type";
+
+const tooltipStylePromise = loadStyle$8();
+
+async function loadStyle$8() {
   try {
     return (await Promise.resolve().then(function () { return datatype$1; })).default;
   } catch {
@@ -25189,7 +25351,7 @@ async function loadStyle$7() {
   }
 }
 
-async function run$H(conf) {
+async function run$I(conf) {
   if (!conf.highlightVars) {
     return;
   }
@@ -25219,17 +25381,17 @@ async function run$H(conf) {
 
 var dataType = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$S,
-  run: run$H
+  name: name$T,
+  run: run$I
 });
 
 // @ts-check
 
-const name$T = "core/algorithms";
+const name$U = "core/algorithms";
 
-const cssPromise$3 = loadStyle$8();
+const cssPromise$3 = loadStyle$9();
 
-async function loadStyle$8() {
+async function loadStyle$9() {
   try {
     return (await Promise.resolve().then(function () { return algorithms$2; })).default;
   } catch {
@@ -25237,7 +25399,7 @@ async function loadStyle$8() {
   }
 }
 
-async function run$I() {
+async function run$J() {
   const elements = Array.from(document.querySelectorAll("ol.algorithm li"));
   elements
     .filter(li => li.textContent.trim().startsWith("Assert: "))
@@ -25251,17 +25413,17 @@ async function run$I() {
 
 var algorithms = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$T,
-  run: run$I
+  name: name$U,
+  run: run$J
 });
 
 // @ts-check
 
-const name$U = "core/anchor-expander";
+const name$V = "core/anchor-expander";
 
 let sectionRefsByNumber = false;
 
-function run$J(conf) {
+function run$K(conf) {
   if (conf.hasOwnProperty("sectionRefsByNumber")) {
     sectionRefsByNumber = conf.sectionRefsByNumber;
   }
@@ -25464,15 +25626,15 @@ function localize(matchingElement, newElement) {
 
 var anchorExpander = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$U,
-  run: run$J
+  name: name$V,
+  run: run$K
 });
 
 // @ts-check
 
-const name$V = "pcisig/include-final-config";
+const name$W = "pcisig/include-final-config";
 
-function run$K(conf) {
+function run$L(conf) {
   const script = document.createElement("script");
   script.id = "finalUserConfig";
   script.type = "application/json";
@@ -25482,8 +25644,119 @@ function run$K(conf) {
 
 var includeFinalConfig = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$V,
-  run: run$K
+  name: name$W,
+  run: run$L
+});
+
+// @ts-check
+
+const name$X = "rs-changelog";
+
+const element = class ChangelogElement extends HTMLElement {
+  constructor() {
+    super();
+    this.props = {
+      from: this.getAttribute("from"),
+      to: this.getAttribute("to") || "HEAD",
+      /** @type {(commit: Commit) => boolean} */
+      filter:
+        typeof window[this.getAttribute("filter")] === "function"
+          ? window[this.getAttribute("filter")]
+          : () => true,
+    };
+  }
+
+  connectedCallback() {
+    const { from, to, filter } = this.props;
+    hyperHTML$2.bind(this)`
+      <ul>
+      ${{
+        any: fetchCommits(from, to, filter)
+          .then(commits => toHTML$2(commits))
+          .catch(error => showInlineError(this, error.message, error.message))
+          .finally(() => {
+            this.dispatchEvent(new CustomEvent("done"));
+          }),
+        placeholder: "Loading list of commits...",
+      }}
+      </ul>
+    `;
+  }
+};
+
+async function fetchCommits(from, to, filter) {
+  /** @type {Commit[]} */
+  let commits;
+  try {
+    const gh = await github;
+    if (!gh) {
+      throw new Error("`respecConfig.github` is not set");
+    }
+    const url = new URL("commits", `${gh.apiBase}/${gh.fullName}/`);
+    url.searchParams.set("from", from);
+    url.searchParams.set("to", to);
+
+    const res = await fetch(url.href);
+    if (!res.ok) {
+      throw new Error(
+        `Request to ${url} failed with status code ${res.status}`
+      );
+    }
+    commits = await res.json();
+    if (!commits.length) {
+      throw new Error(`No commits between ${from}..${to}.`);
+    }
+    commits = commits.filter(filter);
+  } catch (error) {
+    const msg = `Error loading commits from GitHub. ${error.message}`;
+    console.error(error);
+    throw new Error(msg);
+  }
+  return commits;
+}
+
+async function toHTML$2(commits) {
+  const { repoURL } = await github;
+  return commits.map(commit => {
+    const [message, prNumber = null] = commit.message.split(/\(#(\d+)\)/, 2);
+    const commitURL = `${repoURL}commit/${commit.hash}`;
+    const prURL = prNumber ? `${repoURL}pull/${prNumber}` : null;
+    const pr = prNumber && hyperHTML$2` (<a href="${prURL}">#${prNumber}</a>)`;
+    return hyperHTML$2`<li><a href="${commitURL}">${message.trim()}</a>${pr}</li>`;
+  });
+}
+
+var changelog = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  name: name$X,
+  element: element
+});
+
+// @ts-check
+/** @type {CustomElementDfn[]} */
+const CUSTOM_ELEMENTS = [changelog];
+
+const name$Y = "core/custom-elements";
+
+async function run$M() {
+  // prepare and register elements
+  CUSTOM_ELEMENTS.forEach(el => {
+    customElements.define(el.name, el.element);
+  });
+
+  // wait for each element to be ready
+  const selectors = CUSTOM_ELEMENTS.map(el => el.name).join(", ");
+  const elems = document.querySelectorAll(selectors);
+  const readyPromises = [...elems].map(
+    el => new Promise(res => el.addEventListener("done", res, { once: true }))
+  );
+  await Promise.all(readyPromises);
+}
+
+var index = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  name: name$Y,
+  run: run$M
 });
 
 var ui$2 = "#respec-ui {\n  position: fixed;\n  display: flex;\n  flex-direction: row-reverse;\n  top: 20px;\n  right: 20px;\n  width: 202px;\n  text-align: right;\n  z-index: 9000;\n}\n\n#respec-pill,\n.respec-info-button {\n  background: #fff;\n  height: 2.5em;\n  color: rgb(120, 120, 120);\n  border: 1px solid #ccc;\n  box-shadow: 1px 1px 8px 0 rgba(100, 100, 100, 0.5);\n}\n\n.respec-info-button {\n  border: none;\n  opacity: 0.75;\n  border-radius: 2em;\n  margin-right: 1em;\n  min-width: 3.5em;\n}\n\n.respec-info-button:focus,\n.respec-info-button:hover {\n  opacity: 1;\n  transition: opacity 0.2s;\n}\n\n#respec-pill:disabled {\n  font-size: 2.8px;\n  text-indent: -9999em;\n  border-top: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-right: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-bottom: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-left: 1.1em solid #ffffff;\n  transform: translateZ(0);\n  animation: respec-spin 0.5s infinite linear;\n  box-shadow: none;\n}\n\n#respec-pill:disabled,\n#respec-pill:disabled:after {\n  border-radius: 50%;\n  width: 10em;\n  height: 10em;\n}\n\n@keyframes respec-spin {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n\n.respec-hidden {\n  visibility: hidden;\n  opacity: 0;\n  transition: visibility 0s 0.2s, opacity 0.2s linear;\n}\n\n.respec-visible {\n  visibility: visible;\n  opacity: 1;\n  transition: opacity 0.2s linear;\n}\n\n#respec-pill:hover,\n#respec-pill:focus {\n  color: rgb(0, 0, 0);\n  background-color: rgb(245, 245, 245);\n  transition: color 0.2s;\n}\n\n#respec-menu {\n  position: absolute;\n  margin: 0;\n  padding: 0;\n  font-family: sans-serif;\n  background: #fff;\n  box-shadow: 1px 1px 8px 0 rgba(100, 100, 100, 0.5);\n  width: 200px;\n  display: none;\n  text-align: left;\n  margin-top: 32px;\n  font-size: 0.8em;\n}\n\n#respec-menu:not([hidden]) {\n  display: block;\n}\n\n#respec-menu li {\n  list-style-type: none;\n  margin: 0;\n  padding: 0;\n}\n\n.respec-save-buttons {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(47%, 2fr));\n  grid-gap: 0.5cm;\n  padding: 0.5cm;\n}\n\n.respec-save-button:link {\n  padding-top: 16px;\n  color: rgb(240, 240, 240);\n  background: rgb(42, 90, 168);\n  justify-self: stretch;\n  height: 1cm;\n  text-decoration: none;\n  text-align: center;\n  font-size: inherit;\n  border: none;\n  border-radius: 0.2cm;\n}\n\n.respec-save-button:link:hover {\n  color: white;\n  background: rgb(42, 90, 168);\n  padding: 0;\n  margin: 0;\n  border: 0;\n  padding-top: 16px;\n}\n\n#respec-ui button:focus,\n#respec-pill:focus,\n.respec-option:focus {\n  outline: 0;\n  outline-style: none;\n}\n\n#respec-pill-error {\n  background-color: red;\n  color: white;\n}\n\n#respec-pill-warning {\n  background-color: orange;\n  color: white;\n}\n\n.respec-warning-list,\n.respec-error-list {\n  margin: 0;\n  padding: 0;\n  list-style: none;\n  font-family: sans-serif;\n  background-color: rgb(255, 251, 230);\n  font-size: 0.85em;\n}\n\n.respec-warning-list > li,\n.respec-error-list > li {\n  padding: 0.4em 0.7em;\n}\n\n.respec-warning-list > li::before {\n  content: \"⚠️\";\n  padding-right: 0.5em;\n}\n.respec-warning-list p,\n.respec-error-list p {\n  padding: 0;\n  margin: 0;\n}\n\n.respec-warning-list li {\n  color: rgb(92, 59, 0);\n  border-bottom: thin solid rgb(255, 245, 194);\n}\n\n.respec-error-list,\n.respec-error-list li {\n  background-color: rgb(255, 240, 240);\n}\n\n.respec-error-list li::before {\n  content: \"💥\";\n  padding-right: 0.5em;\n}\n\n.respec-error-list li {\n  padding: 0.4em 0.7em;\n  color: rgb(92, 59, 0);\n  border-bottom: thin solid rgb(255, 215, 215);\n}\n\n.respec-error-list li > p {\n  margin: 0;\n  padding: 0;\n  display: inline-block;\n}\n\n#respec-overlay {\n  display: block;\n  position: fixed;\n  z-index: 10000;\n  top: 0px;\n  left: 0px;\n  height: 100%;\n  width: 100%;\n  background: #000;\n}\n\n.respec-show-overlay {\n  transition: opacity 0.2s linear;\n  opacity: 0.5;\n}\n\n.respec-hide-overlay {\n  transition: opacity 0.2s linear;\n  opacity: 0;\n}\n\n.respec-modal {\n  display: block;\n  position: fixed;\n  z-index: 11000;\n  margin: auto;\n  top: 10%;\n  background: #fff;\n  border: 5px solid #666;\n  min-width: 20%;\n  width: 79%;\n  padding: 0;\n  max-height: 80%;\n  overflow-y: auto;\n  margin: 0 -0.5cm;\n}\n\n@media screen and (min-width: 78em) {\n  .respec-modal {\n    width: 62%;\n  }\n}\n\n.respec-modal h3 {\n  margin: 0;\n  padding: 0.2em;\n  text-align: center;\n  color: black;\n  background: linear-gradient(\n    to bottom,\n    rgba(238, 238, 238, 1) 0%,\n    rgba(238, 238, 238, 1) 50%,\n    rgba(204, 204, 204, 1) 100%\n  );\n  font-size: 1em;\n}\n\n.respec-modal .inside div p {\n  padding-left: 1cm;\n}\n\n#respec-menu button.respec-option {\n  background: white;\n  padding: 0 0.2cm;\n  border: none;\n  width: 100%;\n  text-align: left;\n  font-size: inherit;\n  padding: 1.2em 1.2em;\n}\n\n#respec-menu button.respec-option:hover,\n#respec-menu button:focus {\n  background-color: #eeeeee;\n}\n\n.respec-cmd-icon {\n  padding-right: 0.5em;\n}\n\n#respec-ui button.respec-option:last-child {\n  border: none;\n  border-radius: inherit;\n}\n\n.respec-button-copy-paste {\n  position: absolute;\n  height: 28px;\n  width: 40px;\n  cursor: pointer;\n  background-image: linear-gradient(#fcfcfc, #eee);\n  border: 1px solid rgb(144, 184, 222);\n  border-left: 0;\n  border-radius: 0px 0px 3px 0;\n  -webkit-user-select: none;\n  user-select: none;\n  -webkit-appearance: none;\n  top: 0;\n  left: 127px;\n}\n\n#specref-ui {\n  margin: 0 2%;\n  margin-bottom: 0.5cm;\n}\n\n#specref-ui header {\n  font-size: 0.7em;\n  background-color: #eee;\n  text-align: center;\n  padding: 0.2cm;\n  margin-bottom: 0.5cm;\n  border-radius: 0 0 0.2cm 0.2cm;\n}\n\n#specref-ui header h1 {\n  padding: 0;\n  margin: 0;\n  color: black;\n}\n\n#specref-ui p {\n  padding: 0;\n  margin: 0;\n  font-size: 0.8em;\n  text-align: center;\n}\n\n#specref-ui p.state {\n  margin: 1cm;\n}\n\n#specref-ui .searchcomponent {\n  font-size: 16px;\n  display: grid;\n  grid-template-columns: auto 2cm;\n}\n#specref-ui .searchcomponent:focus {\n}\n\n#specref-ui input,\n#specref-ui button {\n  border: 0;\n  padding: 6px 12px;\n}\n\n#specref-ui label {\n  font-size: 0.6em;\n  grid-column-end: 3;\n  text-align: right;\n  grid-column-start: 1;\n}\n\n#specref-ui input[type=\"search\"] {\n  -webkit-appearance: none;\n  font-size: 16px;\n  border-radius: 0.1cm 0 0 0.1cm;\n  border: 1px solid rgb(204, 204, 204);\n}\n\n#specref-ui button[type=\"submit\"] {\n  color: white;\n  border-radius: 0 0.1cm 0.1cm 0;\n  background-color: rgb(51, 122, 183);\n}\n\n#specref-ui button[type=\"submit\"]:hover {\n  background-color: #286090;\n  border-color: #204d74;\n}\n\n#specref-ui .result-stats {\n  margin: 0;\n  padding: 0;\n  color: rgb(128, 128, 128);\n  font-size: 0.7em;\n  font-weight: bold;\n}\n\n#specref-ui .specref-results {\n  font-size: 0.8em;\n}\n\n#specref-ui .specref-results dd + dt {\n  margin-top: 0.51cm;\n}\n\n#specref-ui .specref-results a {\n  text-transform: capitalize;\n}\n#specref-ui .specref-results .authors {\n  display: block;\n  color: #006621;\n}\n\n@media print {\n  #respec-ui {\n    display: none;\n  }\n}\n\n#xref-ui {\n  width: 100%;\n  min-height: 550px;\n  height: 100%;\n  overflow: hidden;\n  padding: 0;\n  margin: 0;\n  border: 0;\n}\n\n#xref-ui:not(.ready) {\n  background: url(\"https://respec.org/xref/loader.gif\") no-repeat center;\n}\n";
@@ -25526,6 +25799,13 @@ var mdnAnnotation$1 = ".mdn {\n  display: block;\n  font: 12px sans-serif;\n  po
 var mdnAnnotation$2 = /*#__PURE__*/Object.freeze({
   __proto__: null,
   'default': mdnAnnotation$1
+});
+
+var dfnPanel$1 = "/* dfn popup panel that list all local references to a dfn */\ndfn {\n  cursor: pointer;\n}\n\n.dfn-panel {\n  position: absolute;\n  left: var(--left); /* set via JS */\n  top: var(--top); /* set via JS */\n  z-index: 35;\n  height: auto;\n  width: max-content;\n  max-width: 300px;\n  max-height: 500px;\n  overflow: auto;\n  padding: 0.5em 0.75em;\n  font: small Helvetica Neue, sans-serif, Droid Sans Fallback;\n  background: #dddddd;\n  color: black;\n  border: outset 0.2em;\n}\n\n.dfn-panel * {\n  margin: 0;\n}\n\n.dfn-panel > b {\n  display: block;\n}\n\n.dfn-panel ul a[href] {\n  color: black;\n}\n\n.dfn-panel a:not(:hover) {\n  text-decoration: none !important;\n  border-bottom: none !important;\n}\n\n.dfn-panel a[href]:hover {\n  border-bottom-width: 1px;\n}\n\n.dfn-panel > b + b {\n  margin-top: 0.25em;\n}\n\n.dfn-panel ul {\n  padding: 0;\n}\n\n.dfn-panel li {\n  list-style: inside;\n}\n\n.dfn-panel.docked {\n  display: inline-block;\n  position: fixed;\n  left: 0.5em;\n  top: unset;\n  bottom: 2em;\n  margin: 0 auto;\n  /* 0.75em from padding (x2), 0.5em from left position, 0.2em border (x2) */\n  max-width: calc(100vw - 0.75em * 2 - 0.5em - 0.2em * 2);\n  max-height: 30vh;\n}\n";
+
+var dfnPanel$2 = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  'default': dfnPanel$1
 });
 
 var datatype = "var {\n  position: relative;\n  cursor: pointer;\n}\n\nvar[data-type]::before,\nvar[data-type]::after {\n  position: absolute;\n  left: 50%;\n  top: -6px;\n  opacity: 0;\n  transition: opacity 0.4s;\n  pointer-events: none;\n}\n\n/* the triangle or arrow or caret or whatever */\nvar[data-type]::before {\n  content: \"\";\n  transform: translateX(-50%);\n  border-width: 4px 6px 0 6px;\n  border-style: solid;\n  border-color: transparent;\n  border-top-color: #000;\n}\n\n/* actual text */\nvar[data-type]::after {\n  content: attr(data-type);\n  transform: translateX(-50%) translateY(-100%);\n  background: #000;\n  text-align: center;\n  /* additional styling */\n  font-family: \"Dank Mono\", \"Fira Code\", monospace;\n  font-style: normal;\n  padding: 6px;\n  border-radius: 3px;\n  color: #daca88;\n  text-indent: 0;\n  font-weight: normal;\n}\n\nvar[data-type]:hover::after,\nvar[data-type]:hover::before {\n  opacity: 1;\n}\n";
