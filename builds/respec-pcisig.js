@@ -5704,6 +5704,7 @@ var pcisigStyle = /*#__PURE__*/Object.freeze({
 const name$i = "pcisig/l10n";
 const additions = {
   en: {
+    sotd: "Status of this Document",
     status_at_publication:
       "This section describes the status of this document at the time of its publication. Other documents may supersede this document. A list of current PCISIG publications and the latest revision of this specification can be found at <a href='https://www.pcisig.com'>pcisig.com</a>",
   },
@@ -6141,6 +6142,71 @@ var showPeople = (items = []) => {
 
 // @ts-check
 
+const localizationStrings$2 = {
+  en: {
+    author: "Author:",
+    authors: "Authors:",
+    editor: "Editor:",
+    editors: "Editors:",
+    former_editor: "Former editor:",
+    former_editors: "Former editors:",
+    latest_editors_draft: "Latest editor's draft:",
+    latest_published_version: "Latest published version:",
+    this_version: "This version:",
+  },
+  ko: {
+    author: "저자:",
+    authors: "저자:",
+    editor: "편집자:",
+    editors: "편집자:",
+    former_editor: "이전 편집자:",
+    former_editors: "이전 편집자:",
+    latest_editors_draft: "최신 편집 초안:",
+    latest_published_version: "최신 버전:",
+    this_version: "현재 버전:",
+  },
+  zh: {
+    editor: "编辑：",
+    editors: "编辑：",
+    former_editor: "原编辑：",
+    former_editors: "原编辑：",
+    latest_editors_draft: "最新编辑草稿：",
+    latest_published_version: "最新发布版本：",
+    this_version: "本版本：",
+  },
+  ja: {
+    author: "著者：",
+    authors: "著者：",
+    editor: "編者：",
+    editors: "編者：",
+    former_editor: "以前の版の編者：",
+    former_editors: "以前の版の編者：",
+    latest_editors_draft: "最新の編集用草案：",
+    latest_published_version: "最新バージョン：",
+    this_version: "このバージョン：",
+  },
+  nl: {
+    author: "Auteur:",
+    authors: "Auteurs:",
+    editor: "Redacteur:",
+    editors: "Redacteurs:",
+    latest_editors_draft: "Laatste werkversie:",
+    latest_published_version: "Laatst gepubliceerde versie:",
+    this_version: "Deze versie:",
+  },
+  es: {
+    author: "Autor:",
+    authors: "Autores:",
+    editor: "Editor:",
+    editors: "Editores:",
+    latest_editors_draft: "Borrador de editor mas reciente:",
+    latest_published_version: "Versión publicada mas reciente:",
+    this_version: "Ésta versión:",
+  },
+};
+
+const l10n$4 = getIntlData(localizationStrings$2);
+
 const ccLicense = "https://creativecommons.org/licenses/by/3.0/";
 
 function getSpecTitleElem(conf) {
@@ -6181,163 +6247,133 @@ function getSpecSubTitleElem(conf) {
 
 var headersTmpl = conf => {
   return hyperHTML$2`
-  <div id="respec-banner">
-    <span id="respec-banner-status">${conf.maturity}</span>&nbsp;&mdash;&nbsp;
-    <span id="respec-banner-spec-name">${conf.title}</span>
-  </div>
-  <div class="head">
-    ${conf.logos.map(showLogo)} ${getSpecTitleElem(conf)}
-    ${getSpecSubTitleElem(conf)}
-    <h2>
-      ${conf.prependPCISIG ? "PCI-SIG " : ""}${conf.textStatus}
-      <time class="dt-published" datetime="${conf.dashDate}"
-        >${conf.publishHumanDate}</time
-      >
-    </h2>
-    <dl>
-      ${
-        !conf.isNoTrack
+    <div class="head">
+      <div id="respec-banner">
+        <span id="respec-banner-status">${conf.maturity}</span>&nbsp;&mdash;&nbsp;
+        <span id="respec-banner-spec-name">${conf.title}</span>
+      </div>
+      ${conf.logos.map(showLogo)} ${getSpecTitleElem(conf)}
+      ${getSpecSubTitleElem(conf)}
+      <h2>
+        ${conf.prependPCISIG ? "PCI-SIG " : ""}${conf.textStatus}
+        <time class="dt-published" datetime="${conf.dashDate}"
+          >${conf.publishHumanDate}</time
+        >
+      </h2>
+      <dl>
+        ${!conf.isNoTrack
           ? hyperHTML$2`
-            <dt>${conf.l10n.this_version}</dt>
-            <dd>
-              <a class="u-url" href="${conf.thisVersion}"
-                >${conf.thisVersion}</a
-              >
-            </dd>
-            <dt>${conf.l10n.latest_published_version}</dt>
-            <dd>
-              ${
-                conf.latestVersion
+              <dt>${l10n$4.this_version}</dt>
+              <dd>
+                <a class="u-url" href="${conf.thisVersion}"
+                  >${conf.thisVersion}</a
+                >
+              </dd>
+              <dt>${l10n$4.latest_published_version}</dt>
+              <dd>
+                ${conf.latestVersion
                   ? hyperHTML$2`
-                    <a href="${conf.latestVersion}">${conf.latestVersion}</a>
-                  `
-                  : "none"
-              }
-            </dd>
-          `
-          : ""
-      }
-      ${
-        conf.edDraftURI
+                      <a href="${conf.latestVersion}">${conf.latestVersion}</a>
+                    `
+                  : "none"}
+              </dd>
+            `
+          : ""}
+        ${conf.edDraftURI
           ? hyperHTML$2`
-            <dt>${conf.l10n.latest_editors_draft}</dt>
-            <dd><a href="${conf.edDraftURI}">${conf.edDraftURI}</a></dd>
-          `
-          : ""
-      }
-      ${
-        conf.testSuiteURI
+              <dt>${l10n$4.latest_editors_draft}</dt>
+              <dd><a href="${conf.edDraftURI}">${conf.edDraftURI}</a></dd>
+            `
+          : ""}
+        ${conf.testSuiteURI
           ? hyperHTML$2`
-            <dt>Test suite:</dt>
-            <dd><a href="${conf.testSuiteURI}">${conf.testSuiteURI}</a></dd>
-          `
-          : ""
-      }
-      ${
-        conf.implementationReportURI
+              <dt>Test suite:</dt>
+              <dd><a href="${conf.testSuiteURI}">${conf.testSuiteURI}</a></dd>
+            `
+          : ""}
+        ${conf.implementationReportURI
           ? hyperHTML$2`
-            <dt>Implementation report:</dt>
-            <dd>
-              <a href="${conf.implementationReportURI}"
-                >${conf.implementationReportURI}</a
-              >
-            </dd>
-          `
-          : ""
-      }
-      ${
-        conf.bugTrackerHTML
+              <dt>Implementation report:</dt>
+              <dd>
+                <a href="${conf.implementationReportURI}"
+                  >${conf.implementationReportURI}</a
+                >
+              </dd>
+            `
+          : ""}
+        ${conf.bugTrackerHTML
           ? hyperHTML$2`
-            <dt>${conf.l10n.bug_tracker}</dt>
-            <dd>${[conf.bugTrackerHTML]}</dd>
-          `
-          : ""
-      }
-      ${
-        conf.isED && conf.prevED
+              <dt>${l10n$4.bug_tracker}</dt>
+              <dd>${[conf.bugTrackerHTML]}</dd>
+            `
+          : ""}
+        ${conf.isED && conf.prevED
           ? hyperHTML$2`
-            <dt>Previous editor's draft:</dt>
-            <dd><a href="${conf.prevED}">${conf.prevED}</a></dd>
-          `
-          : ""
-      }
-      ${
-        conf.showPreviousVersion
+              <dt>Previous editor's draft:</dt>
+              <dd><a href="${conf.prevED}">${conf.prevED}</a></dd>
+            `
+          : ""}
+        ${conf.showPreviousVersion
           ? hyperHTML$2`
-            <dt>Previous version:</dt>
-            <dd><a href="${conf.prevVersion}">${conf.prevVersion}</a></dd>
-          `
-          : ""
-      }
-      ${
-        !conf.prevRecURI
+              <dt>Previous version:</dt>
+              <dd><a href="${conf.prevVersion}">${conf.prevVersion}</a></dd>
+            `
+          : ""}
+        ${!conf.prevRecURI
           ? ""
           : conf.isRec
           ? hyperHTML$2`
-            <dt>Previous Recommendation:</dt>
-            <dd><a href="${conf.prevRecURI}">${conf.prevRecURI}</a></dd>
-          `
+              <dt>Previous Recommendation:</dt>
+              <dd><a href="${conf.prevRecURI}">${conf.prevRecURI}</a></dd>
+            `
           : hyperHTML$2`
-            <dt>Latest Recommendation:</dt>
-            <dd><a href="${conf.prevRecURI}">${conf.prevRecURI}</a></dd>
-          `
-      }
-      <dt>${conf.multipleEditors ? conf.l10n.editors : conf.l10n.editor}</dt>
-      ${showPeople(conf.editors)}
-      ${
-        Array.isArray(conf.formerEditors) && conf.formerEditors.length > 0
+              <dt>Latest Recommendation:</dt>
+              <dd><a href="${conf.prevRecURI}">${conf.prevRecURI}</a></dd>
+            `}
+        <dt>${conf.multipleEditors ? l10n$4.editors : l10n$4.editor}</dt>
+        ${showPeople(conf.editors)}
+        ${Array.isArray(conf.formerEditors) && conf.formerEditors.length > 0
           ? hyperHTML$2`
-            <dt>
-              ${
-                conf.multipleFormerEditors
-                  ? conf.l10n.former_editors
-                  : conf.l10n.former_editor
-              }
-            </dt>
-            ${showPeople(conf.formerEditors)}
-          `
-          : ""
-      }
-      ${
-        conf.authors
+              <dt>
+                ${conf.multipleFormerEditors
+                  ? l10n$4.former_editors
+                  : l10n$4.former_editor}
+              </dt>
+              ${showPeople(conf.formerEditors)}
+            `
+          : ""}
+        ${conf.authors
           ? hyperHTML$2`
-            <dt>
-              ${conf.multipleAuthors ? conf.l10n.authors : conf.l10n.author}
-            </dt>
-            ${showPeople(conf.authors)}
+              <dt>
+                ${conf.multipleAuthors ? l10n$4.authors : l10n$4.author}
+              </dt>
+              ${showPeople(conf.authors)}
+            `
+          : ""}
+        ${conf.otherLinks ? conf.otherLinks.map(showLink) : ""}
+      </dl>
+      ${conf.errata
+        ? hyperHTML$2`
+            <p>
+              Please check the
+              <a href="${conf.errata}"><strong>errata</strong></a> for any
+              errors or issues reported since publication.
+            </p>
           `
-          : ""
-      }
-      ${conf.otherLinks ? conf.otherLinks.map(showLink) : ""}
-    </dl>
-    ${
-      conf.errata
+        : ""}
+      ${conf.alternateFormats
         ? hyperHTML$2`
-          <p>
-            Please check the
-            <a href="${conf.errata}"><strong>errata</strong></a> for any
-            errors or issues reported since publication.
-          </p>
-        `
-        : ""
-    }
-    ${
-      conf.alternateFormats
-        ? hyperHTML$2`
-          <p>
-            ${
-              conf.multipleAlternates
+            <p>
+              ${conf.multipleAlternates
                 ? "This document is also available in these non-normative formats:"
-                : "This document is also available in this non-normative format:"
-            }
-            ${[conf.alternatesHTML]}
-          </p>
-        `
-        : ""
-    }
-    ${renderCopyright(conf)}
-    <hr title="Separator for header" />
-  </div>
+                : "This document is also available in this non-normative format:"}
+              ${[conf.alternatesHTML]}
+            </p>
+          `
+        : ""}
+      ${renderCopyright(conf)}
+      <hr title="Separator for header" />
+    </div>
   `;
 };
 
@@ -6378,48 +6414,47 @@ function renderCopyright(conf) {
 function renderOfficialCopyright(conf) {
   return hyperHTML$2`
     <p class="copyright">
-      <a href="https://members.pcisig.com/wg/PCI-SIG/document/folder/106"
-        >Copyright</a
-      >
-      &copy;
+      Copyright&copy;
       ${conf.copyrightStart ? `${conf.copyrightStart}-` : ""}${conf.publishYear}
-      ${
-        conf.additionalCopyrightHolders
-          ? hyperHTML$2`
-            ${[conf.additionalCopyrightHolders]} &amp;
+      <a href="http://www.pcisig.com">PCI-SIG</a>
+      ${conf.additionalCopyrightHolders
+        ? hyperHTML$2`
+            &amp; ${[conf.additionalCopyrightHolders]}
           `
-          : ""
-      }
+        : ""}
+    </p>
     <dl class="copyright">
       <dt>Web Site</dt>
       <dd><a href="http://www.pcisig.com">http://www.pcisig.com</a></dd>
       <dt>Membership Services</dt>
-      <dd><a href="mailto:administration@pcisig.com">administration@pcisig.com</a></dd>
-      <dd><a href="tel:+1-503-619-0569">+1-503-619-0569</a> (Phone)</dd>
-      <dd><a href="tel:+1-503-644-6708">+1-503-644-6708</a> (Fax)</dd>
+      <dd>
+        <a href="mailto:administration@pcisig.com">administration@pcisig.com</a>
+      </dd>
+      <dd><a href="tel:+1-503-619-0569">+1.503.619.0569</a> (Phone)</dd>
+      <dd><a href="tel:+1-503-644-6708">+1.503.644.6708</a> (Fax)</dd>
       <dt>Technical Support</dt>
       <dd><a href="mailto:techsupp@pcisig.com">techsupp@pcisig.com</a></dd>
-      </dl>
-      <p class="copyright">PCI-SIG disclaims all warranties and liability for the use of this document
-        and the information contained herein and assumes no responsibility
-        for any errors that may appear in this document, nor does PCI-SIG make a commitment
-        to update the information contained herein.
-      </p>
-      <p class="copyright">
-        This PCI Specification is provided “as is” without any warranties of any kind,
-        including any warranty of merchantability, non-infringement, fitness for any
-        particular purpose, or any warranty otherwise arising out of any proposal,
-        specification, or sample. PCI-SIG disclaims all liability for infringement
-        of proprietary rights, relating to use of information in this specification.
-        This document itself may not be modified in any way, including by removing the
-        copyright notice or references to PCI-SIG.
-        No license, express or implied, by estoppel or otherwise, to any intellectual
-        property rights is granted herein.
-        PCI, PCI Express, PCIe, and PCI-SIG are trademarks or registered trademarks of
-        PCI-SIG.
-        All other product names are trademarks, registered trademarks, or servicemarks of
-        their respective owners.
-      </p>
+    </dl>
+    <p class="copyright">
+      PCI-SIG disclaims all warranties and liability for the use of this
+      document and the information contained herein and assumes no
+      responsibility for any errors that may appear in this document, nor does
+      PCI-SIG make a commitment to update the information contained herein.
+    </p>
+    <p class="copyright">
+      This PCI Specification is provided “as is” without any warranties of any
+      kind, including any warranty of merchantability, non-infringement, fitness
+      for any particular purpose, or any warranty otherwise arising out of any
+      proposal, specification, or sample. PCI-SIG disclaims all liability for
+      infringement of proprietary rights, relating to use of information in this
+      specification. This document itself may not be modified in any way,
+      including by removing the copyright notice or references to PCI-SIG. No
+      license, express or implied, by estoppel or otherwise, to any intellectual
+      property rights is granted herein. PCI, PCI Express, PCIe, and PCI-SIG are
+      trademarks or registered trademarks of PCI-SIG. All other product names
+      are trademarks, registered trademarks, or servicemarks of their respective
+      owners.
+    </p>
   `;
 }
 
@@ -8252,7 +8287,7 @@ var biblio$1 = /*#__PURE__*/Object.freeze({
 
 const name$q = "core/render-biblio";
 
-const localizationStrings$2 = {
+const localizationStrings$3 = {
   en: {
     info_references: "Informative references",
     norm_references: "Normative references",
@@ -8270,7 +8305,7 @@ const localizationStrings$2 = {
   },
 };
 
-const l10n$4 = getIntlData(localizationStrings$2);
+const l10n$5 = getIntlData(localizationStrings$3);
 
 const REF_STATUSES = new Map([
   ["CR", "W3C Candidate Recommendation"],
@@ -8308,7 +8343,7 @@ function run$f(conf) {
     hyperHTML$2`<section id='references'></section>`;
 
   if (!document.querySelector("section#references > h2")) {
-    refSection.prepend(hyperHTML$2`<h2>${l10n$4.references}</h2>`);
+    refSection.prepend(hyperHTML$2`<h2>${l10n$5.references}</h2>`);
   }
 
   refSection.classList.add("appendix");
@@ -8320,7 +8355,7 @@ function run$f(conf) {
     const sec = hyperHTML$2`
       <section>
         <h3>${
-          type === "Normative" ? l10n$4.norm_references : l10n$4.info_references
+          type === "Normative" ? l10n$5.norm_references : l10n$5.info_references
         }</h3>
       </section>`;
     addId(sec);
@@ -9014,7 +9049,7 @@ var pluralize$2 = /*#__PURE__*/Object.freeze({
 
 const name$w = "core/examples";
 
-const localizationStrings$3 = {
+const localizationStrings$4 = {
   en: {
     example: "Example",
   },
@@ -9026,7 +9061,7 @@ const localizationStrings$3 = {
   },
 };
 
-const l10n$5 = getIntlData(localizationStrings$3);
+const l10n$6 = getIntlData(localizationStrings$4);
 
 const cssPromise = loadStyle$2();
 
@@ -9060,7 +9095,7 @@ function makeTitle(elem, num, report) {
     : "";
   return hyperHTML$2`
     <div class="marker">
-      <a class="self-link">${l10n$5.example}<bdi>${number}</bdi></a
+      <a class="self-link">${l10n$6.example}<bdi>${number}</bdi></a
       >${title}
     </div>
   `;
@@ -9145,7 +9180,7 @@ var examples = /*#__PURE__*/Object.freeze({
 
 const name$x = "core/issues-notes";
 
-const localizationStrings$4 = {
+const localizationStrings$5 = {
   en: {
     issue_summary: "Issue Summary",
     no_issues_in_spec: "There are no issues listed in this specification.",
@@ -9170,7 +9205,7 @@ async function loadStyle$3() {
   }
 }
 
-const l10n$6 = getIntlData(localizationStrings$4);
+const l10n$7 = getIntlData(localizationStrings$5);
 
 /**
  * @typedef {object} Report
@@ -9367,14 +9402,14 @@ function makeIssueSectionSummary(issueList) {
 
   issueList.hasChildNodes()
     ? issueSummaryElement.append(issueList)
-    : issueSummaryElement.append(hyperHTML$2`<p>${l10n$6.no_issues_in_spec}</p>`);
+    : issueSummaryElement.append(hyperHTML$2`<p>${l10n$7.no_issues_in_spec}</p>`);
   if (
     !heading ||
     (heading && heading !== issueSummaryElement.firstElementChild)
   ) {
     issueSummaryElement.insertAdjacentHTML(
       "afterbegin",
-      `<h2>${l10n$6.issue_summary}</h2>`
+      `<h2>${l10n$7.issue_summary}</h2>`
     );
   }
 }
@@ -9491,13 +9526,13 @@ var issuesNotes = /*#__PURE__*/Object.freeze({
 
 const name$y = "core/best-practices";
 
-const localizationStrings$5 = {
+const localizationStrings$6 = {
   en: {
     best_practice: "Best Practice ",
   },
 };
-const l10n$7 = getIntlData(localizationStrings$5);
-const lang$9 = lang in localizationStrings$5 ? lang : "en";
+const l10n$8 = getIntlData(localizationStrings$6);
+const lang$9 = lang in localizationStrings$6 ? lang : "en";
 
 function run$n() {
   /** @type {NodeListOf<HTMLElement>} */
@@ -9508,7 +9543,7 @@ function run$n() {
     const id = addId(bp, "bp");
     const localizedBpName = hyperHTML$2`
       <a class="marker self-link" href="${`#${id}`}"><bdi lang="${lang$9}">${
-      l10n$7.best_practice
+      l10n$8.best_practice
     }${num + 1}</bdi></a>`;
 
     // Make the summary items, if we have a summary
@@ -22276,7 +22311,7 @@ var regpict = /*#__PURE__*/Object.freeze({
 
 const name$B = "core/figures";
 
-const localizationStrings$6 = {
+const localizationStrings$7 = {
   en: {
     list_of_figures: "List of Figures",
     fig: "Figure ",
@@ -22303,7 +22338,7 @@ const localizationStrings$6 = {
   },
 };
 
-const l10n$8 = getIntlData(localizationStrings$6);
+const l10n$9 = getIntlData(localizationStrings$7);
 
 function run$q() {
   normalizeImages(document);
@@ -22315,7 +22350,7 @@ function run$q() {
   if (tof.length && tofElement) {
     decorateTableOfFigures(tofElement);
     tofElement.append(
-      hyperHTML$2`<h2>${l10n$8.list_of_figures}</h2>`,
+      hyperHTML$2`<h2>${l10n$9.list_of_figures}</h2>`,
       hyperHTML$2`<ul class='tof'>${tof}</ul>`
     );
   }
@@ -22351,7 +22386,7 @@ function decorateFigure(figure, caption, i) {
   // set proper caption title
   wrapInner(caption, hyperHTML$2`<span class='fig-title'></span>`);
   caption.prepend(
-    hyperHTML$2`<span class='fighdr'>${l10n$8.fig}</span>`,
+    hyperHTML$2`<span class='fighdr'>${l10n$9.fig}</span>`,
     hyperHTML$2`<bdi class='figno'>${i + 1}</bdi>`,
     " "
   );
@@ -22457,16 +22492,16 @@ var figures = /*#__PURE__*/Object.freeze({
 
 const name$C = "core/equations";
 
-const localizationStrings$7 = {
+const localizationStrings$8 = {
   en: {
     list_of_equations: "List of Equations",
     eqn: "Equation ",
   },
 };
 
-const lang$a = lang in localizationStrings$7 ? lang : "en";
+const lang$a = lang in localizationStrings$8 ? lang : "en";
 
-const l10n$9 = localizationStrings$7[lang$a];
+const l10n$a = localizationStrings$8[lang$a];
 
 function run$r() {
   normalizeImages$1(document);
@@ -22478,7 +22513,7 @@ function run$r() {
   if (toe.length && toeElement) {
     decorateTableOfEquations(toeElement);
     toeElement.append(
-      hyperHTML$2`<h2>${l10n$9.list_of_equations}</h2>`,
+      hyperHTML$2`<h2>${l10n$a.list_of_equations}</h2>`,
       hyperHTML$2`<ul class='toe'>${toe}</ul>`
     );
   }
@@ -22514,7 +22549,7 @@ function decorateEquation(equation, caption, i) {
   // set proper caption title
   wrapInner(caption, hyperHTML$2`<span class='eqn-title'></span>`);
   caption.prepend(
-    hyperHTML$2`<span class='eqnhdr'>${l10n$9.eqn}</span>`,
+    hyperHTML$2`<span class='eqnhdr'>${l10n$a.eqn}</span>`,
     hyperHTML$2`<bdi class='eqnno'>${i + 1}</bdi>`,
     " "
   );
@@ -22620,16 +22655,16 @@ var equations = /*#__PURE__*/Object.freeze({
 
 const name$D = "core/tables";
 
-const localizationStrings$8 = {
+const localizationStrings$9 = {
   en: {
     list_of_tables: "List of Tables",
     tbl: "Table ",
   },
 };
 
-const lang$b = lang in localizationStrings$8 ? lang : "en";
+const lang$b = lang in localizationStrings$9 ? lang : "en";
 
-const l10n$a = localizationStrings$8[lang$b];
+const l10n$b = localizationStrings$9[lang$b];
 
 function run$s() {
   const tot = collectTables();
@@ -22639,7 +22674,7 @@ function run$s() {
   if (tot.length && totElement) {
     decorateTableOfTables(totElement);
     totElement.append(
-      hyperHTML$2`<h2>${l10n$a.list_of_tables}</h2>`,
+      hyperHTML$2`<h2>${l10n$b.list_of_tables}</h2>`,
       hyperHTML$2`<ul class='tot'>${tot}</ul>`
     );
   }
@@ -22675,7 +22710,7 @@ function decorateTable(table, caption, i) {
   // set proper caption title
   wrapInner(caption, hyperHTML$2`<span class='tbl-title'></span>`);
   caption.prepend(
-    hyperHTML$2`<span class='tblhdr'>${l10n$a.tbl}</span>`,
+    hyperHTML$2`<span class='tblhdr'>${l10n$b.tbl}</span>`,
     hyperHTML$2`<bdi class='tblno'>${i + 1}</bdi>`,
     " "
   );
@@ -23429,7 +23464,7 @@ function bufferToHexString(buffer) {
 // @ts-check
 const name$F = "core/link-to-dfn";
 
-const localizationStrings$9 = {
+const localizationStrings$a = {
   en: {
     /**
      * @param {string} title
@@ -23440,7 +23475,7 @@ const localizationStrings$9 = {
     duplicateTitle: "This is defined more than once in the document.",
   },
 };
-const l10n$b = getIntlData(localizationStrings$9);
+const l10n$c = getIntlData(localizationStrings$a);
 
 class CaseInsensitiveMap extends Map {
   /**
@@ -23524,8 +23559,8 @@ function mapTitleToDfns() {
     if (duplicates.length > 0) {
       showInlineError(
         duplicates,
-        l10n$b.duplicateMsg(title),
-        l10n$b.duplicateTitle
+        l10n$c.duplicateMsg(title),
+        l10n$c.duplicateTitle
       );
     }
   });
@@ -23833,7 +23868,7 @@ const headerTags = ["h1", ...lowerHeaderTags];
 
 const name$I = "core/structure";
 
-const localizationStrings$a = {
+const localizationStrings$b = {
   en: {
     toc: "Table of Contents",
     section: "Section ",
@@ -23854,7 +23889,7 @@ const localizationStrings$a = {
   },
 };
 
-const l10n$c = getIntlData(localizationStrings$a);
+const l10n$d = getIntlData(localizationStrings$b);
 
 /**
  * @typedef {object} SectionInfo
@@ -23898,9 +23933,9 @@ function scanSections(sections, maxTocLevel, { prefix = "" } = {}) {
     const secthdr =
       level === 1
         ? appendixMode
-          ? l10n$c.appendix
-          : l10n$c.chapter
-        : l10n$c.section;
+          ? l10n$d.appendix
+          : l10n$d.chapter
+        : l10n$d.section;
     wrapInner(section.header, hyperHTML$2`<span class='sect-title'>`);
     if (!section.isIntro) {
       index += 1;
@@ -24058,7 +24093,7 @@ function createTableOfContents(ol) {
     return;
   }
   const nav = hyperHTML$2`<nav id="toc">`;
-  const h2 = hyperHTML$2`<h2 class="introductory">${l10n$c.toc}</h2>`;
+  const h2 = hyperHTML$2`<h2 class="introductory">${l10n$d.toc}</h2>`;
   addId(h2);
   nav.append(h2, ol);
   const ref =
@@ -24158,7 +24193,7 @@ var figTblEqnNumbering = /*#__PURE__*/Object.freeze({
 
 const name$K = "core/informative";
 
-const localizationStrings$b = {
+const localizationStrings$c = {
   en: {
     informative: "This section is non-normative.",
   },
@@ -24167,14 +24202,14 @@ const localizationStrings$b = {
   },
 };
 
-const l10n$d = getIntlData(localizationStrings$b);
+const l10n$e = getIntlData(localizationStrings$c);
 
 function run$A() {
   Array.from(document.querySelectorAll("section.informative"))
     .map(informative => informative.querySelector("h2, h3, h4, h5, h6"))
     .filter(heading => heading)
     .forEach(heading => {
-      heading.after(hyperHTML$2`<p><em>${l10n$d.informative}</em></p>`);
+      heading.after(hyperHTML$2`<p><em>${l10n$e.informative}</em></p>`);
     });
 }
 
@@ -24936,7 +24971,7 @@ var seo = /*#__PURE__*/Object.freeze({
 });
 
 // @ts-check
-const localizationStrings$c = {
+const localizationStrings$d = {
   en: {
     missing_test_suite_uri:
       "Found tests in your spec, but missing '" +
@@ -24946,7 +24981,7 @@ const localizationStrings$c = {
   },
 };
 
-const l10n$e = getIntlData(localizationStrings$c);
+const l10n$f = getIntlData(localizationStrings$d);
 
 const name$Q = "core/data-tests";
 
@@ -25005,7 +25040,7 @@ function run$F(conf) {
     return;
   }
   if (!conf.testSuiteURI) {
-    pub("error", l10n$e.missing_test_suite_uri);
+    pub("error", l10n$f.missing_test_suite_uri);
     return;
   }
 
