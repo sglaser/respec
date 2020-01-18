@@ -6564,8 +6564,8 @@ var sotdTmpl = (conf, opts) => {
                   This document is governed by the
                   <a
                     id="pcisig_process_revision"
-                    href="https://www.pcisig.com/2019/Process-20190301/"
-                    >1 March 2019 PCI-SIG Process Document</a
+                    href="https://members.pcisig.com/wg/PCI-SIG/document/previewpdf/1107"
+                    >PCI-SIG Specification Development Procedures 08/08/2017</a
                   >.
                 </p>
                 ${
