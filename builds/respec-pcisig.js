@@ -24,6 +24,7 @@ const modules = [
   Promise.resolve().then(function () { return pcisigHeaders; }),
   Promise.resolve().then(function () { return footnotes; }),
   // import("../src/w3c/abstract.js"),
+  Promise.resolve().then(function () { return tablenotes; }),
   Promise.resolve().then(function () { return dataTransform; }),
   Promise.resolve().then(function () { return dataAbbr; }),
   Promise.resolve().then(function () { return inlines; }),
@@ -5392,17 +5393,118 @@ function registerDefinition(dfn, names) {
   }
 }
 
+// @ts-check
+
+const name$f = "wpt-tests-exist";
+
+const meta$7 = {
+  en: {
+    description: "Non-existent Web Platform Tests",
+    howToFix: "Please fix the tests mentioned.",
+    help: "See developer console.",
+  },
+};
+
+const lang$8 = lang in meta$7 ? lang : "en";
+
+/**
+ * Runs linter rule.
+ * @param {Object} conf The ReSpec config.
+ * @param  {Document} doc The document to be checked.
+ * @return {Promise<import("../LinterRule").LinterResult>}
+ */
+async function linterFunction$4(conf, doc) {
+  const filesInWPT = await getFilesInWPT(conf.testSuiteURI, conf.githubAPI);
+  if (!filesInWPT) {
+    return;
+  }
+
+  const offendingElements = [];
+  const offendingTests = new Set();
+
+  /** @type {NodeListOf<HTMLElement>} */
+  const elems = doc.querySelectorAll("[data-tests]");
+  const testables = [...elems].filter(elem => elem.dataset.tests);
+
+  for (const elem of testables) {
+    const tests = elem.dataset.tests
+      .split(/,/gm)
+      .map(test => test.trim().split("#")[0])
+      .filter(test => test);
+
+    const missingTests = tests.filter(test => !filesInWPT.has(test));
+    if (missingTests.length) {
+      offendingElements.push(elem);
+      missingTests.forEach(test => offendingTests.add(test));
+    }
+  }
+
+  if (!offendingElements.length) {
+    return;
+  }
+
+  const missingTests = [...offendingTests].map(test => `\`${test}\``);
+  return {
+    name: name$f,
+    offendingElements,
+    occurrences: offendingElements.length,
+    ...meta$7[lang$8],
+    description: `${meta$7[lang$8].description}: ${missingTests.join(", ")}.`,
+  };
+}
+
+const rule$7 = new LinterRule(name$f, linterFunction$4);
+
+/**
+ * @param {string} testSuiteURI
+ * @param {string} githubAPIBase
+ */
+async function getFilesInWPT(testSuiteURI, githubAPIBase) {
+  let wptDirectory;
+  try {
+    const testSuiteURL = new URL(testSuiteURI);
+    if (testSuiteURL.pathname.startsWith("/web-platform-tests/wpt/")) {
+      const re = /web-platform-tests\/wpt\/(.+)/;
+      wptDirectory = testSuiteURL.pathname.match(re)[1].replace(/\//g, "");
+    } else {
+      wptDirectory = testSuiteURL.pathname.replace(/\//g, "");
+    }
+  } catch (error) {
+    const msg = "Failed to parse WPT directory from testSuiteURI";
+    pub("warn", msg);
+    console.error(error);
+    return null;
+  }
+
+  const url = new URL("web-platform-tests/wpt/files", `${githubAPIBase}/`);
+  url.searchParams.set("path", wptDirectory);
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    const error = await response.text();
+    const msg =
+      "Failed to fetch files from WPT repository. " +
+      `Request failed with error: ${error} (${response.status})`;
+    pub("warn", msg);
+    return null;
+  }
+  /** @type {{ entries: string[] }} */
+  const { entries } = await response.json();
+  const files = entries.filter(entry => !entry.endsWith("/"));
+  return new Set(files);
+}
+
 /**
  * Sets the defaults for pcisig specs
  */
+const name$g = "pcisig/pcisig-defaults";
 
-const name$f = "pcisig/pcisig-defaults";
-
-linter.register(rule$6);
+linter.register(rule$6, rule$7);
 
 const pcisigDefaults = {
   lint: {
     "privsec-section": true,
+    "wpt-tests-exist": false,
   },
   pluralize: true,
   doJsonLd: false,
@@ -5458,12 +5560,12 @@ function run$5(conf) {
 
 var pcisigDefaults$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$f,
+  name: name$g,
   run: run$5
 });
 
 // @ts-check
-const name$g = "core/style";
+const name$h = "core/style";
 
 // Opportunistically inserts the style, with the chance to reduce some FOUC
 const styleElement = insertStyle$1();
@@ -5492,13 +5594,13 @@ async function run$6(conf) {
 
 var style = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$g,
+  name: name$h,
   run: run$6
 });
 
 // @ts-check
 
-const name$h = "pcisig/style";
+const name$i = "pcisig/style";
 
 function attachFixupScript(document, version) {
   const script = document.createElement("script");
@@ -5696,12 +5798,12 @@ function run$7(conf) {
 
 var pcisigStyle = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$h,
+  name: name$i,
   run: run$7
 });
 
 // Module pcisig/l10n
-const name$i = "pcisig/l10n";
+const name$j = "pcisig/l10n";
 const additions = {
   en: {
     sotd: "Status of this Document",
@@ -5716,11 +5818,11 @@ Object.keys(additions).forEach(key => {
 
 var l10n$2 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$i
+  name: name$j
 });
 
 // @ts-check
-const name$j = "core/github";
+const name$k = "core/github";
 
 let resolveGithubPromise;
 let rejectGithubPromise;
@@ -5854,14 +5956,14 @@ async function run$8(conf) {
 
 var github$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$j,
+  name: name$k,
   github: github,
   run: run$8
 });
 
 // @ts-check
 
-const name$k = "core/data-include";
+const name$l = "core/data-include";
 
 function processResponse(rawData, id, url) {
   /** @type {HTMLElement} */
@@ -5936,12 +6038,11 @@ async function run$9() {
 
 var dataInclude = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$k,
+  name: name$l,
   run: run$9
 });
 
 // @ts-check
-
 const html$1 = hyperHTML$2;
 
 var showLink = link => {
@@ -5998,8 +6099,6 @@ var showLogo = obj => {
 
 // @ts-check
 
-const html$2 = hyperHTML$2;
-
 const localizationStrings$1 = {
   en: {
     until: "Until",
@@ -6009,10 +6108,10 @@ const localizationStrings$1 = {
   },
 };
 
-const lang$8 = lang in localizationStrings$1 ? lang : "en";
+const lang$9 = lang in localizationStrings$1 ? lang : "en";
 
 var showPeople = (items = []) => {
-  const l10n = localizationStrings$1[lang$8];
+  const l10n = localizationStrings$1[lang$9];
   return items.map(getItem);
 
   function getItem(p) {
@@ -6020,31 +6119,31 @@ var showPeople = (items = []) => {
     const company = [p.company];
     const editorid = p.w3cid ? parseInt(p.w3cid, 10) : null;
     /** @type {HTMLElement} */
-    const dd = html$2`
+    const dd = hyperHTML$2`
       <dd class="p-author h-card vcard" data-editor-id="${editorid}"></dd>
     `;
     const span = document.createDocumentFragment();
     const contents = [];
     if (p.mailto) {
-      contents.push(html$2`
+      contents.push(hyperHTML$2`
         <a class="ed_mailto u-email email p-name" href="${`mailto:${p.mailto}`}"
           >${personName}</a
         >
       `);
     } else if (p.url) {
-      contents.push(html$2`
+      contents.push(hyperHTML$2`
         <a class="u-url url p-name fn" href="${p.url}">${personName}</a>
       `);
     } else {
       contents.push(
-        html$2`
+        hyperHTML$2`
           <span class="p-name fn">${personName}</span>
         `
       );
     }
     if (p.orcid) {
       contents.push(
-        html$2`
+        hyperHTML$2`
           <a class="p-name orcid" href="${p.orcid}"
             ><svg
               width="16"
@@ -6064,15 +6163,16 @@ var showPeople = (items = []) => {
               <path
                 class="st1"
                 d="M86.3 186.2H70.9V79.1h15.4v107.1zM108.9 79.1h41.6c39.6 0 57 28.3 57 53.6 0 27.5-21.5 53.6-56.8 53.6h-41.8V79.1zm15.4 93.3h24.5c34.9 0 42.9-26.5 42.9-39.7C191.7 111.2 178 93 148 93h-23.7v79.4zM88.7 56.8c0 5.5-4.5 10.1-10.1 10.1s-10.1-4.6-10.1-10.1c0-5.6 4.5-10.1 10.1-10.1s10.1 4.6 10.1 10.1z"
-              /></svg
-          ></a>
+              />
+            </svg>
+          </a>
         `
       );
     }
     if (p.company) {
       if (p.companyURL) {
         contents.push(
-          html$2`
+          hyperHTML$2`
             (<a class="p-org org h-org h-card" href="${p.companyURL}"
               >${company}</a
             >)
@@ -6080,7 +6180,7 @@ var showPeople = (items = []) => {
         );
       } else {
         contents.push(
-          html$2`
+          hyperHTML$2`
             (${company})
           `
         );
@@ -6113,24 +6213,25 @@ var showPeople = (items = []) => {
       }
       timeElem.dateTime = toShortIsoDate(retiredDate);
       contents.push(
-        html$2`
-          - ${l10n.until.concat(" ")}${[timeElem]}
+        hyperHTML$2`
+          - ${l10n.until.concat(" ")}${timeElem}
         `
       );
     }
 
-    html$2.bind(span)`${contents}`;
+    // @ts-ignore: hyperhtml types only support Element but we use a DocumentFragment here
+    hyperHTML$2.bind(span)`${contents}`;
     dd.appendChild(span);
     return dd;
   }
 
   function getExtra(extra) {
-    const span = html$2`
+    const span = hyperHTML$2`
       <span class="${extra.class || null}"></span>
     `;
     let textContainer = span;
     if (extra.href) {
-      textContainer = html$2`
+      textContainer = hyperHTML$2`
         <a href="${extra.href}"></a>
       `;
       span.appendChild(textContainer);
@@ -6882,7 +6983,7 @@ function linkToCommunity(conf, opts) {
 
 // @ts-check
 
-const name$l = "pcisig/pcisig-headers";
+const name$m = "pcisig/pcisig-headers";
 
 const PCISIGDate = new Intl.DateTimeFormat(["en-AU"], {
   timeZone: "UTC",
@@ -7522,13 +7623,13 @@ function isElement(node) {
 
 var pcisigHeaders = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$l,
+  name: name$m,
   run: run$a
 });
 
 // @ts-check
 
-const name$m = "pcisig/footnotes";
+const name$n = "pcisig/footnotes";
 
 function run$b() {
   document.querySelectorAll("span.footnote").forEach((footnote, index) => {
@@ -7550,15 +7651,93 @@ function run$b() {
 
 var footnotes = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$m,
+  name: name$n,
   run: run$b
 });
 
 // @ts-check
 
-const name$n = "core/data-transform";
+const name$o = "pcisig/tablenotes";
 
 function run$c() {
+  console.log("in tablenotes");
+  const tableid_to_notes_entries = new Map();
+  //
+  // find all tables that contain elements with index entries, go through them sequentially
+  //
+  const note_list = document.querySelectorAll("table span.tablenote");
+  note_list.forEach(note => {
+    console.log(`tablenotes: note = ${note.outerHTML}`);
+    const table = note.closest("table");
+    if (table) {
+      addId(table, "tbl");
+      console.log(`tablenotes: tf.closest("table") = ${table.id}`);
+      if (!tableid_to_notes_entries.has(table.id)) {
+        tableid_to_notes_entries.set(table.id, []);
+        console.log(
+          `tablenotes: tableid_to_notes_entries.keys() = ${Array.from(
+            tableid_to_notes_entries.keys()
+          )}`
+        );
+      }
+      const ent = tableid_to_notes_entries.get(table.id);
+      const str = note.innerHTML;
+      // check to see if the entry is there already, if not add it
+      const initial_note = ent.indexOf(str) < 0;
+      if (initial_note) {
+        ent.push(str);
+      }
+      const tfnum = ent.indexOf(str) + 1;
+      // replace content of original element
+      const tfid = `${table.id}_tablenote_${tfnum}`;
+      note.innerHTML = `&nbsp;<a href="#li_${tfid}"><sup>[${tfnum}]</sup></a>`;
+    } else {
+      // should never happen since selector for note_list requires ancestor table element
+      note.classList.add("respec-error");
+    }
+  });
+
+  tableid_to_notes_entries.forEach((entries, tableid) => {
+    // for each table that has tablenotes
+    const table = document.getElementById(tableid);
+    const tbody = document.createElement("tbody");
+    tbody.classList.add("notes");
+    tbody.innerHTML =
+      '<tr><td colspan="1000"><b>Notes:</b><ol class="notes"></ol></td></tr>';
+    const tfcontainer = tbody.querySelector("ol.notes");
+    entries.forEach((entry, index) => {
+      // for each unique note in that table
+      const tfid = `${tableid}_tablenote_${index + 1}`;
+      const li = document.createElement("li");
+      console.log(`tablenotes: add li for "${tfid}"`);
+      li.id = `li_${tfid}`;
+      li.classList.add("tablenote-li");
+      const refs = table.querySelectorAll(`a[href="#${li.id}"]`);
+      const alist = [];
+      console.log(`tablenotes: refs.length = ${refs.length}`);
+      refs.forEach(a => {
+        a.setAttribute("id", `a_${tfid}_${alist.length + 1}`);
+        alist.push(`<a href="#${a.id}">&#8673;</a>&nbsp;`);
+      });
+      li.innerHTML = `${alist.join("")}${entry}`;
+      tfcontainer.appendChild(li);
+    });
+    console.log(`tablenotes: add notes tbody to "${table.id}"`);
+    table.appendChild(tbody);
+  });
+}
+
+var tablenotes = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  name: name$o,
+  run: run$c
+});
+
+// @ts-check
+
+const name$p = "core/data-transform";
+
+function run$d() {
   /** @type {NodeListOf<HTMLElement>} */
   const transformables = document.querySelectorAll("[data-transform]");
   transformables.forEach(el => {
@@ -7569,14 +7748,14 @@ function run$c() {
 
 var dataTransform = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$n,
-  run: run$c
+  name: name$p,
+  run: run$d
 });
 
 // @ts-check
-const name$o = "core/dfn-abbr";
+const name$q = "core/dfn-abbr";
 
-function run$d() {
+function run$e() {
   /** @type {NodeListOf<HTMLElement>} */
   const elements = document.querySelectorAll("[data-abbr]");
   for (const elem of elements) {
@@ -7625,8 +7804,8 @@ function generateAbbreviation(elem) {
 
 var dataAbbr = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$o,
-  run: run$d
+  name: name$q,
+  run: run$e
 });
 
 // @ts-check
@@ -8127,7 +8306,7 @@ const biblioDB = {
 // @ts-check
 const biblio = {};
 
-const name$p = "core/biblio";
+const name$r = "core/biblio";
 
 const bibrefsURL = new URL("https://specref.herokuapp.com/bibrefs?refs=");
 
@@ -8206,7 +8385,7 @@ async function resolveRef(key) {
   return entry;
 }
 
-async function run$e(conf) {
+async function run$f(conf) {
   const finish = () => {
     doneResolver$2(conf.biblio);
   };
@@ -8275,17 +8454,17 @@ async function run$e(conf) {
 var biblio$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
   biblio: biblio,
-  name: name$p,
+  name: name$r,
   updateFromNetwork: updateFromNetwork,
   resolveRef: resolveRef,
-  run: run$e,
+  run: run$f,
   wireReference: wireReference,
   stringifyReference: stringifyReference
 });
 
 // @ts-check
 
-const name$q = "core/render-biblio";
+const name$s = "core/render-biblio";
 
 const localizationStrings$3 = {
   en: {
@@ -8332,7 +8511,7 @@ const defaultsReference = Object.freeze({
 
 const endWithDot = endNormalizer(".");
 
-function run$f(conf) {
+function run$g(conf) {
   const informs = Array.from(conf.informativeReferences);
   const norms = Array.from(conf.normativeReferences);
 
@@ -8573,8 +8752,8 @@ function warnBadRefs(badRefs) {
 
 var renderBiblio = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$q,
-  run: run$f,
+  name: name$s,
+  run: run$g,
   renderInlineCitation: renderInlineCitation,
   wireReference: wireReference,
   stringifyReference: stringifyReference
@@ -8582,7 +8761,7 @@ var renderBiblio = /*#__PURE__*/Object.freeze({
 
 // @ts-check
 
-const name$r = "core/inlines";
+const name$t = "core/inlines";
 const rfc2119Usage = {};
 
 // Inline `code`
@@ -8741,7 +8920,7 @@ function processInlineContent(text) {
   return document.createTextNode(text);
 }
 
-function run$g(conf) {
+function run$h(conf) {
   const abbrMap = new Map();
   document.normalize();
   if (!document.querySelector("section#conformance")) {
@@ -8843,13 +9022,13 @@ function run$g(conf) {
 
 var inlines = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$r,
+  name: name$t,
   rfc2119Usage: rfc2119Usage,
-  run: run$g
+  run: run$h
 });
 
 // @ts-check
-const name$s = "pcisig/pcisig-conformance";
+const name$u = "pcisig/pcisig-conformance";
 
 /**
  * @param {Element} conformance
@@ -8884,7 +9063,7 @@ function processConformance(conformance) {
   conformance.prepend(...content.childNodes);
 }
 
-function run$h() {
+function run$i() {
   const conformance = document.querySelector("section#conformance");
   if (conformance) {
     processConformance(conformance);
@@ -8893,16 +9072,16 @@ function run$h() {
 
 var pcisigConformance = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$s,
-  run: run$h
+  name: name$u,
+  run: run$i
 });
 
 // Module pcisig/pre-dfn
 // Finds all <dfn> elements and adjust dfn-type attribute.
 
-const name$t = "pcisig/pre-dfn";
+const name$v = "pcisig/pre-dfn";
 
-function run$i() {
+function run$j() {
   const dfnClass = [
     "dfn",
     "pin",
@@ -8938,15 +9117,15 @@ function run$i() {
 
 var preDfn = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$t,
-  run: run$i
+  name: name$v,
+  run: run$j
 });
 
 // @ts-check
 
-const name$u = "core/dfn";
+const name$w = "core/dfn";
 
-function run$j() {
+function run$k() {
   document.querySelectorAll("dfn").forEach(dfn => {
     const titles = getDfnTitles(dfn);
     registerDefinition(dfn, titles);
@@ -8964,15 +9143,15 @@ function run$j() {
 
 var dfn = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$u,
-  run: run$j
+  name: name$w,
+  run: run$k
 });
 
 // @ts-check
 
-const name$v = "core/pluralize";
+const name$x = "core/pluralize";
 
-function run$k(conf) {
+function run$l(conf) {
   if (!conf.pluralize) return;
 
   const pluralizeDfn = getPluralizer();
@@ -9041,13 +9220,13 @@ function getPluralizer() {
 
 var pluralize$2 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$v,
-  run: run$k
+  name: name$x,
+  run: run$l
 });
 
 // @ts-check
 
-const name$w = "core/examples";
+const name$y = "core/examples";
 
 const localizationStrings$4 = {
   en: {
@@ -9101,7 +9280,7 @@ function makeTitle(elem, num, report) {
   `;
 }
 
-async function run$l() {
+async function run$m() {
   /** @type {NodeListOf<HTMLElement>} */
   const examples = document.querySelectorAll(
     "pre.example, pre.illegal-example, aside.example"
@@ -9172,13 +9351,13 @@ async function run$l() {
 
 var examples = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$w,
-  run: run$l
+  name: name$y,
+  run: run$m
 });
 
 // @ts-check
 
-const name$x = "core/issues-notes";
+const name$z = "core/issues-notes";
 
 const localizationStrings$5 = {
   en: {
@@ -9494,7 +9673,7 @@ async function fetchAndStoreGithubIssues(github) {
   return new Map(Object.entries(issues));
 }
 
-async function run$m(conf) {
+async function run$n(conf) {
   const query = ".issue, .note, .warning, .ednote, .impnote";
   /** @type {NodeListOf<HTMLElement>} */
   const issuesAndNotes = document.querySelectorAll(query);
@@ -9518,13 +9697,13 @@ async function run$m(conf) {
 
 var issuesNotes = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$x,
-  run: run$m
+  name: name$z,
+  run: run$n
 });
 
 // @ts-check
 
-const name$y = "core/best-practices";
+const name$A = "core/best-practices";
 
 const localizationStrings$6 = {
   en: {
@@ -9532,9 +9711,9 @@ const localizationStrings$6 = {
   },
 };
 const l10n$8 = getIntlData(localizationStrings$6);
-const lang$9 = lang in localizationStrings$6 ? lang : "en";
+const lang$a = lang in localizationStrings$6 ? lang : "en";
 
-function run$n() {
+function run$o() {
   /** @type {NodeListOf<HTMLElement>} */
   const bps = document.querySelectorAll(".practicelab");
   const bpSummary = document.getElementById("bp-summary");
@@ -9542,7 +9721,7 @@ function run$n() {
   [...bps].forEach((bp, num) => {
     const id = addId(bp, "bp");
     const localizedBpName = hyperHTML$2`
-      <a class="marker self-link" href="${`#${id}`}"><bdi lang="${lang$9}">${
+      <a class="marker self-link" href="${`#${id}`}"><bdi lang="${lang$a}">${
       l10n$8.best_practice
     }${num + 1}</bdi></a>`;
 
@@ -9584,8 +9763,8 @@ function run$n() {
 
 var bestPractices = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$y,
-  run: run$n
+  name: name$A,
+  run: run$o
 });
 
 // @ts-check
@@ -9741,7 +9920,7 @@ function getDataType(idlStruct) {
 
 // @ts-check
 
-const name$z = "pcisig/draw-csrs";
+const name$B = "pcisig/draw-csrs";
 
 /**
  * insert_unused_table_rows inserts "reserved" rows into a tables for
@@ -9965,7 +10144,7 @@ function mergeJSON(target, inputSrc) {
  * representing the table.
  * @returns {Promise<void>}
  */
-async function run$o() {
+async function run$p() {
   document
     .querySelectorAll("figure.regipct-generated")
     .forEach(item => item.remove());
@@ -9994,10 +10173,10 @@ async function run$o() {
 
 var drawCsrs = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$z,
+  name: name$B,
   insert_unused_table_rows: insert_unused_table_rows,
   parse_table: parse_table,
-  run: run$o
+  run: run$p
 });
 
 var commonjsGlobal$1 = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -10710,7 +10889,7 @@ var objectDefineProperties = descriptors ? Object.defineProperties : function de
   return O;
 };
 
-var html$3 = getBuiltIn('document', 'documentElement');
+var html$2 = getBuiltIn('document', 'documentElement');
 
 var IE_PROTO = sharedKey('IE_PROTO');
 
@@ -10728,7 +10907,7 @@ var createDict = function () {
   var js = 'java' + script + ':';
   var iframeDocument;
   iframe.style.display = 'none';
-  html$3.appendChild(iframe);
+  html$2.appendChild(iframe);
   iframe.src = String(js);
   iframeDocument = iframe.contentWindow.document;
   iframeDocument.open();
@@ -21007,7 +21186,7 @@ makeMorphable();
 // @ts-check
 // import css from "text!../../src/pcisig/css/regpict.css";
 
-const name$A = "pcisig/regpict";
+const name$C = "pcisig/regpict";
 
 const cssPromise$2 = loadStyle$4();
 
@@ -22189,7 +22368,7 @@ function copyAttribute(dest, src, attribute, property) {
   if (src.hasAttribute(attribute)) dest[property] = src.getAttribute(attribute);
 }
 
-async function run$p(conf) {
+async function run$q(conf) {
   pub("start", "core/regpict");
   if (!conf.noRegpictCSS) {
     const css = await cssPromise$2;
@@ -22302,14 +22481,14 @@ ${css}
 
 var regpict = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$A,
+  name: name$C,
   draw_regpict: draw_regpict,
-  run: run$p
+  run: run$q
 });
 
 // @ts-check
 
-const name$B = "core/figures";
+const name$D = "core/figures";
 
 const localizationStrings$7 = {
   en: {
@@ -22340,7 +22519,7 @@ const localizationStrings$7 = {
 
 const l10n$9 = getIntlData(localizationStrings$7);
 
-function run$q() {
+function run$r() {
   normalizeImages(document);
 
   const tof = collectFigures();
@@ -22484,13 +22663,13 @@ function* iteratePreviousElements(element) {
 
 var figures = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$B,
-  run: run$q
+  name: name$D,
+  run: run$r
 });
 
 // @ts-check
 
-const name$C = "core/equations";
+const name$E = "core/equations";
 
 const localizationStrings$8 = {
   en: {
@@ -22499,11 +22678,11 @@ const localizationStrings$8 = {
   },
 };
 
-const lang$a = lang in localizationStrings$8 ? lang : "en";
+const lang$b = lang in localizationStrings$8 ? lang : "en";
 
-const l10n$a = localizationStrings$8[lang$a];
+const l10n$a = localizationStrings$8[lang$b];
 
-function run$r() {
+function run$s() {
   normalizeImages$1(document);
 
   const toe = collectEquations();
@@ -22647,13 +22826,13 @@ function* iteratePreviousElements$1(element) {
 
 var equations = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$C,
-  run: run$r
+  name: name$E,
+  run: run$s
 });
 
 // @ts-check
 
-const name$D = "core/tables";
+const name$F = "core/tables";
 
 const localizationStrings$9 = {
   en: {
@@ -22662,11 +22841,11 @@ const localizationStrings$9 = {
   },
 };
 
-const lang$b = lang in localizationStrings$9 ? lang : "en";
+const lang$c = lang in localizationStrings$9 ? lang : "en";
 
-const l10n$b = localizationStrings$9[lang$b];
+const l10n$b = localizationStrings$9[lang$c];
 
-function run$s() {
+function run$t() {
   const tot = collectTables();
 
   // Create a Table of Tables if a section with id 'tot' exists.
@@ -22796,12 +22975,12 @@ function* iteratePreviousElements$2(element) {
 
 var tables = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$D,
-  run: run$s
+  name: name$F,
+  run: run$t
 });
 
 // @ts-check
-const name$E = "core/data-cite";
+const name$G = "core/data-cite";
 
 function requestLookup(conf) {
   const toCiteDetails = citeDetailsConverter(conf);
@@ -22936,7 +23115,7 @@ function citeDetailsConverter(conf) {
   };
 }
 
-async function run$t(conf) {
+async function run$u(conf) {
   const toCiteDetails = citeDetailsConverter(conf);
   /** @type {NodeListOf<HTMLElement>} */
   const cites = document.querySelectorAll("dfn[data-cite], a[data-cite]");
@@ -22992,8 +23171,8 @@ async function linkInlineCitations(doc, conf = respecConfig) {
 
 var dataCite = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$E,
-  run: run$t,
+  name: name$G,
+  run: run$u,
   linkInlineCitations: linkInlineCitations
 });
 
@@ -23109,7 +23288,7 @@ if (
  * @param {Object} conf respecConfig
  * @param {HTMLElement[]} elems possibleExternalLinks
  */
-async function run$u(conf, elems) {
+async function run$v(conf, elems) {
   const xref = normalizeConfig(conf.xref);
   if (xref.specs) {
     const bodyCite = document.body.dataset.cite
@@ -23462,7 +23641,7 @@ function bufferToHexString(buffer) {
 }
 
 // @ts-check
-const name$F = "core/link-to-dfn";
+const name$H = "core/link-to-dfn";
 
 const localizationStrings$a = {
   en: {
@@ -23506,7 +23685,7 @@ class CaseInsensitiveMap extends Map {
   }
 }
 
-async function run$v(conf) {
+async function run$w(conf) {
   const titleToDfns = mapTitleToDfns();
   /** @type {HTMLElement[]} */
   const possibleExternalLinks = [];
@@ -23536,7 +23715,7 @@ async function run$v(conf) {
   if (conf.xref) {
     possibleExternalLinks.push(...findExplicitExternalLinks());
     try {
-      await run$u(conf, possibleExternalLinks);
+      await run$v(conf, possibleExternalLinks);
     } catch (error) {
       console.error(error);
       showLinkingError(possibleExternalLinks);
@@ -23737,14 +23916,14 @@ function showLinkingError(elems) {
 
 var linkToDfn = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$F,
-  run: run$v
+  name: name$H,
+  run: run$w
 });
 
 // @ts-check
-const name$G = "core/contrib";
+const name$I = "core/contrib";
 
-async function run$w(conf) {
+async function run$x(conf) {
   const ghContributors = document.getElementById("gh-contributors");
   if (!ghContributors) {
     return;
@@ -23828,15 +24007,15 @@ function toHTML(contributors, element) {
 
 var contrib = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$G,
-  run: run$w
+  name: name$I,
+  run: run$x
 });
 
 // @ts-check
 
-const name$H = "core/fix-headers";
+const name$J = "core/fix-headers";
 
-function run$x() {
+function run$y() {
   [...document.querySelectorAll("section:not(.introductory)")]
     .map(sec => sec.querySelector("h1, h2, h3, h4, h5, h6"))
     .filter(h => h)
@@ -23857,8 +24036,8 @@ function getParents(el, selector) {
 
 var fixHeaders = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$H,
-  run: run$x
+  name: name$J,
+  run: run$y
 });
 
 // @ts-check
@@ -23866,7 +24045,7 @@ var fixHeaders = /*#__PURE__*/Object.freeze({
 const lowerHeaderTags = ["h2", "h3", "h4", "h5", "h6"];
 const headerTags = ["h1", ...lowerHeaderTags];
 
-const name$I = "core/structure";
+const name$K = "core/structure";
 
 const localizationStrings$b = {
   en: {
@@ -24033,7 +24212,7 @@ function filterHeader(h) {
   );
 }
 
-function run$y(conf) {
+function run$z(conf) {
   if ("tocIntroductory" in conf === false) {
     conf.tocIntroductory = false;
   }
@@ -24123,8 +24302,8 @@ function appendixNumber(index) {
 
 var structure$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$I,
-  run: run$y
+  name: name$K,
+  run: run$z
 });
 
 // Module pcisig/fig-tbl-eqn-numbering
@@ -24134,7 +24313,7 @@ var structure$1 = /*#__PURE__*/Object.freeze({
 // 1. core/figures runs before core/structure and thus doesn't know Chapter and Appendix numbers
 // 2. A second pass means that this plugin is not part of the src/core.
 
-const name$J = "pcisig/fig-tbl-eqn-numbering";
+const name$L = "pcisig/fig-tbl-eqn-numbering";
 
 function numberItems(sec, chapter, map, selector) {
   // Process Figure Captions, populating figNumMap
@@ -24156,7 +24335,7 @@ function renumberItems(selector, map) {
   });
 }
 
-function run$z(conf) {
+function run$A(conf) {
   if (conf.numberByChapter) {
     const chapterSecnos = document.querySelectorAll(
       "body > section:not(.introductory) h2:first-child bdi.secno"
@@ -24185,13 +24364,13 @@ function run$z(conf) {
 
 var figTblEqnNumbering = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$J,
-  run: run$z
+  name: name$L,
+  run: run$A
 });
 
 // @ts-check
 
-const name$K = "core/informative";
+const name$M = "core/informative";
 
 const localizationStrings$c = {
   en: {
@@ -24204,7 +24383,7 @@ const localizationStrings$c = {
 
 const l10n$e = getIntlData(localizationStrings$c);
 
-function run$A() {
+function run$B() {
   Array.from(document.querySelectorAll("section.informative"))
     .map(informative => informative.querySelector("h2, h3, h4, h5, h6"))
     .filter(heading => heading)
@@ -24215,8 +24394,8 @@ function run$A() {
 
 var informative = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$K,
-  run: run$A
+  name: name$M,
+  run: run$B
 });
 
 // @ts-check
@@ -24224,9 +24403,9 @@ var informative = /*#__PURE__*/Object.freeze({
 // All headings are expected to have an ID, unless their immediate container has one.
 // This is currently in core though it comes from a W3C rule. It may move in the future.
 
-const name$L = "core/id-headers";
+const name$N = "core/id-headers";
 
-function run$B(conf) {
+function run$C(conf) {
   /** @type {NodeListOf<HTMLElement>} */
   const headings = document.querySelectorAll(
     `section:not(.head):not(.introductory) h2, h3, h4, h5, h6, figcaption, caption, div.impnote-title, div.note-title`
@@ -24247,13 +24426,13 @@ function run$B(conf) {
 
 var idHeaders = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$L,
-  run: run$B
+  name: name$N,
+  run: run$C
 });
 
 // @ts-check
 
-const name$M = "core/caniuse";
+const name$O = "core/caniuse";
 
 const API_URL$1 = "https://respec.org/caniuse/";
 
@@ -24307,7 +24486,7 @@ async function loadStyle$5() {
   }
 }
 
-async function run$C(conf) {
+async function run$D(conf) {
   if (!conf.caniuse) {
     return; // nothing to do.
   }
@@ -24455,13 +24634,13 @@ function addBrowser([browserName, browserData]) {
 
 var caniuse = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$M,
-  run: run$C
+  name: name$O,
+  run: run$D
 });
 
 // @ts-check
 
-const name$N = "core/mdn-annoatation";
+const name$P = "core/mdn-annoatation";
 
 const SPEC_MAP_URL =
   "https://raw.githubusercontent.com/w3c/mdn-spec-links/master/SPECMAP.json";
@@ -24587,7 +24766,7 @@ function buildBrowserSupportTable(support) {
   return innerHTML;
 }
 
-async function run$D(conf) {
+async function run$E(conf) {
   const { shortName, mdn } = conf;
   if (!shortName || !mdn) {
     // Nothing to do if shortName is not provided
@@ -24639,8 +24818,8 @@ async function run$D(conf) {
 
 var mdnAnnotation = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$N,
-  run: run$D
+  name: name$P,
+  run: run$E
 });
 
 // @ts-check
@@ -24730,7 +24909,7 @@ expose("core/exporter", { rsDocToDataURL });
 
 // @ts-check
 
-const name$O = "ui/save-html";
+const name$Q = "ui/save-html";
 
 // Create and download an EPUB 3 version of the content
 // Using (by default) the EPUB 3 conversion service set up at labs.w3.org/epub-generator
@@ -24824,7 +25003,7 @@ function exportDocument(_, mimeType) {
 
 var saveHtml = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$O,
+  name: name$Q,
   exportDocument: exportDocument
 });
 
@@ -24949,9 +25128,9 @@ var aboutRespec = /*#__PURE__*/Object.freeze({
  * first paragraph of the abstract.
  */
 
-const name$P = "core/seo";
+const name$R = "core/seo";
 
-function run$E() {
+function run$F() {
   const firstParagraph = document.querySelector("#abstract p:first-of-type");
   if (!firstParagraph) {
     return; // no abstract, so nothing to do
@@ -24966,8 +25145,8 @@ function run$E() {
 
 var seo = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$P,
-  run: run$E
+  name: name$R,
+  run: run$F
 });
 
 // @ts-check
@@ -24983,7 +25162,7 @@ const localizationStrings$d = {
 
 const l10n$f = getIntlData(localizationStrings$d);
 
-const name$Q = "core/data-tests";
+const name$S = "core/data-tests";
 
 function toListItem(href) {
   const emojiList = [];
@@ -25031,7 +25210,7 @@ function toListItem(href) {
   return testList;
 }
 
-function run$F(conf) {
+function run$G(conf) {
   /** @type {NodeListOf<HTMLElement>} */
   const elems = document.querySelectorAll("[data-tests]");
   const testables = [...elems].filter(elem => elem.dataset.tests);
@@ -25106,12 +25285,12 @@ function toHTML$1(testURLs) {
 
 var dataTests = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$Q,
-  run: run$F
+  name: name$S,
+  run: run$G
 });
 
 // @ts-check
-const name$R = "core/list-sorter";
+const name$T = "core/list-sorter";
 
 function makeSorter(direction) {
   return ({ textContent: a }, { textContent: b }) => {
@@ -25164,7 +25343,7 @@ function sortDefinitionTerms(dl, dir) {
   return sortedElements;
 }
 
-function run$G() {
+function run$H() {
   /** @type {NodeListOf<HTMLElement>} */
   const sortables = document.querySelectorAll("[data-sort]");
   for (const elem of sortables) {
@@ -25196,17 +25375,17 @@ function run$G() {
 
 var listSorter = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$R,
+  name: name$T,
   sortListItems: sortListItems,
   sortDefinitionTerms: sortDefinitionTerms,
-  run: run$G
+  run: run$H
 });
 
 // Constructs "dfn panels" which show all the local references to a dfn and a
 
-const name$S = "core/dfn-panel";
+const name$U = "core/dfn-panel";
 
-async function run$H() {
+async function run$I() {
   const css = await loadStyle$7();
   document.head.insertBefore(
     hyperHTML$2`<style>${css}</style>`,
@@ -25368,13 +25547,13 @@ async function loadStyle$7() {
 
 var dfnPanel = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$S,
-  run: run$H
+  name: name$U,
+  run: run$I
 });
 
 // @ts-check
 
-const name$T = "core/data-type";
+const name$V = "core/data-type";
 
 const tooltipStylePromise = loadStyle$8();
 
@@ -25386,7 +25565,7 @@ async function loadStyle$8() {
   }
 }
 
-async function run$I(conf) {
+async function run$J(conf) {
   if (!conf.highlightVars) {
     return;
   }
@@ -25416,13 +25595,13 @@ async function run$I(conf) {
 
 var dataType = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$T,
-  run: run$I
+  name: name$V,
+  run: run$J
 });
 
 // @ts-check
 
-const name$U = "core/algorithms";
+const name$W = "core/algorithms";
 
 const cssPromise$3 = loadStyle$9();
 
@@ -25434,7 +25613,7 @@ async function loadStyle$9() {
   }
 }
 
-async function run$J() {
+async function run$K() {
   const elements = Array.from(document.querySelectorAll("ol.algorithm li"));
   elements
     .filter(li => li.textContent.trim().startsWith("Assert: "))
@@ -25448,17 +25627,17 @@ async function run$J() {
 
 var algorithms = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$U,
-  run: run$J
+  name: name$W,
+  run: run$K
 });
 
 // @ts-check
 
-const name$V = "core/anchor-expander";
+const name$X = "core/anchor-expander";
 
 let sectionRefsByNumber = false;
 
-function run$K(conf) {
+function run$L(conf) {
   if (conf.hasOwnProperty("sectionRefsByNumber")) {
     sectionRefsByNumber = conf.sectionRefsByNumber;
   }
@@ -25661,15 +25840,15 @@ function localize(matchingElement, newElement) {
 
 var anchorExpander = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$V,
-  run: run$K
+  name: name$X,
+  run: run$L
 });
 
 // @ts-check
 
-const name$W = "pcisig/include-final-config";
+const name$Y = "pcisig/include-final-config";
 
-function run$L(conf) {
+function run$M(conf) {
   const script = document.createElement("script");
   script.id = "finalUserConfig";
   script.type = "application/json";
@@ -25679,13 +25858,13 @@ function run$L(conf) {
 
 var includeFinalConfig = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$W,
-  run: run$L
+  name: name$Y,
+  run: run$M
 });
 
 // @ts-check
 
-const name$X = "rs-changelog";
+const name$Z = "rs-changelog";
 
 const element = class ChangelogElement extends HTMLElement {
   constructor() {
@@ -25763,7 +25942,7 @@ async function toHTML$2(commits) {
 
 var changelog = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$X,
+  name: name$Z,
   element: element
 });
 
@@ -25771,9 +25950,9 @@ var changelog = /*#__PURE__*/Object.freeze({
 /** @type {CustomElementDfn[]} */
 const CUSTOM_ELEMENTS = [changelog];
 
-const name$Y = "core/custom-elements";
+const name$_ = "core/custom-elements";
 
-async function run$M() {
+async function run$N() {
   // prepare and register elements
   CUSTOM_ELEMENTS.forEach(el => {
     customElements.define(el.name, el.element);
@@ -25790,8 +25969,8 @@ async function run$M() {
 
 var index = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  name: name$Y,
-  run: run$M
+  name: name$_,
+  run: run$N
 });
 
 var ui$2 = "#respec-ui {\n  position: fixed;\n  display: flex;\n  flex-direction: row-reverse;\n  top: 20px;\n  right: 20px;\n  width: 202px;\n  text-align: right;\n  z-index: 9000;\n}\n\n#respec-pill,\n.respec-info-button {\n  background: #fff;\n  height: 2.5em;\n  color: rgb(120, 120, 120);\n  border: 1px solid #ccc;\n  box-shadow: 1px 1px 8px 0 rgba(100, 100, 100, 0.5);\n}\n\n.respec-info-button {\n  border: none;\n  opacity: 0.75;\n  border-radius: 2em;\n  margin-right: 1em;\n  min-width: 3.5em;\n}\n\n.respec-info-button:focus,\n.respec-info-button:hover {\n  opacity: 1;\n  transition: opacity 0.2s;\n}\n\n#respec-pill:disabled {\n  font-size: 2.8px;\n  text-indent: -9999em;\n  border-top: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-right: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-bottom: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-left: 1.1em solid #ffffff;\n  transform: translateZ(0);\n  animation: respec-spin 0.5s infinite linear;\n  box-shadow: none;\n}\n\n#respec-pill:disabled,\n#respec-pill:disabled:after {\n  border-radius: 50%;\n  width: 10em;\n  height: 10em;\n}\n\n@keyframes respec-spin {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n\n.respec-hidden {\n  visibility: hidden;\n  opacity: 0;\n  transition: visibility 0s 0.2s, opacity 0.2s linear;\n}\n\n.respec-visible {\n  visibility: visible;\n  opacity: 1;\n  transition: opacity 0.2s linear;\n}\n\n#respec-pill:hover,\n#respec-pill:focus {\n  color: rgb(0, 0, 0);\n  background-color: rgb(245, 245, 245);\n  transition: color 0.2s;\n}\n\n#respec-menu {\n  position: absolute;\n  margin: 0;\n  padding: 0;\n  font-family: sans-serif;\n  background: #fff;\n  box-shadow: 1px 1px 8px 0 rgba(100, 100, 100, 0.5);\n  width: 200px;\n  display: none;\n  text-align: left;\n  margin-top: 32px;\n  font-size: 0.8em;\n}\n\n#respec-menu:not([hidden]) {\n  display: block;\n}\n\n#respec-menu li {\n  list-style-type: none;\n  margin: 0;\n  padding: 0;\n}\n\n.respec-save-buttons {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(47%, 2fr));\n  grid-gap: 0.5cm;\n  padding: 0.5cm;\n}\n\n.respec-save-button:link {\n  padding-top: 16px;\n  color: rgb(240, 240, 240);\n  background: rgb(42, 90, 168);\n  justify-self: stretch;\n  height: 1cm;\n  text-decoration: none;\n  text-align: center;\n  font-size: inherit;\n  border: none;\n  border-radius: 0.2cm;\n}\n\n.respec-save-button:link:hover {\n  color: white;\n  background: rgb(42, 90, 168);\n  padding: 0;\n  margin: 0;\n  border: 0;\n  padding-top: 16px;\n}\n\n#respec-ui button:focus,\n#respec-pill:focus,\n.respec-option:focus {\n  outline: 0;\n  outline-style: none;\n}\n\n#respec-pill-error {\n  background-color: red;\n  color: white;\n}\n\n#respec-pill-warning {\n  background-color: orange;\n  color: white;\n}\n\n.respec-warning-list,\n.respec-error-list {\n  margin: 0;\n  padding: 0;\n  list-style: none;\n  font-family: sans-serif;\n  background-color: rgb(255, 251, 230);\n  font-size: 0.85em;\n}\n\n.respec-warning-list > li,\n.respec-error-list > li {\n  padding: 0.4em 0.7em;\n}\n\n.respec-warning-list > li::before {\n  content: \"⚠️\";\n  padding-right: 0.5em;\n}\n.respec-warning-list p,\n.respec-error-list p {\n  padding: 0;\n  margin: 0;\n}\n\n.respec-warning-list li {\n  color: rgb(92, 59, 0);\n  border-bottom: thin solid rgb(255, 245, 194);\n}\n\n.respec-error-list,\n.respec-error-list li {\n  background-color: rgb(255, 240, 240);\n}\n\n.respec-error-list li::before {\n  content: \"💥\";\n  padding-right: 0.5em;\n}\n\n.respec-error-list li {\n  padding: 0.4em 0.7em;\n  color: rgb(92, 59, 0);\n  border-bottom: thin solid rgb(255, 215, 215);\n}\n\n.respec-error-list li > p {\n  margin: 0;\n  padding: 0;\n  display: inline-block;\n}\n\n#respec-overlay {\n  display: block;\n  position: fixed;\n  z-index: 10000;\n  top: 0px;\n  left: 0px;\n  height: 100%;\n  width: 100%;\n  background: #000;\n}\n\n.respec-show-overlay {\n  transition: opacity 0.2s linear;\n  opacity: 0.5;\n}\n\n.respec-hide-overlay {\n  transition: opacity 0.2s linear;\n  opacity: 0;\n}\n\n.respec-modal {\n  display: block;\n  position: fixed;\n  z-index: 11000;\n  margin: auto;\n  top: 10%;\n  background: #fff;\n  border: 5px solid #666;\n  min-width: 20%;\n  width: 79%;\n  padding: 0;\n  max-height: 80%;\n  overflow-y: auto;\n  margin: 0 -0.5cm;\n}\n\n@media screen and (min-width: 78em) {\n  .respec-modal {\n    width: 62%;\n  }\n}\n\n.respec-modal h3 {\n  margin: 0;\n  padding: 0.2em;\n  text-align: center;\n  color: black;\n  background: linear-gradient(\n    to bottom,\n    rgba(238, 238, 238, 1) 0%,\n    rgba(238, 238, 238, 1) 50%,\n    rgba(204, 204, 204, 1) 100%\n  );\n  font-size: 1em;\n}\n\n.respec-modal .inside div p {\n  padding-left: 1cm;\n}\n\n#respec-menu button.respec-option {\n  background: white;\n  padding: 0 0.2cm;\n  border: none;\n  width: 100%;\n  text-align: left;\n  font-size: inherit;\n  padding: 1.2em 1.2em;\n}\n\n#respec-menu button.respec-option:hover,\n#respec-menu button:focus {\n  background-color: #eeeeee;\n}\n\n.respec-cmd-icon {\n  padding-right: 0.5em;\n}\n\n#respec-ui button.respec-option:last-child {\n  border: none;\n  border-radius: inherit;\n}\n\n.respec-button-copy-paste {\n  position: absolute;\n  height: 28px;\n  width: 40px;\n  cursor: pointer;\n  background-image: linear-gradient(#fcfcfc, #eee);\n  border: 1px solid rgb(144, 184, 222);\n  border-left: 0;\n  border-radius: 0px 0px 3px 0;\n  -webkit-user-select: none;\n  user-select: none;\n  -webkit-appearance: none;\n  top: 0;\n  left: 127px;\n}\n\n#specref-ui {\n  margin: 0 2%;\n  margin-bottom: 0.5cm;\n}\n\n#specref-ui header {\n  font-size: 0.7em;\n  background-color: #eee;\n  text-align: center;\n  padding: 0.2cm;\n  margin-bottom: 0.5cm;\n  border-radius: 0 0 0.2cm 0.2cm;\n}\n\n#specref-ui header h1 {\n  padding: 0;\n  margin: 0;\n  color: black;\n}\n\n#specref-ui p {\n  padding: 0;\n  margin: 0;\n  font-size: 0.8em;\n  text-align: center;\n}\n\n#specref-ui p.state {\n  margin: 1cm;\n}\n\n#specref-ui .searchcomponent {\n  font-size: 16px;\n  display: grid;\n  grid-template-columns: auto 2cm;\n}\n#specref-ui .searchcomponent:focus {\n}\n\n#specref-ui input,\n#specref-ui button {\n  border: 0;\n  padding: 6px 12px;\n}\n\n#specref-ui label {\n  font-size: 0.6em;\n  grid-column-end: 3;\n  text-align: right;\n  grid-column-start: 1;\n}\n\n#specref-ui input[type=\"search\"] {\n  -webkit-appearance: none;\n  font-size: 16px;\n  border-radius: 0.1cm 0 0 0.1cm;\n  border: 1px solid rgb(204, 204, 204);\n}\n\n#specref-ui button[type=\"submit\"] {\n  color: white;\n  border-radius: 0 0.1cm 0.1cm 0;\n  background-color: rgb(51, 122, 183);\n}\n\n#specref-ui button[type=\"submit\"]:hover {\n  background-color: #286090;\n  border-color: #204d74;\n}\n\n#specref-ui .result-stats {\n  margin: 0;\n  padding: 0;\n  color: rgb(128, 128, 128);\n  font-size: 0.7em;\n  font-weight: bold;\n}\n\n#specref-ui .specref-results {\n  font-size: 0.8em;\n}\n\n#specref-ui .specref-results dd + dt {\n  margin-top: 0.51cm;\n}\n\n#specref-ui .specref-results a {\n  text-transform: capitalize;\n}\n#specref-ui .specref-results .authors {\n  display: block;\n  color: #006621;\n}\n\n@media print {\n  #respec-ui {\n    display: none;\n  }\n}\n\n#xref-ui {\n  width: 100%;\n  min-height: 550px;\n  height: 100%;\n  overflow: hidden;\n  padding: 0;\n  margin: 0;\n  border: 0;\n}\n\n#xref-ui:not(.ready) {\n  background: url(\"https://respec.org/xref/loader.gif\") no-repeat center;\n}\n";
