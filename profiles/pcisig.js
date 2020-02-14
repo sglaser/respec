@@ -21,6 +21,7 @@ const modules = [
   import("../src/pcisig/pcisig-headers.js"),
   import("../src/pcisig/footnotes.js"),
   // import("../src/w3c/abstract.js"),
+  import("../src/pcisig/tablenotes.js"),
   import("../src/core/data-transform.js"),
   import("../src/core/data-abbr.js"),
   import("../src/core/inlines.js"),
