@@ -1,5 +1,5 @@
 // @ts-check
-import { getIntlData } from "../../core/l10n";
+import { getIntlData } from "../../core/l10n.js";
 import { hyperHTML as html } from "../../core/import-maps.js";
 import { norm } from "../../core/utils.js";
 import { pub } from "../../core/pubsubhub.js";
