@@ -1,18 +1,20 @@
 /**
  * Sets the defaults for pcisig specs
  */
+export const name = "pcisig/pcisig-defaults";
+
 import { coreDefaults } from "../core/defaults.js";
 import { definitionMap } from "../core/dfn-map.js";
 import linter from "../core/linter.js";
 import { rule as privsecSectionRule } from "../core/linter-rules/privsec-section.js";
+import { rule as wptTestsExist } from "../core/linter-rules/wpt-tests-exist.js";
 
-export const name = "pcisig/pcisig-defaults";
-
-linter.register(privsecSectionRule);
+linter.register(privsecSectionRule, wptTestsExist);
 
 const pcisigDefaults = {
   lint: {
     "privsec-section": true,
+    "wpt-tests-exist": false,
   },
   pluralize: true,
   doJsonLd: false,
