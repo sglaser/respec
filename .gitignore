@@ -1,5 +1,7 @@
 scratch
 .DS_Store
+Old/
+Archive/
 *~
 /node_modules
 .htaccess
