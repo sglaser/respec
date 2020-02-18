@@ -24,7 +24,7 @@ export function run(conf, doc) {
     titles[title] = {};
     conf.definitionMap[title].forEach(dfn => {
       if (dfn.attr("id") === undefined) {
-        addId(dfn,"dfn", title);
+        addId(dfn, "dfn", title);
       }
       const dfn_for = dfn.attr("data-dfn-for") || "";
       if (dfn_for in titles[title]) {
