@@ -1,5 +1,5 @@
 // @ts-check
-import { getIntlData } from "../../core/l10n.js";
+import { getIntlData } from "../../core/utils.js";
 import { hyperHTML as html } from "../../core/import-maps.js";
 
 const localizationStrings = {
@@ -21,6 +21,9 @@ const localizationStrings = {
   es: {
     sotd: "Estado de este Document",
   },
+  de: {
+    sotd: "Status dieses Dokuments",
+  },
 };
 
 export const l10n = getIntlData(localizationStrings);
@@ -36,7 +39,7 @@ export default (conf, opts) => {
       : conf.isNoTrack
       ? renderIsNoTrack(conf, opts)
       : html`
-          <p><em>${[conf.l10n.status_at_publication]}</em></p>
+          <p><em>${conf.l10n.status_at_publication}</em></p>
           ${conf.isSubmission
             ? noteForSubmission(conf, opts)
             : html`

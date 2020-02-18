@@ -8,8 +8,13 @@
 //  - lang: can change the generated text (supported: en, fr)
 //  - maxTocLevel: only generate a TOC so many levels deep
 
-import { addId, children, parents, renameElement, wrapInner } from "./utils.js";
-import { getIntlData } from "../core/l10n.js";
+import {
+  addId,
+  children,
+  getIntlData,
+  parents,
+  renameElement,
+} from "./utils.js";
 import { hyperHTML } from "./import-maps.js";
 
 const lowerHeaderTags = ["h2", "h3", "h4", "h5", "h6"];
@@ -24,6 +29,15 @@ const localizationStrings = {
     chapter: "Chapter ",
     appendix: "Appendix ",
   },
+  zh: {
+    toc: "内容大纲",
+  },
+  ko: {
+    toc: "목차",
+  },
+  ja: {
+    toc: "目次",
+  },
   nl: {
     toc: "Inhoudsopgave",
     section: "Section ", // TODO translate
@@ -35,6 +49,9 @@ const localizationStrings = {
     section: "Section ", // TODO: translate
     chapter: "Chapter ", // TODO: translate
     appendix: "Appendix ", // TODO: translate
+  },
+  de: {
+    toc: "Inhaltsverzeichnis",
   },
 };
 

@@ -6,7 +6,6 @@
 //  - don't use generated content in the CSS!
 import {
   addHashId,
-  flatten,
   showInlineError,
   showInlineWarning,
   xmlEscape,
@@ -25,7 +24,7 @@ const idlPartials = {};
 const templates = {
   wrap(items) {
     return items
-      .reduce(flatten, [])
+      .flat()
       .filter(x => x !== "")
       .map(x => (typeof x === "string" ? new Text(x) : x));
   },
@@ -349,10 +348,10 @@ function renderWebIDL(idlElement, index) {
  */
 export function addIDLHeader(pre) {
   addHashId(pre, "webidl");
-  const header = hyperHTML`<div class="idlHeader"><a
+  const header = hyperHTML`<span class="idlHeader"><a
       class="self-link"
       href="${`#${pre.id}`}"
-    >WebIDL</a></div>`;
+    >WebIDL</a></span>`;
   pre.prepend(header);
   addCopyIDLButton(header);
 }

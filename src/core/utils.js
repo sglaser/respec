@@ -292,6 +292,39 @@ export function norm(str) {
   return str.trim().replace(/\s+/g, " ");
 }
 
+/**
+ * @param {string} lang
+ */
+function resolveLanguageAlias(lang) {
+  const aliases = {
+    "zh-hans": "zh",
+    "zh-cn": "zh",
+  };
+  return aliases[lang] || lang;
+}
+
+/**
+ * @template {Record<string, Record<string, string|Function>>} T
+ * @param {T} localizationStrings
+ * @returns {T[keyof T]}
+ */
+export function getIntlData(localizationStrings, lang = docLang) {
+  lang = resolveLanguageAlias(lang);
+  // Proxy return type is a known bug:
+  // https://github.com/Microsoft/TypeScript/issues/20846
+  // @ts-ignore
+  return new Proxy(localizationStrings, {
+    /** @param {string} key */
+    get(data, key) {
+      const result = (data[lang] && data[lang][key]) || data.en[key];
+      if (!result) {
+        throw new Error(`No l10n data for key: "${key}"`);
+      }
+      return result;
+    },
+  });
+}
+
 // --- DATE HELPERS -------------------------------------------------------------------------------
 // Takes a Date object and an optional separator and returns the year,month,day representation with
 // the custom separator (defaulting to none) and proper 0-padding
@@ -368,18 +401,14 @@ export function linkCSS(doc, styles) {
 // with RSv1. It is therefore not tested and not actively supported.
 /**
  * @this {any}
+ * @param {string} content
  * @param {string} [flist]
  */
-export function runTransforms(content, flist) {
-  let args = [this, content];
-  const funcArgs = Array.from(arguments);
-  funcArgs.shift();
-  funcArgs.shift();
-  args = args.concat(funcArgs);
+export function runTransforms(content, flist, ...funcArgs) {
+  const args = [this, content, ...funcArgs];
   if (flist) {
     const methods = flist.split(/\s+/);
-    for (let j = 0; j < methods.length; j++) {
-      const meth = methods[j];
+    for (const meth of methods) {
       /** @type {any} */
       const method = window[meth];
       if (method) {
@@ -455,23 +484,13 @@ export async function fetchAndCache(input, maxAge = 86400000) {
   return response;
 }
 
-// --- COLLECTION/ITERABLE HELPERS ---------------
-/**
- * Spreads one iterable into another.
- *
- * @param {Array} collector
- * @param {any|Array} item
- * @returns {Array}
- */
-export function flatten(collector, item) {
-  const items = !Array.isArray(item)
-    ? [item]
-    : item.slice().reduce(flatten, []);
-  collector.push(...items);
-  return collector;
-}
-
 // --- DOM HELPERS -------------------------------
+
+export function htmlJoinComma(array, mapper = item => item) {
+  const items = array.map(mapper);
+  const joined = items.slice(0, -1).map(item => hyperHTML`${item}, `);
+  return hyperHTML`${joined}${items[items.length - 1]}`;
+}
 
 /**
  * Separates each item with proper commas and "and".
@@ -487,8 +506,8 @@ export function htmlJoinAnd(array, mapper = item => item) {
     case 2: // x and y
       return hyperHTML`${items[0]} and ${items[1]}`;
     default: {
-      const joinedItems = items.slice(0, -1).map(item => hyperHTML`${item}, `);
-      return hyperHTML`${joinedItems}and ${items[items.length - 1]}`;
+      const joined = htmlJoinComma(items.slice(0, -1));
+      return hyperHTML`${joined}, and ${items[items.length - 1]}`;
     }
   }
 }
@@ -777,6 +796,29 @@ export function children(element, selector) {
 }
 
 /**
+ * Calculates indentation when the element starts after a newline.
+ * The value will be empty if no newline or any non-whitespace exists after one.
+ * @param {Element} element
+ *
+ * @example `    <div></div>` returns "    " (4 spaces).
+ */
+export function getElementIndentation(element) {
+  const { previousSibling } = element;
+  if (!previousSibling || previousSibling.nodeType !== Node.TEXT_NODE) {
+    return "";
+  }
+  const index = previousSibling.textContent.lastIndexOf("\n");
+  if (index === -1) {
+    return "";
+  }
+  const slice = previousSibling.textContent.slice(index + 1);
+  if (/\S/.test(slice)) {
+    return "";
+  }
+  return slice;
+}
+
+/**
  * Generates simple ids. The id's increment after it yields.
  *
  * @param {String} namespace A string like "highlight".
@@ -873,5 +915,44 @@ export function removeCommentNodes(node) {
 function* walkTree(walker) {
   while (walker.nextNode()) {
     yield /** @type {T} */ (walker.currentNode);
+  }
+}
+
+export class CaseInsensitiveMap extends Map {
+  /**
+   * @param {Array<[String, HTMLElement]>} [entries]
+   */
+  constructor(entries = []) {
+    super();
+    entries.forEach(([key, elem]) => {
+      this.set(key, elem);
+    });
+    return this;
+  }
+  /**
+   * @param {String} key
+   * @param {*} value
+   */
+  set(key, value) {
+    super.set(key.toLowerCase(), value);
+    return this;
+  }
+  /**
+   * @param {String} key
+   */
+  get(key) {
+    return super.get(key.toLowerCase());
+  }
+  /**
+   * @param {String} key
+   */
+  has(key) {
+    return super.has(key.toLowerCase());
+  }
+  /**
+   * @param {String} key
+   */
+  delete(key) {
+    return super.delete(key.toLowerCase());
   }
 }
