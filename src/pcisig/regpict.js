@@ -5,7 +5,7 @@
 // svg diagram that represents the fields in the table.
 
 import { addId, showInlineError } from "../core/utils.js";
-import { SVG } from "../../js/deps/builds/svg.esm.js";
+import { SVG } from "../../js/deps/svg.esm.js";
 import { fetchAsset } from "../core/text-loader.js";
 import { hyperHTML } from "../core/import-maps.js";
 // import { parse_table } from "./draw-csrs.js";
