@@ -47,6 +47,7 @@ export function run(conf) {
         processTable(matchingElement, id, a);
         break;
       }
+      case "p":
       case "aside":
       case "div": {
         processBox(matchingElement, id, a);
@@ -94,8 +95,9 @@ function processBox(matchingElement, id, a) {
 function processFigure(matchingElement, id, a) {
   const figcaption = matchingElement.querySelector("figcaption");
   const figEqn =
-    !matchingElement.classList ||
-    (!matchingElement.classList.contains("equation") ? "fig" : "eqn");
+    matchingElement.classList && matchingElement.classList.contains("equation")
+      ? "eqn"
+      : "fig";
   if (!figcaption) {
     a.textContent = a.getAttribute("href");
     const msg = `Found matching figure "${id}", but figure is lacking a \`<figcaption>\`.`;
