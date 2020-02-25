@@ -8,25 +8,25 @@ import { addId } from "../core/utils.js";
 export const name = "pcisig/tablenotes";
 
 export function run() {
-  console.log("in tablenotes");
+  // console.log("in tablenotes");
   const tableid_to_notes_entries = new Map();
   //
   // find all tables that contain elements with index entries, go through them sequentially
   //
   const note_list = document.querySelectorAll("table span.tablenote");
   note_list.forEach(note => {
-    console.log(`tablenotes: note = ${note.outerHTML}`);
+    // console.log(`tablenotes: note = ${note.outerHTML}`);
     const table = note.closest("table");
     if (table) {
       addId(table, "tbl");
-      console.log(`tablenotes: tf.closest("table") = ${table.id}`);
+      // console.log(`tablenotes: tf.closest("table") = ${table.id}`);
       if (!tableid_to_notes_entries.has(table.id)) {
         tableid_to_notes_entries.set(table.id, []);
-        console.log(
-          `tablenotes: tableid_to_notes_entries.keys() = ${Array.from(
-            tableid_to_notes_entries.keys()
-          )}`
-        );
+        // console.log(
+        //   `tablenotes: tableid_to_notes_entries.keys() = ${Array.from(
+        //     tableid_to_notes_entries.keys()
+        //   )}`
+        // );
       }
       const ent = tableid_to_notes_entries.get(table.id);
       const str = note.innerHTML;
@@ -57,12 +57,12 @@ export function run() {
       // for each unique note in that table
       const tfid = `${tableid}_tablenote_${index + 1}`;
       const li = document.createElement("li");
-      console.log(`tablenotes: add li for "${tfid}"`);
+      // console.log(`tablenotes: add li for "${tfid}"`);
       li.id = `li_${tfid}`;
       li.classList.add("tablenote-li");
       const refs = table.querySelectorAll(`a[href="#${li.id}"]`);
       const alist = [];
-      console.log(`tablenotes: refs.length = ${refs.length}`);
+      // console.log(`tablenotes: refs.length = ${refs.length}`);
       refs.forEach(a => {
         a.setAttribute("id", `a_${tfid}_${alist.length + 1}`);
         alist.push(`<a href="#${a.id}">&#8673;</a>&nbsp;`);
@@ -70,7 +70,7 @@ export function run() {
       li.innerHTML = `${alist.join("")}${entry}`;
       tfcontainer.appendChild(li);
     });
-    console.log(`tablenotes: add notes tbody to "${table.id}"`);
+    // console.log(`tablenotes: add notes tbody to "${table.id}"`);
     table.appendChild(tbody);
   });
 }
