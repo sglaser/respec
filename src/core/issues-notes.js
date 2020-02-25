@@ -24,6 +24,7 @@ const localizationStrings = {
     feature_at_risk: "(Feature at Risk) Issue",
     issue: "Issue",
     issue_summary: "Issue Summary",
+    implementation_note: "Implementation Note",
     no_issues_in_spec: "There are no issues listed in this specification.",
     note: "Note",
     warning: "Warning",
