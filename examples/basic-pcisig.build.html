@@ -10,9 +10,8 @@
     <script async="async"
           class="remove"
           src="../builds/respec-pcisig.js"></script><!--<script async
-          class='remove'
-          src='../js/profile-pcisig.js'></script>-->
-
+            class='remove'
+            src='../profiles/pcisig.js'></script>-->
     <script class="remove">
     const respecConfig = {
       specStatus: "WD",
@@ -32,6 +31,19 @@
       cssOverride: "../Spec/StyleSheets/2019/base.css"
     };
     </script>
+    <style>
+      span.tablenote {
+        font-variant: all-small-caps;
+      }
+    </style>
+    <!--<style>
+      span.xxxtablenote::before {
+        content: " →";
+      }
+      span.xxxtablenote::after {
+        content: "← ";
+      }
+    </style>-->
   </head>
   <body>
     <nav id="toc"></nav>
@@ -141,10 +153,10 @@
         <tbody>
           <tr>
             <td>
-              Data 3
+              Data 3<span class="tablenote">Data 3 Tablenote</span>
             </td>
             <td>
-              Data 4
+              Data 4<span class="tablenote">Data 4 Tablenote</span>
             </td>
           </tr>
         </tbody>
@@ -167,10 +179,10 @@
         <tbody>
           <tr>
             <td>
-              Data 5
+              Data 5<span class="tablenote">Data 5/6 Tablenote</span>
             </td>
             <td>
-              Data 6
+              Data 6<span class="tablenote">Data 5/6 Tablenote</span>
             </td>
           </tr>
           <tr>
@@ -178,7 +190,7 @@
               Subtable
             </td>
             <td>
-              <table class="data complex">
+              <table class="data complex" id="first-subtable">
                 <thead>
                   <tr>
                     <th>
@@ -192,10 +204,10 @@
                 <tbody>
                   <tr>
                     <td>
-                      Data 9
+                      Data 9<span class="tablenote">Data 9 Tablenote</span>
                     </td>
                     <td>
-                      Data 10
+                      Data 10<span class="tablenote">Data 10 Tablenote</span>
                     </td>
                   </tr>
                 </tbody>
@@ -204,7 +216,7 @@
           </tr>
           <tr>
             <td>
-              Data 11
+              Data 11<span class="tablenote">Data 11 Tablenote</span>
             </td>
             <td>
               Data 12
@@ -1040,7 +1052,7 @@
                 <p>
                   Four time value ranges are defined:
                 </p>
-                <dl>
+                <dl class="wide">
                   <dt>
                     Range A
                   </dt>
