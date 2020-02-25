@@ -10,7 +10,6 @@
 
 import {
   addId,
-  children,
   getIntlData,
   parents,
   renameElement,
