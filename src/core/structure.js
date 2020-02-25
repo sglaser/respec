@@ -14,6 +14,7 @@ import {
   getIntlData,
   parents,
   renameElement,
+  wrapInner,
 } from "./utils.js";
 import { hyperHTML } from "./import-maps.js";
 
