@@ -41,15 +41,9 @@ const localizationStrings = {
   },
   nl: {
     toc: "Inhoudsopgave",
-    section: "Section ", // TODO translate
-    chapter: "Chapter ", // TODO: translate
-    appendix: "Appendix ", // TODO: translate
   },
   es: {
     toc: "Tabla de Contenidos",
-    section: "Section ", // TODO: translate
-    chapter: "Chapter ", // TODO: translate
-    appendix: "Appendix ", // TODO: translate
   },
   de: {
     toc: "Inhaltsverzeichnis",
@@ -66,6 +60,7 @@ const l10n = getIntlData(localizationStrings);
  * Scans sections and generate ordered list element + ID-to-anchor-content dictionary.
  * @param {Section[]} sections the target element to find child sections
  * @param {number} maxTocLevel
+ * @param {String} prefix
  */
 function scanSections(sections, maxTocLevel, { prefix = "" } = {}) {
   let appendixMode = false;
@@ -139,10 +134,10 @@ function scanSections(sections, maxTocLevel, { prefix = "" } = {}) {
  * @param {Element} parent
  */
 function getSectionTree(parent, { tocIntroductory = false } = {}) {
-  const sectionElements = children(
-    parent,
-    tocIntroductory ? "section" : "section:not(.introductory)"
-  );
+  /** @type {NodeListOf<HTMLElement>} */
+  const sectionElements = tocIntroductory
+    ? parent.querySelectorAll(":scope > section")
+    : parent.querySelectorAll(":scope > section:not(.introductory)");
   /** @type {Section[]} */
   const sections = [];
 
