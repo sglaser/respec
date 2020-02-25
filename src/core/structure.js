@@ -59,7 +59,6 @@ const l10n = getIntlData(localizationStrings);
  * Scans sections and generate ordered list element + ID-to-anchor-content dictionary.
  * @param {Section[]} sections the target element to find child sections
  * @param {number} maxTocLevel
- * @param {String} prefix
  */
 function scanSections(sections, maxTocLevel, { prefix = "" } = {}) {
   let appendixMode = false;
