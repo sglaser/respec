@@ -4,8 +4,13 @@
 // This is to enable the generation of a Table of Tables wherever there is a #tot element
 // to be found as well as normalise the titles of tables.
 
-import { addId, renameElement, wrapInner } from "./utils.js";
-import { lang as defaultLang } from "../core/l10n.js";
+import {
+  addId,
+  getIntlData,
+  renameElement,
+  showInlineWarning,
+  wrapInner,
+} from "./utils.js";
 import { hyperHTML } from "./import-maps.js";
 
 export const name = "core/tables";
@@ -17,9 +22,7 @@ const localizationStrings = {
   },
 };
 
-const lang = defaultLang in localizationStrings ? defaultLang : "en";
-
-const l10n = localizationStrings[lang];
+const l10n = getIntlData(localizationStrings);
 
 export function run() {
   const tot = collectTables();
@@ -63,7 +66,7 @@ function decorateTable(table, caption, i) {
   const title = caption.textContent;
   addId(table, "tbl", title);
   // set proper caption title
-  wrapInner(caption, hyperHTML`<span class='tbl-title'></span>`);
+  wrapInner(caption, hyperHTML`<span class='tbl-title'>`);
   caption.prepend(
     hyperHTML`<span class='tblhdr'>${l10n.tbl}</span>`,
     hyperHTML`<bdi class='tblno'>${i + 1}</bdi>`,
@@ -81,8 +84,8 @@ function getTableOfTablesListItem(tableId, caption) {
   totCaption.querySelectorAll("a").forEach(anchor => {
     renameElement(anchor, "span").removeAttribute("href");
   });
-  totCaption.querySelectorAll("dfn").forEach(anchor => {
-    renameElement(anchor, "span");
+  totCaption.querySelectorAll("dfn").forEach(dfn => {
+    renameElement(dfn, "span");
   });
   totCaption.querySelectorAll("[id]").forEach(anchor => {
     anchor.removeAttribute("id");

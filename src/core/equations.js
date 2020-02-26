@@ -4,8 +4,13 @@
 // Adds width and height to images, if they are missing.
 // Generates a Table of Equations wherever there is a #tof element.
 
-import { addId, renameElement, showInlineWarning, wrapInner } from "./utils.js";
-import { lang as defaultLang } from "../core/l10n.js";
+import {
+  addId,
+  getIntlData,
+  renameElement,
+  showInlineWarning,
+  wrapInner,
+} from "./utils.js";
 import { hyperHTML } from "./import-maps.js";
 
 export const name = "core/equations";
@@ -17,9 +22,7 @@ const localizationStrings = {
   },
 };
 
-const lang = defaultLang in localizationStrings ? defaultLang : "en";
-
-const l10n = localizationStrings[lang];
+const l10n = getIntlData(localizationStrings);
 
 export function run() {
   normalizeImages(document);
@@ -65,7 +68,7 @@ function decorateEquation(equation, caption, i) {
   const title = caption.textContent;
   addId(equation, "eqn", title);
   // set proper caption title
-  wrapInner(caption, hyperHTML`<span class='eqn-title'></span>`);
+  wrapInner(caption, hyperHTML`<span class='eqn-title'>`);
   caption.prepend(
     hyperHTML`<span class='eqnhdr'>${l10n.eqn}</span>`,
     hyperHTML`<bdi class='eqnno'>${i + 1}</bdi>`,
@@ -83,8 +86,8 @@ function getTableOfEquationsListItem(equationId, caption) {
   toeCaption.querySelectorAll("a").forEach(anchor => {
     renameElement(anchor, "span").removeAttribute("href");
   });
-  toeCaption.querySelectorAll("dfn").forEach(anchor => {
-    renameElement(anchor, "span");
+  toeCaption.querySelectorAll("dfn").forEach(dfn => {
+    renameElement(dfn, "span");
   });
   toeCaption.querySelectorAll("[id]").forEach(anchor => {
     anchor.removeAttribute("id");
