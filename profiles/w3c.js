@@ -33,11 +33,13 @@ const modules = [
   import("../src/core/best-practices.js"),
   import("../src/core/figures.js"),
   import("../src/core/webidl.js"),
-  import("../src/core/data-cite.js"),
   import("../src/core/biblio.js"),
-  import("../src/core/webidl-index.js"),
   import("../src/core/link-to-dfn.js"),
+  import("../src/core/xref.js"),
+  import("../src/core/data-cite.js"),
+  import("../src/core/webidl-index.js"),
   import("../src/core/render-biblio.js"),
+  import("../src/core/dfn-index.js"),
   import("../src/core/contrib.js"),
   import("../src/core/fix-headers.js"),
   import("../src/core/structure.js"),
@@ -62,8 +64,9 @@ const modules = [
   import("../src/core/algorithms.js"),
   import("../src/core/anchor-expander.js"),
   import("../src/core/custom-elements/index.js"),
-  /* Linter must be the last thing to run */
+  /* Linters must be the last thing to run */
   import("../src/core/linter.js"),
+  import("../src/core/a11y.js"),
 ];
 
 async function domReady() {
