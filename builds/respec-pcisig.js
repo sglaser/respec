@@ -1,4 +1,4 @@
-window.respecVersion = "25.3.0";
+window.respecVersion = "25.6.2";
 
 (function () {
   'use strict';
@@ -17,7 +17,7 @@ window.respecVersion = "25.3.0";
     Promise.resolve().then(function () { return pcisigDefaults$1; }),
     Promise.resolve().then(function () { return style; }),
     Promise.resolve().then(function () { return pcisigStyle; }),
-    Promise.resolve().then(function () { return l10n$2; }),
+    Promise.resolve().then(function () { return l10n$3; }),
     Promise.resolve().then(function () { return github$1; }),
     Promise.resolve().then(function () { return dataInclude; }),
     Promise.resolve().then(function () { return markdown; }),
@@ -75,6 +75,7 @@ window.respecVersion = "25.3.0";
     Promise.resolve().then(function () { return anchorExpander; }),
     Promise.resolve().then(function () { return includeFinalConfig; }),
     Promise.resolve().then(function () { return index; }),
+    Promise.resolve().then(function () { return railroad; }),
     /* Linter must be the last thing to run */
     Promise.resolve().then(function () { return linter$1; }),
   ];
@@ -108,7 +109,7 @@ window.respecVersion = "25.3.0";
      * @param {string[]} deps
      * @param {(...modules: any[]) => void} callback
      */
-    const require = function(deps, callback) {
+    const require = function (deps, callback) {
       const modules = deps.map(dep => {
         if (!(dep in window.require.modules)) {
           throw new Error(`Unsupported dependency name: ${dep}`);
@@ -389,7 +390,7 @@ window.respecVersion = "25.3.0";
     run: run
   });
 
-  const instanceOfAny = (object, constructors) => constructors.some(c => object instanceof c);
+  const instanceOfAny = (object, constructors) => constructors.some((c) => object instanceof c);
 
   let idbProxyableTypes;
   let cursorAdvanceMethods;
@@ -436,7 +437,7 @@ window.respecVersion = "25.3.0";
           request.addEventListener('error', error);
       });
       promise
-          .then(value => {
+          .then((value) => {
           // Since cursoring reuses the IDBRequest (*sigh*), we cache it for later retrieval
           // (see wrapFunction).
           if (value instanceof IDBCursor) {
@@ -584,19 +585,20 @@ window.respecVersion = "25.3.0";
       const request = indexedDB.open(name, version);
       const openPromise = wrap(request);
       if (upgrade) {
-          request.addEventListener('upgradeneeded', event => {
+          request.addEventListener('upgradeneeded', (event) => {
               upgrade(wrap(request.result), event.oldVersion, event.newVersion, wrap(request.transaction));
           });
       }
       if (blocked)
           request.addEventListener('blocked', () => blocked());
-      if (terminated)
-          request.addEventListener('close', () => terminated());
-      if (blocking) {
-          openPromise
-              .then(db => db.addEventListener('versionchange', blocking))
-              .catch(() => { });
-      }
+      openPromise
+          .then((db) => {
+          if (terminated)
+              db.addEventListener('close', () => terminated());
+          if (blocking)
+              db.addEventListener('versionchange', () => blocking());
+      })
+          .catch(() => { });
       return openPromise;
   }
   /**
@@ -637,7 +639,7 @@ window.respecVersion = "25.3.0";
           let target = tx.store;
           if (useIndex)
               target = target.index(args.shift());
-          const returnVal = target[targetFuncName](...args);
+          const returnVal = await target[targetFuncName](...args);
           if (isWrite)
               await tx.done;
           return returnVal;
@@ -645,7 +647,7 @@ window.respecVersion = "25.3.0";
       cachedMethods.set(prop, method);
       return method;
   }
-  replaceTraps(oldTraps => ({
+  replaceTraps((oldTraps) => ({
       ...oldTraps,
       get: (target, prop, receiver) => getMethod(target, prop) || oldTraps.get(target, prop, receiver),
       has: (target, prop) => !!getMethod(target, prop) || oldTraps.has(target, prop),
@@ -659,22 +661,9 @@ window.respecVersion = "25.3.0";
     wrap: wrap
   });
 
-  /*! (c) Andrea Giammarchi (ISC) */var hyperHTML$1=function(N){/*! (c) Andrea Giammarchi - ISC */var t={};try{t.WeakMap=WeakMap;}catch(e){t.WeakMap=function(t,e){var n=e.defineProperty,r=e.hasOwnProperty,i=a.prototype;return i.delete=function(e){return this.has(e)&&delete e[this._]},i.get=function(e){return this.has(e)?e[this._]:void 0},i.has=function(e){return r.call(e,this._)},i.set=function(e,t){return n(e,this._,{configurable:!0,value:t}),this},a;function a(e){n(this,"_",{value:"_@ungap/weakmap"+t++}),e&&e.forEach(o,this);}function o(e){this.set(e[0],e[1]);}}(Math.random(),Object);}var s=t.WeakMap,i={};
-  /*! (c) Andrea Giammarchi - ISC */try{i.WeakSet=WeakSet;}catch(e){!function(e,t){var n=r.prototype;function r(){t(this,"_",{value:"_@ungap/weakmap"+e++});}n.add=function(e){return this.has(e)||t(e,this._,{value:!0,configurable:!0}),this},n.has=function(e){return this.hasOwnProperty.call(e,this._)},n.delete=function(e){return this.has(e)&&delete e[this._]},i.WeakSet=r;}(Math.random(),Object.defineProperty);}function m(e,t,n,r,i,a){for(var o=("selectedIndex"in t),u=o;r<i;){var c=e(n[r],1);if(t.insertBefore(c,a),o&&u&&c.selected){u=!u;var l=t.selectedIndex;t.selectedIndex=l<0?r:f.call(t.querySelectorAll("option"),c);}r++;}}function y(e,t){return e==t}function b(e){return e}function w(e,t,n,r,i,a,o){var u=a-i;if(u<1)return -1;for(;u<=n-t;){for(var c=t,l=i;c<n&&l<a&&o(e[c],r[l]);)c++,l++;if(l===a)return t;t=c+1;}return -1}function x(e,t,n,r,i){return n<r?e(t[n],0):0<n?e(t[n-1],-0).nextSibling:i}function E(e,t,n,r){for(;n<r;)a(e(t[n++],-1));}function C(e,t,n,r,i,a,o,u,c,l,s,f,h){!function(e,t,n,r,i,a,o,u,c){for(var l=[],s=e.length,f=o,h=0;h<s;)switch(e[h++]){case 0:i++,f++;break;case 1:l.push(r[i]),m(t,n,r,i++,i,f<u?t(a[f],0):c);break;case-1:f++;}for(h=0;h<s;)switch(e[h++]){case 0:o++;break;case-1:-1<l.indexOf(a[o])?o++:E(t,a,o++,o);}}(function(e,t,n,r,i,a,o){var u,c,l,s,f,h,d,v=n+a,p=[];e:for(u=0;u<=v;u++){if(50<u)return null;for(d=u-1,f=u?p[u-1]:[0,0],h=p[u]=[],c=-u;c<=u;c+=2){for(l=(s=c===-u||c!==u&&f[d+c-1]<f[d+c+1]?f[d+c+1]:f[d+c-1]+1)-c;s<a&&l<n&&o(r[i+s],e[t+l]);)s++,l++;if(s===a&&l===n)break e;h[u+c]=s;}}var g=Array(u/2+v/2),m=g.length-1;for(u=p.length-1;0<=u;u--){for(;0<s&&0<l&&o(r[i+s-1],e[t+l-1]);)g[m--]=0,s--,l--;if(!u)break;d=u-1,f=u?p[u-1]:[0,0],(c=s-l)===-u||c!==u&&f[d+c-1]<f[d+c+1]?(l--,g[m--]=1):(s--,g[m--]=-1);}return g}(n,r,a,o,u,l,f)||function(e,t,n,r,i,a,o,u){var c=0,l=r<u?r:u,s=Array(l++),f=Array(l);f[0]=-1;for(var h=1;h<l;h++)f[h]=o;for(var d=i.slice(a,o),v=t;v<n;v++){var p=d.indexOf(e[v]);if(-1<p){var g=p+a;-1<(c=k(f,l,g))&&(f[c]=g,s[c]={newi:v,oldi:g,prev:s[c-1]});}}for(c=--l,--o;f[c]>o;)--c;l=u+r-c;var m=Array(l),y=s[c];for(--n;y;){for(var b=y.newi,w=y.oldi;b<n;)m[--l]=1,--n;for(;w<o;)m[--l]=-1,--o;m[--l]=0,--n,--o,y=y.prev;}for(;t<=n;)m[--l]=1,--n;for(;a<=o;)m[--l]=-1,--o;return m}(n,r,i,a,o,u,c,l),e,t,n,r,o,u,s,h);}var e=i.WeakSet,f=[].indexOf,k=function(e,t,n){for(var r=1,i=t;r<i;){var a=(r+i)/2>>>0;n<e[a]?i=a:r=1+a;}return r},a=function(e){return (e.remove||function(){var e=this.parentNode;e&&e.removeChild(this);}
-  /*! (c) 2018 Andrea Giammarchi (ISC) */).call(e)};function l(e,t,n,r){for(var i=(r=r||{}).compare||y,a=r.node||b,o=null==r.before?null:a(r.before,0),u=t.length,c=u,l=0,s=n.length,f=0;l<c&&f<s&&i(t[l],n[f]);)l++,f++;for(;l<c&&f<s&&i(t[c-1],n[s-1]);)c--,s--;var h=l===c,d=f===s;if(h&&d)return n;if(h&&f<s)return m(a,e,n,f,s,x(a,t,l,u,o)),n;if(d&&l<c)return E(a,t,l,c),n;var v=c-l,p=s-f,g=-1;if(v<p){if(-1<(g=w(n,f,s,t,l,c,i)))return m(a,e,n,f,g,a(t[l],0)),m(a,e,n,g+v,s,x(a,t,c,u,o)),n}else if(p<v&&-1<(g=w(t,l,c,n,f,s,i)))return E(a,t,l,g),E(a,t,g+p,c),n;return v<2||p<2?(m(a,e,n,f,s,a(t[l],0)),E(a,t,l,c)):v==p&&function(e,t,n,r,i,a){for(;r<i&&a(n[r],e[t-1]);)r++,t--;return 0===t}(n,s,t,l,c,i)?m(a,e,n,f,s,x(a,t,c,u,o)):C(a,e,n,f,s,p,t,l,c,v,u,i,o),n}var n,r={};
-  /*! (c) Andrea Giammarchi - ISC */function o(e,t){t=t||{};var n=N.createEvent("CustomEvent");return n.initCustomEvent(e,!!t.bubbles,!!t.cancelable,t.detail),n}r.CustomEvent="function"==typeof CustomEvent?CustomEvent:(o[n="prototype"]=new o("").constructor[n],o);var u=r.CustomEvent,c={};
-  /*! (c) Andrea Giammarchi - ISC */try{c.Map=Map;}catch(e){c.Map=function(){var n=0,i=[],a=[];return {delete:function(e){var t=r(e);return t&&(i.splice(n,1),a.splice(n,1)),t},forEach:function(n,r){i.forEach(function(e,t){n.call(r,a[t],e,this);},this);},get:function(e){return r(e)?a[n]:void 0},has:function(e){return r(e)},set:function(e,t){return a[r(e)?n:i.push(e)-1]=t,this}};function r(e){return -1<(n=i.indexOf(e))}};}var h=c.Map;function d(){return this}function v(e,t){var n="_"+e+"$";return {get:function(){return this[n]||p(this,n,t.call(this,e))},set:function(e){p(this,n,e);}}}var p=function(e,t,n){return Object.defineProperty(e,t,{configurable:!0,value:"function"==typeof n?function(){return e._wire$=n.apply(this,arguments)}:n})[t]};Object.defineProperties(d.prototype,{ELEMENT_NODE:{value:1},nodeType:{value:-1}});var g,A,S,O,T,M,_={},j={},L=[],P=j.hasOwnProperty,D=0,W={attributes:_,define:function(e,t){e.indexOf("-")<0?(e in j||(D=L.push(e)),j[e]=t):_[e]=t;},invoke:function(e,t){for(var n=0;n<D;n++){var r=L[n];if(P.call(e,r))return j[r](e[r],t)}}},$=Array.isArray||(A=(g={}.toString).call([]),function(e){return g.call(e)===A}),R=(S=N,O="fragment",M="content"in H(T="template")?function(e){var t=H(T);return t.innerHTML=e,t.content}:function(e){var t=H(O),n=H(T),r=null;if(/^[^\S]*?<(col(?:group)?|t(?:head|body|foot|r|d|h))/i.test(e)){var i=RegExp.$1;n.innerHTML="<table>"+e+"</table>",r=n.querySelectorAll(i);}else n.innerHTML=e,r=n.childNodes;return F(t,r),t},function(e,t){return ("svg"===t?function(e){var t=H(O),n=H("div");return n.innerHTML='<svg xmlns="http://www.w3.org/2000/svg">'+e+"</svg>",F(t,n.firstChild.childNodes),t}:M)(e)});function F(e,t){for(var n=t.length;n--;)e.appendChild(t[0]);}function H(e){return e===O?S.createDocumentFragment():S.createElementNS("http://www.w3.org/1999/xhtml",e)}
-  /*! (c) Andrea Giammarchi - ISC */
-  var I,z,V,Z,G,q,B,J,K,Q,U=(z="appendChild",V="cloneNode",Z="createTextNode",q=(G="importNode")in(I=N),(B=I.createDocumentFragment())[z](I[Z]("g")),B[z](I[Z]("")),(q?I[G](B,!0):B[V](!0)).childNodes.length<2?function e(t,n){for(var r=t[V](),i=t.childNodes||[],a=i.length,o=0;n&&o<a;o++)r[z](e(i[o],n));return r}:q?I[G]:function(e,t){return e[V](!!t)}),X="".trim||function(){return String(this).replace(/^\s+|\s+/g,"")},Y="-"+Math.random().toFixed(6)+"%",ee=!1;try{J=N.createElement("template"),Q="tabindex",(K="content")in J&&(J.innerHTML="<p "+Q+'="'+Y+'"></p>',J[K].childNodes[0].getAttribute(Q)==Y)||(Y="_dt: "+Y.slice(1,-1)+";",ee=!0);}catch(e){}var te="\x3c!--"+Y+"--\x3e",ne=8,re=1,ie=3,ae=/^(?:style|textarea)$/i,oe=/^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;var ue=" \\f\\n\\r\\t",ce="[^"+ue+"\\/>\"'=]+",le="["+ue+"]+"+ce,se="<([A-Za-z]+[A-Za-z0-9:._-]*)((?:",fe="(?:\\s*=\\s*(?:'[^']*?'|\"[^\"]*?\"|<[^>]*?>|"+ce.replace("\\/","")+"))?)",he=new RegExp(se+le+fe+"+)(["+ue+"]*/?>)","g"),de=new RegExp(se+le+fe+"*)(["+ue+"]*/>)","g"),ve=new RegExp("("+le+"\\s*=\\s*)(['\"]?)"+te+"\\2","gi");function pe(e,t,n,r){return "<"+t+n.replace(ve,ge)+r}function ge(e,t,n){return t+(n||'"')+Y+(n||'"')}function me(e,t,n){return oe.test(t)?e:"<"+t+n+"></"+t+">"}var ye=ee?function(e,t){var n=t.join(" ");return t.slice.call(e,0).sort(function(e,t){return n.indexOf(e.name)<=n.indexOf(t.name)?-1:1})}:function(e,t){return t.slice.call(e,0)};function be(e,t){for(var n=t.length,r=0;r<n;)e=e.childNodes[t[r++]];return e}function we(e,t,n,r){for(var i=e.attributes,a=[],o=[],u=ye(i,n),c=u.length,l=0;l<c;){var s,f=u[l++],h=f.value===Y;if(h||1<(s=f.value.split(te)).length){var d=f.name;if(a.indexOf(d)<0){a.push(d);var v=n.shift().replace(h?/^(?:|[\S\s]*?\s)(\S+?)\s*=\s*('|")?$/:new RegExp("^(?:|[\\S\\s]*?\\s)("+d+")\\s*=\\s*('|\")[\\S\\s]*","i"),"$1"),p=i[v]||i[v.toLowerCase()];if(h)t.push(Ne(p,r,v,null));else{for(var g=s.length-2;g--;)n.shift();t.push(Ne(p,r,v,s));}}o.push(f);}}for(var m=((l=0)<(c=o.length)&&ee&&!("ownerSVGElement"in e));l<c;){var y=o[l++];m&&(y.value=""),e.removeAttribute(y.name);}var b=e.nodeName;if(/^script$/i.test(b)){var w=N.createElement(b);for(c=i.length,l=0;l<c;)w.setAttributeNode(i[l++].cloneNode(!0));w.textContent=e.textContent,e.parentNode.replaceChild(w,e);}}function Ne(e,t,n,r){return {type:"attr",node:e,path:t,name:n,sparse:r}}function xe(e,t){return {type:"text",node:e,path:t}}var Ee=new s;function Ce(o,f){var e=(o.convert||
-  /*! (c) Andrea Giammarchi - ISC */
-  function(e){return e.join(te).replace(de,me).replace(he,pe)})(f),t=o.transform;t&&(e=t(e));var n=R(e,o.type);Se(n);var u=[];!function e(t,n,r,i){for(var a,o,u=t.childNodes,c=u.length,l=0;l<c;){var s=u[l];switch(s.nodeType){case re:var f=i.concat(l);we(s,n,r,f),e(s,n,r,f);break;case ne:var h=s.textContent;if(h===Y)r.shift(),n.push(ae.test(t.nodeName)?xe(t,i):(a=s,o=i.concat(l),{type:"any",node:a,path:o}));else switch(h.slice(0,2)){case"/*":if("*/"!==h.slice(-2))break;case"👻":t.removeChild(s),l--,c--;}break;case ie:ae.test(t.nodeName)&&X.call(s.textContent)===te&&(r.shift(),n.push(xe(t,i)));}l++;}}(n,u,f.slice(0),[]);var r={content:n,updates:function(c){for(var l=[],s=u.length,e=0,t=0;e<s;){var n=u[e++],r=be(c,n.path);switch(n.type){case"any":l.push({fn:o.any(r,[]),sparse:!1});break;case"attr":var i=n.sparse,a=o.attribute(r,n.name,n.node);null===i?l.push({fn:a,sparse:!1}):(t+=i.length-2,l.push({fn:a,sparse:!0,values:i}));break;case"text":l.push({fn:o.text(r),sparse:!1}),r.textContent="";}}return s+=t,function(){var e=arguments.length;if(s!==e-1)throw new Error(e-1+" values instead of "+s+"\n"+f.join("${value}"));for(var t=1,n=1;t<e;){var r=l[t-n];if(r.sparse){var i=r.values,a=i[0],o=1,u=i.length;for(n+=u-2;o<u;)a+=arguments[t++]+i[o++];r.fn(a);}else r.fn(arguments[t++]);}return c}}};return Ee.set(f,r),r}var ke=[];function Ae(i){var a=ke,o=Se;return function(e){var t,n,r;return a!==e&&(t=i,n=a=e,r=Ee.get(n)||Ce(t,n),o=r.updates(U.call(N,r.content,!0))),o.apply(null,arguments)}}function Se(e){for(var t=e.childNodes,n=t.length;n--;){var r=t[n];1!==r.nodeType&&0===X.call(r.textContent).length&&e.removeChild(r);}}
-  /*! (c) Andrea Giammarchi - ISC */var Oe,Te,Me=(Oe=/acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i,Te=/([^A-Z])([A-Z]+)/g,function(e,t){return "ownerSVGElement"in e?function(e,t){var n;return (n=t?t.cloneNode(!0):(e.setAttribute("style","--hyper:style;"),e.getAttributeNode("style"))).value="",e.setAttributeNode(n),je(n,!0)}(e,t):je(e.style,!1)});
-  /*! (c) Andrea Giammarchi - ISC */function _e(e,t,n){return t+"-"+n.toLowerCase()}function je(a,o){var u,c;return function(e){var t,n,r,i;switch(typeof e){case"object":if(e){if("object"===u){if(!o&&c!==e)for(n in c)n in e||(a[n]="");}else o?a.value="":a.cssText="";for(n in t=o?{}:a,e)r="number"!=typeof(i=e[n])||Oe.test(n)?i:i+"px",!o&&/^--/.test(n)?t.setProperty(n,r):t[n]=r;u="object",o?a.value=function(e){var t,n=[];for(t in e)n.push(t.replace(Te,_e),":",e[t],";");return n.join("")}(c=t):c=e;break}default:c!=e&&(u="string",c=e,o?a.value=e||"":a.cssText=e||"");}}}var Le,Pe,De=(Le=[].slice,(Pe=We.prototype).ELEMENT_NODE=1,Pe.nodeType=111,Pe.remove=function(e){var t=this.childNodes,n=this.firstChild,r=this.lastChild;if(this._=null,e&&2===t.length)r.parentNode.removeChild(r);else{var i=this.ownerDocument.createRange();i.setStartBefore(e?t[1]:n),i.setEndAfter(r),i.deleteContents();}return n},Pe.valueOf=function(e){var t=this._,n=null==t;if(n&&(t=this._=this.ownerDocument.createDocumentFragment()),n||e)for(var r=this.childNodes,i=0,a=r.length;i<a;i++)t.appendChild(r[i]);return t},We);function We(e){var t=this.childNodes=Le.call(e,0);this.firstChild=t[0],this.lastChild=t[t.length-1],this.ownerDocument=t[0].ownerDocument,this._=null;}function $e(e){return {html:e}}function Re(e,t){switch(e.nodeType){case Ke:return 1/t<0?t?e.remove(!0):e.lastChild:t?e.valueOf(!0):e.firstChild;case Je:return Re(e.render(),t);default:return e}}function Fe(e,t){t(e.placeholder),"text"in e?Promise.resolve(e.text).then(String).then(t):"any"in e?Promise.resolve(e.any).then(t):"html"in e?Promise.resolve(e.html).then($e).then(t):Promise.resolve(W.invoke(e,t)).then(t);}function He(e){return null!=e&&"then"in e}var Ie,ze,Ve,Ze,Ge,qe="ownerSVGElement",Be="connected",Je=d.prototype.nodeType,Ke=De.prototype.nodeType,Qe=(ze=(Ie={Event:u,WeakSet:e}).Event,Ve=Ie.WeakSet,Ze=!0,Ge=null,function(e){return Ze&&(Ze=!Ze,Ge=new Ve,function(t){var i=new Ve,a=new Ve;try{new MutationObserver(u).observe(t,{subtree:!0,childList:!0});}catch(e){var n=0,r=[],o=function(e){r.push(e),clearTimeout(n),n=setTimeout(function(){u(r.splice(n=0,r.length));},0);};t.addEventListener("DOMNodeRemoved",function(e){o({addedNodes:[],removedNodes:[e.target]});},!0),t.addEventListener("DOMNodeInserted",function(e){o({addedNodes:[e.target],removedNodes:[]});},!0);}function u(e){for(var t,n=e.length,r=0;r<n;r++)c((t=e[r]).removedNodes,"disconnected",a,i),c(t.addedNodes,"connected",i,a);}function c(e,t,n,r){for(var i,a=new ze(t),o=e.length,u=0;u<o;1===(i=e[u++]).nodeType&&l(i,a,t,n,r));}function l(e,t,n,r,i){Ge.has(e)&&!r.has(e)&&(i.delete(e),r.add(e),e.dispatchEvent(t));for(var a=e.children||[],o=a.length,u=0;u<o;l(a[u++],t,n,r,i));}}(e.ownerDocument)),Ge.add(e),e}),Ue=/^(?:form|list)$/i,Xe=[].slice;function Ye(e){return this.type=e,Ae(this)}var et=!(Ye.prototype={attribute:function(n,r,e){var i,t=qe in n;if("style"===r)return Me(n,e,t);if("."===r.slice(0,1))return o=n,u=r.slice(1),t?function(t){try{o[u]=t;}catch(e){o.setAttribute(u,t);}}:function(e){o[u]=e;};if(/^on/.test(r)){var a=r.slice(2);return a===Be||"disconnected"===a?Qe(n):r.toLowerCase()in n&&(a=a.toLowerCase()),function(e){i!==e&&(i&&n.removeEventListener(a,i,!1),(i=e)&&n.addEventListener(a,e,!1));}}if("data"===r||!t&&r in n&&!Ue.test(r))return function(e){i!==e&&(i=e,n[r]!==e&&null==e?(n[r]="",n.removeAttribute(r)):n[r]=e);};if(r in W.attributes)return function(e){var t=W.attributes[r](n,e);i!==t&&(null==(i=t)?n.removeAttribute(r):n.setAttribute(r,t));};var o,u,c=!1,l=e.cloneNode(!0);return function(e){i!==e&&(i=e,l.value!==e&&(null==e?(c&&(c=!1,n.removeAttributeNode(l)),l.value=e):(l.value=e,c||(c=!0,n.setAttributeNode(l)))));}},any:function(r,i){var a,o={node:Re,before:r},u=qe in r?"svg":"html",c=!1;return function e(t){switch(typeof t){case"string":case"number":case"boolean":c?a!==t&&(a=t,i[0].textContent=t):(c=!0,a=t,i=l(r.parentNode,i,[(n=t,r.ownerDocument.createTextNode(n))],o));break;case"function":e(t(r));break;case"object":case"undefined":if(null==t){c=!1,i=l(r.parentNode,i,[],o);break}default:if(c=!1,$(a=t))if(0===t.length)i.length&&(i=l(r.parentNode,i,[],o));else switch(typeof t[0]){case"string":case"number":case"boolean":e({html:t});break;case"object":if($(t[0])&&(t=t.concat.apply([],t)),He(t[0])){Promise.all(t).then(e);break}default:i=l(r.parentNode,i,t,o);}else"ELEMENT_NODE"in t?i=l(r.parentNode,i,11===t.nodeType?Xe.call(t.childNodes):[t],o):He(t)?t.then(e):"placeholder"in t?Fe(t,e):"text"in t?e(String(t.text)):"any"in t?e(t.any):"html"in t?i=l(r.parentNode,i,Xe.call(R([].concat(t.html).join(""),u).childNodes),o):e("length"in t?Xe.call(t):W.invoke(t,e));}var n;}},text:function(r){var i;return function e(t){if(i!==t){var n=typeof(i=t);"object"==n&&t?He(t)?t.then(e):"placeholder"in t?Fe(t,e):e("text"in t?String(t.text):"any"in t?t.any:"html"in t?[].concat(t.html).join(""):"length"in t?Xe.call(t).join(""):W.invoke(t,e)):"function"==n?e(t(r)):r.textContent=null==t?"":t;}}}}),tt=function(e){var t,n=(t=(N.defaultView.navigator||{}).userAgent,/(Firefox|Safari)\/(\d+)/.test(t)&&!/(Chrom[eium]+|Android)\/(\d+)/.test(t)),r=!("raw"in e)||e.propertyIsEnumerable("raw")||!Object.isFrozen(e.raw);if(n||r){var i={},a=function(e){for(var t=".",n=0;n<e.length;n++)t+=e[n].length+"."+e[n];return i[t]||(i[t]=e)};if(r)tt=a;else{var o=new s;tt=function(e){return o.get(e)||(n=a(t=e),o.set(t,n),n);var t,n;};}}else et=!0;return nt(e)};function nt(e){return et?e:tt(e)}function rt(e){for(var t=arguments.length,n=[nt(e)],r=1;r<t;)n.push(arguments[r++]);return n}var it=new s,at=function(t){var n,r,i;return function(){var e=rt.apply(null,arguments);return i!==e[0]?(i=e[0],r=new Ye(t),n=ut(r.apply(r,e))):r.apply(r,e),n}},ot=function(e,t){var n=t.indexOf(":"),r=it.get(e),i=t;return -1<n&&(i=t.slice(n+1),t=t.slice(0,n)||"html"),r||it.set(e,r={}),r[i]||(r[i]=at(t))},ut=function(e){var t=e.childNodes,n=t.length;return 1===n?t[0]:n?new De(t):e},ct=new s;function lt(){var e=ct.get(this),t=rt.apply(null,arguments);return e&&e.template===t[0]?e.tagger.apply(null,t):function(e){var t=new Ye(qe in this?"svg":"html");ct.set(this,{tagger:t,template:e}),this.textContent="",this.appendChild(t.apply(null,arguments));}
-  /*! (c) Andrea Giammarchi (ISC) */.apply(this,t),this}var st,ft,ht,dt,vt=W.define,pt=Ye.prototype;function gt(e){return arguments.length<2?null==e?at("html"):"string"==typeof e?gt.wire(null,e):"raw"in e?at("html")(e):"nodeType"in e?gt.bind(e):ot(e,"html"):("raw"in e?at("html"):gt.wire).apply(null,arguments)}return gt.Component=d,gt.bind=function(e){return lt.bind(e)},gt.define=vt,gt.diff=l,(gt.hyper=gt).observe=Qe,gt.tagger=pt,gt.wire=function(e,t){return null==e?at(t||"html"):ot(e,t||"html")},gt._={WeakMap:s,WeakSet:e},st=at,ft=new s,ht=Object.create,dt=function(e,t){var n={w:null,p:null};return t.set(e,n),n},Object.defineProperties(d,{for:{configurable:!0,value:function(e,t){return function(e,t,n,r){var i,a,o,u=t.get(e)||dt(e,t);switch(typeof r){case"object":case"function":var c=u.w||(u.w=new s);return c.get(r)||(i=c,a=r,o=new e(n),i.set(a,o),o);default:var l=u.p||(u.p=ht(null));return l[r]||(l[r]=new e(n))}}(this,ft.get(e)||(n=e,r=new h,ft.set(n,r),r),e,null==t?"default":t);var n,r;}}}),Object.defineProperties(d.prototype,{handleEvent:{value:function(e){var t=e.currentTarget;this["getAttribute"in t&&t.getAttribute("data-call")||"on"+e.type](e);}},html:v("html",st),svg:v("svg",st),state:v("state",function(){return this.defaultState}),defaultState:{get:function(){return {}}},dispatch:{value:function(e,t){var n=this._wire$;if(n){var r=new u(e,{bubbles:!0,cancelable:!0,detail:t});return r.component=this,(n.dispatchEvent?n:n.firstChild).dispatchEvent(r)}return !1}},setState:{value:function(e,t){var n=this.state,r="function"==typeof e?e.call(this,n):e;for(var i in r)n[i]=r[i];return !1!==t&&this.render(),this}}}),gt}(document);
-
   /**
    * marked - a markdown parser
-   * Copyright (c) 2011-2019, Christopher Jeffrey. (MIT Licensed)
+   * Copyright (c) 2011-2020, Christopher Jeffrey. (MIT Licensed)
    * https://github.com/markedjs/marked
    */
 
@@ -979,7 +968,7 @@ window.respecVersion = "25.3.0";
   const block = {
     newline: /^\n+/,
     code: /^( {4}[^\n]+\n*)+/,
-    fences: /^ {0,3}(`{3,}|~{3,})([^`~\n]*)\n(?:|([\s\S]*?)\n)(?: {0,3}\1[~`]* *(?:\n+|$)|$)/,
+    fences: /^ {0,3}(`{3,}(?=[^`\n]*\n)|~{3,})([^\n]*)\n(?:|([\s\S]*?)\n)(?: {0,3}\1[~`]* *(?:\n+|$)|$)/,
     hr: /^ {0,3}((?:- *){3,}|(?:_ *){3,}|(?:\* *){3,})(?:\n+|$)/,
     heading: /^ {0,3}(#{1,6}) +([^\n]*?)(?: +#+)? *(?:\n+|$)/,
     blockquote: /^( {0,3}> ?(paragraph|[^\n]*)(?:\n|$))+/,
@@ -1038,10 +1027,10 @@ window.respecVersion = "25.3.0";
 
   block.paragraph = edit$1(block._paragraph)
     .replace('hr', block.hr)
-    .replace('heading', ' {0,3}#{1,6} +')
+    .replace('heading', ' {0,3}#{1,6} ')
     .replace('|lheading', '') // setex headings don't interrupt commonmark paragraphs
     .replace('blockquote', ' {0,3}>')
-    .replace('fences', ' {0,3}(?:`{3,}|~{3,})[^`\\n]*\\n')
+    .replace('fences', ' {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n')
     .replace('list', ' {0,3}(?:[*+-]|1[.)]) ') // only lists starting from 1 can interrupt
     .replace('html', '</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|!--)')
     .replace('tag', block._tag) // pars can be interrupted by type (6) html blocks
@@ -1062,9 +1051,35 @@ window.respecVersion = "25.3.0";
    */
 
   block.gfm = merge$1({}, block.normal, {
-    nptable: /^ *([^|\n ].*\|.*)\n *([-:]+ *\|[-| :]*)(?:\n((?:.*[^>\n ].*(?:\n|$))*)\n*|$)/,
-    table: /^ *\|(.+)\n *\|?( *[-:]+[-| :]*)(?:\n((?: *[^>\n ].*(?:\n|$))*)\n*|$)/
+    nptable: '^ *([^|\\n ].*\\|.*)\\n' // Header
+      + ' *([-:]+ *\\|[-| :]*)' // Align
+      + '(?:\\n((?:(?!\\n|hr|heading|blockquote|code|fences|list|html).*(?:\\n|$))*)\\n*|$)', // Cells
+    table: '^ *\\|(.+)\\n' // Header
+      + ' *\\|?( *[-:]+[-| :]*)' // Align
+      + '(?:\\n *((?:(?!\\n|hr|heading|blockquote|code|fences|list|html).*(?:\\n|$))*)\\n*|$)' // Cells
   });
+
+  block.gfm.nptable = edit$1(block.gfm.nptable)
+    .replace('hr', block.hr)
+    .replace('heading', ' {0,3}#{1,6} ')
+    .replace('blockquote', ' {0,3}>')
+    .replace('code', ' {4}[^\\n]')
+    .replace('fences', ' {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n')
+    .replace('list', ' {0,3}(?:[*+-]|1[.)]) ') // only lists starting from 1 can interrupt
+    .replace('html', '</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|!--)')
+    .replace('tag', block._tag) // tables can be interrupted by type (6) html blocks
+    .getRegex();
+
+  block.gfm.table = edit$1(block.gfm.table)
+    .replace('hr', block.hr)
+    .replace('heading', ' {0,3}#{1,6} ')
+    .replace('blockquote', ' {0,3}>')
+    .replace('code', ' {4}[^\\n]')
+    .replace('fences', ' {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n')
+    .replace('list', ' {0,3}(?:[*+-]|1[.)]) ') // only lists starting from 1 can interrupt
+    .replace('html', '</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|!--)')
+    .replace('tag', block._tag) // tables can be interrupted by type (6) html blocks
+    .getRegex();
 
   /**
    * Pedantic grammar (original John Gruber's loose markdown specification)
@@ -1791,6 +1806,9 @@ window.respecVersion = "25.3.0";
       let slug = value
         .toLowerCase()
         .trim()
+        // remove html tags
+        .replace(/<[!\/a-z].*?>/ig, '')
+        // remove unwanted chars
         .replace(/[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,./:;<=>?@[\]^`{|}~]/g, '')
         .replace(/\s/g, '-');
 
@@ -1890,11 +1908,11 @@ window.respecVersion = "25.3.0";
           }
 
           src = src.substring(cap[0].length);
-          out += this.options.sanitize
-            ? this.options.sanitizer
+          out += this.renderer.html(this.options.sanitize
+            ? (this.options.sanitizer
               ? this.options.sanitizer(cap[0])
-              : escape$3(cap[0])
-            : cap[0];
+              : escape$3(cap[0]))
+            : cap[0]);
           continue;
         }
 
@@ -2119,6 +2137,10 @@ window.respecVersion = "25.3.0";
     }
 
     del(text) {
+      return text;
+    }
+
+    html(text) {
       return text;
     }
 
@@ -2998,6 +3020,19 @@ window.respecVersion = "25.3.0";
   });
   });
 
+  /*! (c) Andrea Giammarchi (ISC) */var hyperHTML=function(N){/*! (c) Andrea Giammarchi - ISC */var t={};try{t.WeakMap=WeakMap;}catch(e){t.WeakMap=function(t,e){var n=e.defineProperty,r=e.hasOwnProperty,i=a.prototype;return i.delete=function(e){return this.has(e)&&delete e[this._]},i.get=function(e){return this.has(e)?e[this._]:void 0},i.has=function(e){return r.call(e,this._)},i.set=function(e,t){return n(e,this._,{configurable:!0,value:t}),this},a;function a(e){n(this,"_",{value:"_@ungap/weakmap"+t++}),e&&e.forEach(o,this);}function o(e){this.set(e[0],e[1]);}}(Math.random(),Object);}var s=t.WeakMap,i={};
+  /*! (c) Andrea Giammarchi - ISC */try{i.WeakSet=WeakSet;}catch(e){!function(e,t){var n=r.prototype;function r(){t(this,"_",{value:"_@ungap/weakmap"+e++});}n.add=function(e){return this.has(e)||t(e,this._,{value:!0,configurable:!0}),this},n.has=function(e){return this.hasOwnProperty.call(e,this._)},n.delete=function(e){return this.has(e)&&delete e[this._]},i.WeakSet=r;}(Math.random(),Object.defineProperty);}function m(e,t,n,r,i,a){for(var o=("selectedIndex"in t),u=o;r<i;){var c=e(n[r],1);if(t.insertBefore(c,a),o&&u&&c.selected){u=!u;var l=t.selectedIndex;t.selectedIndex=l<0?r:f.call(t.querySelectorAll("option"),c);}r++;}}function y(e,t){return e==t}function b(e){return e}function w(e,t,n,r,i,a,o){var u=a-i;if(u<1)return -1;for(;u<=n-t;){for(var c=t,l=i;c<n&&l<a&&o(e[c],r[l]);)c++,l++;if(l===a)return t;t=c+1;}return -1}function x(e,t,n,r,i){return n<r?e(t[n],0):0<n?e(t[n-1],-0).nextSibling:i}function E(e,t,n,r){for(;n<r;)a(e(t[n++],-1));}function C(e,t,n,r,i,a,o,u,c,l,s,f,h){!function(e,t,n,r,i,a,o,u,c){for(var l=[],s=e.length,f=o,h=0;h<s;)switch(e[h++]){case 0:i++,f++;break;case 1:l.push(r[i]),m(t,n,r,i++,i,f<u?t(a[f],0):c);break;case-1:f++;}for(h=0;h<s;)switch(e[h++]){case 0:o++;break;case-1:-1<l.indexOf(a[o])?o++:E(t,a,o++,o);}}(function(e,t,n,r,i,a,o){var u,c,l,s,f,h,d,v=n+a,p=[];e:for(u=0;u<=v;u++){if(50<u)return null;for(d=u-1,f=u?p[u-1]:[0,0],h=p[u]=[],c=-u;c<=u;c+=2){for(l=(s=c===-u||c!==u&&f[d+c-1]<f[d+c+1]?f[d+c+1]:f[d+c-1]+1)-c;s<a&&l<n&&o(r[i+s],e[t+l]);)s++,l++;if(s===a&&l===n)break e;h[u+c]=s;}}var g=Array(u/2+v/2),m=g.length-1;for(u=p.length-1;0<=u;u--){for(;0<s&&0<l&&o(r[i+s-1],e[t+l-1]);)g[m--]=0,s--,l--;if(!u)break;d=u-1,f=u?p[u-1]:[0,0],(c=s-l)===-u||c!==u&&f[d+c-1]<f[d+c+1]?(l--,g[m--]=1):(s--,g[m--]=-1);}return g}(n,r,a,o,u,l,f)||function(e,t,n,r,i,a,o,u){var c=0,l=r<u?r:u,s=Array(l++),f=Array(l);f[0]=-1;for(var h=1;h<l;h++)f[h]=o;for(var d=i.slice(a,o),v=t;v<n;v++){var p=d.indexOf(e[v]);if(-1<p){var g=p+a;-1<(c=k(f,l,g))&&(f[c]=g,s[c]={newi:v,oldi:g,prev:s[c-1]});}}for(c=--l,--o;f[c]>o;)--c;l=u+r-c;var m=Array(l),y=s[c];for(--n;y;){for(var b=y.newi,w=y.oldi;b<n;)m[--l]=1,--n;for(;w<o;)m[--l]=-1,--o;m[--l]=0,--n,--o,y=y.prev;}for(;t<=n;)m[--l]=1,--n;for(;a<=o;)m[--l]=-1,--o;return m}(n,r,i,a,o,u,c,l),e,t,n,r,o,u,s,h);}var e=i.WeakSet,f=[].indexOf,k=function(e,t,n){for(var r=1,i=t;r<i;){var a=(r+i)/2>>>0;n<e[a]?i=a:r=1+a;}return r},a=function(e){return (e.remove||function(){var e=this.parentNode;e&&e.removeChild(this);}
+  /*! (c) 2018 Andrea Giammarchi (ISC) */).call(e)};function l(e,t,n,r){for(var i=(r=r||{}).compare||y,a=r.node||b,o=null==r.before?null:a(r.before,0),u=t.length,c=u,l=0,s=n.length,f=0;l<c&&f<s&&i(t[l],n[f]);)l++,f++;for(;l<c&&f<s&&i(t[c-1],n[s-1]);)c--,s--;var h=l===c,d=f===s;if(h&&d)return n;if(h&&f<s)return m(a,e,n,f,s,x(a,t,l,u,o)),n;if(d&&l<c)return E(a,t,l,c),n;var v=c-l,p=s-f,g=-1;if(v<p){if(-1<(g=w(n,f,s,t,l,c,i)))return m(a,e,n,f,g,a(t[l],0)),m(a,e,n,g+v,s,x(a,t,c,u,o)),n}else if(p<v&&-1<(g=w(t,l,c,n,f,s,i)))return E(a,t,l,g),E(a,t,g+p,c),n;return v<2||p<2?(m(a,e,n,f,s,a(t[l],0)),E(a,t,l,c)):v==p&&function(e,t,n,r,i,a){for(;r<i&&a(n[r],e[t-1]);)r++,t--;return 0===t}(n,s,t,l,c,i)?m(a,e,n,f,s,x(a,t,c,u,o)):C(a,e,n,f,s,p,t,l,c,v,u,i,o),n}var n,r={};
+  /*! (c) Andrea Giammarchi - ISC */function o(e,t){t=t||{};var n=N.createEvent("CustomEvent");return n.initCustomEvent(e,!!t.bubbles,!!t.cancelable,t.detail),n}r.CustomEvent="function"==typeof CustomEvent?CustomEvent:(o[n="prototype"]=new o("").constructor[n],o);var u=r.CustomEvent,c={};
+  /*! (c) Andrea Giammarchi - ISC */try{c.Map=Map;}catch(e){c.Map=function(){var n=0,i=[],a=[];return {delete:function(e){var t=r(e);return t&&(i.splice(n,1),a.splice(n,1)),t},forEach:function(n,r){i.forEach(function(e,t){n.call(r,a[t],e,this);},this);},get:function(e){return r(e)?a[n]:void 0},has:function(e){return r(e)},set:function(e,t){return a[r(e)?n:i.push(e)-1]=t,this}};function r(e){return -1<(n=i.indexOf(e))}};}var h=c.Map;function d(){return this}function v(e,t){var n="_"+e+"$";return {get:function(){return this[n]||p(this,n,t.call(this,e))},set:function(e){p(this,n,e);}}}var p=function(e,t,n){return Object.defineProperty(e,t,{configurable:!0,value:"function"==typeof n?function(){return e._wire$=n.apply(this,arguments)}:n})[t]};Object.defineProperties(d.prototype,{ELEMENT_NODE:{value:1},nodeType:{value:-1}});var g,A,S,O,T,M,_={},j={},L=[],P=j.hasOwnProperty,D=0,W={attributes:_,define:function(e,t){e.indexOf("-")<0?(e in j||(D=L.push(e)),j[e]=t):_[e]=t;},invoke:function(e,t){for(var n=0;n<D;n++){var r=L[n];if(P.call(e,r))return j[r](e[r],t)}}},$=Array.isArray||(A=(g={}.toString).call([]),function(e){return g.call(e)===A}),R=(S=N,O="fragment",M="content"in H(T="template")?function(e){var t=H(T);return t.innerHTML=e,t.content}:function(e){var t=H(O),n=H(T),r=null;if(/^[^\S]*?<(col(?:group)?|t(?:head|body|foot|r|d|h))/i.test(e)){var i=RegExp.$1;n.innerHTML="<table>"+e+"</table>",r=n.querySelectorAll(i);}else n.innerHTML=e,r=n.childNodes;return F(t,r),t},function(e,t){return ("svg"===t?function(e){var t=H(O),n=H("div");return n.innerHTML='<svg xmlns="http://www.w3.org/2000/svg">'+e+"</svg>",F(t,n.firstChild.childNodes),t}:M)(e)});function F(e,t){for(var n=t.length;n--;)e.appendChild(t[0]);}function H(e){return e===O?S.createDocumentFragment():S.createElementNS("http://www.w3.org/1999/xhtml",e)}
+  /*! (c) Andrea Giammarchi - ISC */
+  var I,z,V,Z,G,q,B,J,K,Q,U=(z="appendChild",V="cloneNode",Z="createTextNode",q=(G="importNode")in(I=N),(B=I.createDocumentFragment())[z](I[Z]("g")),B[z](I[Z]("")),(q?I[G](B,!0):B[V](!0)).childNodes.length<2?function e(t,n){for(var r=t[V](),i=t.childNodes||[],a=i.length,o=0;n&&o<a;o++)r[z](e(i[o],n));return r}:q?I[G]:function(e,t){return e[V](!!t)}),X="".trim||function(){return String(this).replace(/^\s+|\s+/g,"")},Y="-"+Math.random().toFixed(6)+"%",ee=!1;try{J=N.createElement("template"),Q="tabindex",(K="content")in J&&(J.innerHTML="<p "+Q+'="'+Y+'"></p>',J[K].childNodes[0].getAttribute(Q)==Y)||(Y="_dt: "+Y.slice(1,-1)+";",ee=!0);}catch(e){}var te="\x3c!--"+Y+"--\x3e",ne=8,re=1,ie=3,ae=/^(?:style|textarea)$/i,oe=/^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;var ue=" \\f\\n\\r\\t",ce="[^"+ue+"\\/>\"'=]+",le="["+ue+"]+"+ce,se="<([A-Za-z]+[A-Za-z0-9:._-]*)((?:",fe="(?:\\s*=\\s*(?:'[^']*?'|\"[^\"]*?\"|<[^>]*?>|"+ce.replace("\\/","")+"))?)",he=new RegExp(se+le+fe+"+)(["+ue+"]*/?>)","g"),de=new RegExp(se+le+fe+"*)(["+ue+"]*/>)","g"),ve=new RegExp("("+le+"\\s*=\\s*)(['\"]?)"+te+"\\2","gi");function pe(e,t,n,r){return "<"+t+n.replace(ve,ge)+r}function ge(e,t,n){return t+(n||'"')+Y+(n||'"')}function me(e,t,n){return oe.test(t)?e:"<"+t+n+"></"+t+">"}var ye=ee?function(e,t){var n=t.join(" ");return t.slice.call(e,0).sort(function(e,t){return n.indexOf(e.name)<=n.indexOf(t.name)?-1:1})}:function(e,t){return t.slice.call(e,0)};function be(e,t){for(var n=t.length,r=0;r<n;)e=e.childNodes[t[r++]];return e}function we(e,t,n,r){for(var i=e.attributes,a=[],o=[],u=ye(i,n),c=u.length,l=0;l<c;){var s,f=u[l++],h=f.value===Y;if(h||1<(s=f.value.split(te)).length){var d=f.name;if(a.indexOf(d)<0){a.push(d);var v=n.shift().replace(h?/^(?:|[\S\s]*?\s)(\S+?)\s*=\s*('|")?$/:new RegExp("^(?:|[\\S\\s]*?\\s)("+d+")\\s*=\\s*('|\")[\\S\\s]*","i"),"$1"),p=i[v]||i[v.toLowerCase()];if(h)t.push(Ne(p,r,v,null));else {for(var g=s.length-2;g--;)n.shift();t.push(Ne(p,r,v,s));}}o.push(f);}}for(var m=((l=0)<(c=o.length)&&ee&&!("ownerSVGElement"in e));l<c;){var y=o[l++];m&&(y.value=""),e.removeAttribute(y.name);}var b=e.nodeName;if(/^script$/i.test(b)){var w=N.createElement(b);for(c=i.length,l=0;l<c;)w.setAttributeNode(i[l++].cloneNode(!0));w.textContent=e.textContent,e.parentNode.replaceChild(w,e);}}function Ne(e,t,n,r){return {type:"attr",node:e,path:t,name:n,sparse:r}}function xe(e,t){return {type:"text",node:e,path:t}}var Ee,Ce=(Ee=new s,{get:function(e){return Ee.get(e)},set:function(e,t){return Ee.set(e,t),t}});function ke(o,f){var e=(o.convert||
+  /*! (c) Andrea Giammarchi - ISC */
+  function(e){return e.join(te).replace(de,me).replace(he,pe)})(f),t=o.transform;t&&(e=t(e));var n=R(e,o.type);Oe(n);var u=[];return function e(t,n,r,i){for(var a,o,u=t.childNodes,c=u.length,l=0;l<c;){var s=u[l];switch(s.nodeType){case re:var f=i.concat(l);we(s,n,r,f),e(s,n,r,f);break;case ne:var h=s.textContent;if(h===Y)r.shift(),n.push(ae.test(t.nodeName)?xe(t,i):(a=s,o=i.concat(l),{type:"any",node:a,path:o}));else switch(h.slice(0,2)){case"/*":if("*/"!==h.slice(-2))break;case"👻":t.removeChild(s),l--,c--;}break;case ie:ae.test(t.nodeName)&&X.call(s.textContent)===te&&(r.shift(),n.push(xe(t,i)));}l++;}}(n,u,f.slice(0),[]),{content:n,updates:function(c){for(var l=[],s=u.length,e=0,t=0;e<s;){var n=u[e++],r=be(c,n.path);switch(n.type){case"any":l.push({fn:o.any(r,[]),sparse:!1});break;case"attr":var i=n.sparse,a=o.attribute(r,n.name,n.node);null===i?l.push({fn:a,sparse:!1}):(t+=i.length-2,l.push({fn:a,sparse:!0,values:i}));break;case"text":l.push({fn:o.text(r),sparse:!1}),r.textContent="";}}return s+=t,function(){var e=arguments.length;if(s!==e-1)throw new Error(e-1+" values instead of "+s+"\n"+f.join("${value}"));for(var t=1,n=1;t<e;){var r=l[t-n];if(r.sparse){var i=r.values,a=i[0],o=1,u=i.length;for(n+=u-2;o<u;)a+=arguments[t++]+i[o++];r.fn(a);}else r.fn(arguments[t++]);}return c}}}}var Ae=[];function Se(i){var a=Ae,o=Oe;return function(e){var t,n,r;return a!==e&&(t=i,n=a=e,r=Ce.get(n)||Ce.set(n,ke(t,n)),o=r.updates(U.call(N,r.content,!0))),o.apply(null,arguments)}}function Oe(e){for(var t=e.childNodes,n=t.length;n--;){var r=t[n];1!==r.nodeType&&0===X.call(r.textContent).length&&e.removeChild(r);}}
+  /*! (c) Andrea Giammarchi - ISC */var Te,Me,_e=(Te=/acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i,Me=/([^A-Z])([A-Z]+)/g,function(e,t){return "ownerSVGElement"in e?function(e,t){var n;return (n=t?t.cloneNode(!0):(e.setAttribute("style","--hyper:style;"),e.getAttributeNode("style"))).value="",e.setAttributeNode(n),Le(n,!0)}(e,t):Le(e.style,!1)});
+  /*! (c) Andrea Giammarchi - ISC */function je(e,t,n){return t+"-"+n.toLowerCase()}function Le(a,o){var u,c;return function(e){var t,n,r,i;switch(typeof e){case"object":if(e){if("object"===u){if(!o&&c!==e)for(n in c)n in e||(a[n]="");}else o?a.value="":a.cssText="";for(n in t=o?{}:a,e)r="number"!=typeof(i=e[n])||Te.test(n)?i:i+"px",!o&&/^--/.test(n)?t.setProperty(n,r):t[n]=r;u="object",o?a.value=function(e){var t,n=[];for(t in e)n.push(t.replace(Me,je),":",e[t],";");return n.join("")}(c=t):c=e;break}default:c!=e&&(u="string",c=e,o?a.value=e||"":a.cssText=e||"");}}}var Pe,De,We=(Pe=[].slice,(De=$e.prototype).ELEMENT_NODE=1,De.nodeType=111,De.remove=function(e){var t=this.childNodes,n=this.firstChild,r=this.lastChild;if(this._=null,e&&2===t.length)r.parentNode.removeChild(r);else {var i=this.ownerDocument.createRange();i.setStartBefore(e?t[1]:n),i.setEndAfter(r),i.deleteContents();}return n},De.valueOf=function(e){var t=this._,n=null==t;if(n&&(t=this._=this.ownerDocument.createDocumentFragment()),n||e)for(var r=this.childNodes,i=0,a=r.length;i<a;i++)t.appendChild(r[i]);return t},$e);function $e(e){var t=this.childNodes=Pe.call(e,0);this.firstChild=t[0],this.lastChild=t[t.length-1],this.ownerDocument=t[0].ownerDocument,this._=null;}function Re(e){return {html:e}}function Fe(e,t){switch(e.nodeType){case Qe:return 1/t<0?t?e.remove(!0):e.lastChild:t?e.valueOf(!0):e.firstChild;case Ke:return Fe(e.render(),t);default:return e}}function He(e,t){t(e.placeholder),"text"in e?Promise.resolve(e.text).then(String).then(t):"any"in e?Promise.resolve(e.any).then(t):"html"in e?Promise.resolve(e.html).then(Re).then(t):Promise.resolve(W.invoke(e,t)).then(t);}function Ie(e){return null!=e&&"then"in e}var ze,Ve,Ze,Ge,qe,Be="ownerSVGElement",Je="connected",Ke=d.prototype.nodeType,Qe=We.prototype.nodeType,Ue=(Ve=(ze={Event:u,WeakSet:e}).Event,Ze=ze.WeakSet,Ge=!0,qe=null,function(e){return Ge&&(Ge=!Ge,qe=new Ze,function(t){var i=new Ze,a=new Ze;try{new MutationObserver(u).observe(t,{subtree:!0,childList:!0});}catch(e){var n=0,r=[],o=function(e){r.push(e),clearTimeout(n),n=setTimeout(function(){u(r.splice(n=0,r.length));},0);};t.addEventListener("DOMNodeRemoved",function(e){o({addedNodes:[],removedNodes:[e.target]});},!0),t.addEventListener("DOMNodeInserted",function(e){o({addedNodes:[e.target],removedNodes:[]});},!0);}function u(e){for(var t,n=e.length,r=0;r<n;r++)c((t=e[r]).removedNodes,"disconnected",a,i),c(t.addedNodes,"connected",i,a);}function c(e,t,n,r){for(var i,a=new Ve(t),o=e.length,u=0;u<o;1===(i=e[u++]).nodeType&&l(i,a,t,n,r));}function l(e,t,n,r,i){qe.has(e)&&!r.has(e)&&(i.delete(e),r.add(e),e.dispatchEvent(t));for(var a=e.children||[],o=a.length,u=0;u<o;l(a[u++],t,n,r,i));}}(e.ownerDocument)),qe.add(e),e}),Xe=/^(?:form|list)$/i,Ye=[].slice;function et(e){return this.type=e,Se(this)}var tt=!(et.prototype={attribute:function(n,r,e){var i,t=Be in n;if("style"===r)return _e(n,e,t);if("."===r.slice(0,1))return o=n,u=r.slice(1),t?function(t){try{o[u]=t;}catch(e){o.setAttribute(u,t);}}:function(e){o[u]=e;};if(/^on/.test(r)){var a=r.slice(2);return a===Je||"disconnected"===a?Ue(n):r.toLowerCase()in n&&(a=a.toLowerCase()),function(e){i!==e&&(i&&n.removeEventListener(a,i,!1),(i=e)&&n.addEventListener(a,e,!1));}}if("data"===r||!t&&r in n&&!Xe.test(r))return function(e){i!==e&&(i=e,n[r]!==e&&null==e?(n[r]="",n.removeAttribute(r)):n[r]=e);};if(r in W.attributes)return function(e){var t=W.attributes[r](n,e);i!==t&&(null==(i=t)?n.removeAttribute(r):n.setAttribute(r,t));};var o,u,c=!1,l=e.cloneNode(!0);return function(e){i!==e&&(i=e,l.value!==e&&(null==e?(c&&(c=!1,n.removeAttributeNode(l)),l.value=e):(l.value=e,c||(c=!0,n.setAttributeNode(l)))));}},any:function(r,i){var a,o={node:Fe,before:r},u=Be in r?"svg":"html",c=!1;return function e(t){switch(typeof t){case"string":case"number":case"boolean":c?a!==t&&(a=t,i[0].textContent=t):(c=!0,a=t,i=l(r.parentNode,i,[(n=t,r.ownerDocument.createTextNode(n))],o));break;case"function":e(t(r));break;case"object":case"undefined":if(null==t){c=!1,i=l(r.parentNode,i,[],o);break}default:if(c=!1,$(a=t))if(0===t.length)i.length&&(i=l(r.parentNode,i,[],o));else switch(typeof t[0]){case"string":case"number":case"boolean":e({html:t});break;case"object":if($(t[0])&&(t=t.concat.apply([],t)),Ie(t[0])){Promise.all(t).then(e);break}default:i=l(r.parentNode,i,t,o);}else "ELEMENT_NODE"in t?i=l(r.parentNode,i,11===t.nodeType?Ye.call(t.childNodes):[t],o):Ie(t)?t.then(e):"placeholder"in t?He(t,e):"text"in t?e(String(t.text)):"any"in t?e(t.any):"html"in t?i=l(r.parentNode,i,Ye.call(R([].concat(t.html).join(""),u).childNodes),o):e("length"in t?Ye.call(t):W.invoke(t,e));}var n;}},text:function(r){var i;return function e(t){if(i!==t){var n=typeof(i=t);"object"==n&&t?Ie(t)?t.then(e):"placeholder"in t?He(t,e):e("text"in t?String(t.text):"any"in t?t.any:"html"in t?[].concat(t.html).join(""):"length"in t?Ye.call(t).join(""):W.invoke(t,e)):"function"==n?e(t(r)):r.textContent=null==t?"":t;}}}}),nt=function(e){var t,n=(t=(N.defaultView.navigator||{}).userAgent,/(Firefox|Safari)\/(\d+)/.test(t)&&!/(Chrom[eium]+|Android)\/(\d+)/.test(t)),r=!("raw"in e)||e.propertyIsEnumerable("raw")||!Object.isFrozen(e.raw);if(n||r){var i={},a=function(e){for(var t=".",n=0;n<e.length;n++)t+=e[n].length+"."+e[n];return i[t]||(i[t]=e)};if(r)nt=a;else {var o=new s;nt=function(e){return o.get(e)||(n=a(t=e),o.set(t,n),n);var t,n;};}}else tt=!0;return rt(e)};function rt(e){return tt?e:nt(e)}function it(e){for(var t=arguments.length,n=[rt(e)],r=1;r<t;)n.push(arguments[r++]);return n}var at=new s,ot=function(t){var n,r,i;return function(){var e=it.apply(null,arguments);return i!==e[0]?(i=e[0],r=new et(t),n=ct(r.apply(r,e))):r.apply(r,e),n}},ut=function(e,t){var n=t.indexOf(":"),r=at.get(e),i=t;return -1<n&&(i=t.slice(n+1),t=t.slice(0,n)||"html"),r||at.set(e,r={}),r[i]||(r[i]=ot(t))},ct=function(e){var t=e.childNodes,n=t.length;return 1===n?t[0]:n?new We(t):e},lt=new s;function st(){var e=lt.get(this),t=it.apply(null,arguments);return e&&e.template===t[0]?e.tagger.apply(null,t):function(e){var t=new et(Be in this?"svg":"html");lt.set(this,{tagger:t,template:e}),this.textContent="",this.appendChild(t.apply(null,arguments));}
+  /*! (c) Andrea Giammarchi (ISC) */.apply(this,t),this}var ft,ht,dt,vt,pt=W.define,gt=et.prototype;function mt(e){return arguments.length<2?null==e?ot("html"):"string"==typeof e?mt.wire(null,e):"raw"in e?ot("html")(e):"nodeType"in e?mt.bind(e):ut(e,"html"):("raw"in e?ot("html"):mt.wire).apply(null,arguments)}return mt.Component=d,mt.bind=function(e){return st.bind(e)},mt.define=pt,mt.diff=l,(mt.hyper=mt).observe=Ue,mt.tagger=gt,mt.wire=function(e,t){return null==e?ot(t||"html"):ut(e,t||"html")},mt._={WeakMap:s,WeakSet:e},ft=ot,ht=new s,dt=Object.create,vt=function(e,t){var n={w:null,p:null};return t.set(e,n),n},Object.defineProperties(d,{for:{configurable:!0,value:function(e,t){return function(e,t,n,r){var i,a,o,u=t.get(e)||vt(e,t);switch(typeof r){case"object":case"function":var c=u.w||(u.w=new s);return c.get(r)||(i=c,a=r,o=new e(n),i.set(a,o),o);default:var l=u.p||(u.p=dt(null));return l[r]||(l[r]=new e(n))}}(this,ht.get(e)||(n=e,r=new h,ht.set(n,r),r),e,null==t?"default":t);var n,r;}}}),Object.defineProperties(d.prototype,{handleEvent:{value:function(e){var t=e.currentTarget;this["getAttribute"in t&&t.getAttribute("data-call")||"on"+e.type](e);}},html:v("html",ft),svg:v("svg",ft),state:v("state",function(){return this.defaultState}),defaultState:{get:function(){return {}}},dispatch:{value:function(e,t){var n=this._wire$;if(n){var r=new u(e,{bubbles:!0,cancelable:!0,detail:t});return r.component=this,(n.dispatchEvent?n:n.firstChild).dispatchEvent(r)}return !1}},setState:{value:function(e,t){var n=this.state,r="function"==typeof e?e.call(this,n):e;for(var i in r)n[i]=r[i];return !1!==t&&this.render(),this}}}),mt}(document);
+
   // @ts-check
 
   /** @type {import("idb")} */
@@ -3005,7 +3040,7 @@ window.respecVersion = "25.3.0";
   const idb = _idb;
   /** @type {import("hyperhtml").default} */
   // @ts-ignore
-  const hyperHTML$2 = hyperHTML$1;
+  const html$1 = hyperHTML;
   /** @type {import("marked")} */
   // @ts-ignore
   const marked$1 = marked_1;
@@ -3016,6 +3051,18 @@ window.respecVersion = "25.3.0";
   // @ts-check
 
   const dashes = /-/g;
+
+  const localizationStrings = {
+    en: {
+      x_and_y: " and ",
+      x_y_and_z: ", and ",
+    },
+    de: {
+      x_and_y: " und ",
+      x_y_and_z: " und ",
+    },
+  };
+  const l10n$2 = getIntlData(localizationStrings);
 
   const ISODate = new Intl.DateTimeFormat(["en-ca-iso8601"], {
     timeZone: "UTC",
@@ -3111,8 +3158,10 @@ window.respecVersion = "25.3.0";
    * @param {HTMLElement|HTMLElement[]} elems
    * @param {String} msg message to show in warning
    * @param {String=} title error message to add on each element
+   * @param {object} [options]
+   * @param {string} [options.details]
    */
-  function showInlineWarning(elems, msg, title) {
+  function showInlineWarning(elems, msg, title, { details } = {}) {
     if (!Array.isArray(elems)) elems = [elems];
     const links = elems
       .map((element, i) => {
@@ -3120,7 +3169,11 @@ window.respecVersion = "25.3.0";
         return generateMarkdownLink(element, i);
       })
       .join(", ");
-    pub("warn", `${msg} at: ${links}.`);
+    let message = `${msg} at: ${links}.`;
+    if (details) {
+      message += `\n\n<details>${details}</details>`;
+    }
+    pub("warn", message);
     console.warn(msg, elems);
   }
 
@@ -3172,74 +3225,6 @@ window.respecVersion = "25.3.0";
     return `[${i + 1}](#${element.id})`;
   }
 
-  class IDBKeyVal {
-    /**
-     * @param {import("idb").IDBPDatabase} idb
-     * @param {string} storeName
-     */
-    constructor(idb, storeName) {
-      this.idb = idb;
-      this.storeName = storeName;
-    }
-
-    /** @param {string} key */
-    async get(key) {
-      return await this.idb
-        .transaction(this.storeName)
-        .objectStore(this.storeName)
-        .get(key);
-    }
-
-    /**
-     * @param {string[]} keys
-     */
-    async getMany(keys) {
-      const keySet = new Set(keys);
-      /** @type {Map<string, any>} */
-      const results = new Map();
-      let cursor = await this.idb.transaction(this.storeName).store.openCursor();
-      while (cursor) {
-        if (keySet.has(cursor.key)) {
-          results.set(cursor.key, cursor.value);
-        }
-        cursor = await cursor.continue();
-      }
-      return results;
-    }
-
-    /**
-     * @param {string} key
-     * @param {any} value
-     */
-    async set(key, value) {
-      const tx = this.idb.transaction(this.storeName, "readwrite");
-      tx.objectStore(this.storeName).put(value, key);
-      return await tx.done;
-    }
-
-    async addMany(entries) {
-      const tx = this.idb.transaction(this.storeName, "readwrite");
-      for (const [key, value] of entries) {
-        tx.objectStore(this.storeName).put(value, key);
-      }
-      return await tx.done;
-    }
-
-    async clear() {
-      const tx = this.idb.transaction(this.storeName, "readwrite");
-      tx.objectStore(this.storeName).clear();
-      return await tx.done;
-    }
-
-    async keys() {
-      const tx = this.idb.transaction(this.storeName);
-      /** @type {Promise<string[]>} */
-      const keys = tx.objectStore(this.storeName).getAllKeys();
-      await tx.done;
-      return keys;
-    }
-  }
-
   // STRING HELPERS
   // Takes an array and returns a string that separates each of its items with the proper commas and
   // "and". The second argument is a mapping function that can convert the items before they are
@@ -3258,12 +3243,13 @@ window.respecVersion = "25.3.0";
       case 1: // "x"
         return items.toString();
       case 2: // x and y
-        return items.join(" and ");
+        return items.join(l10n$2.x_and_y);
       default: {
         // x, y, and z
         const str = items.join(", ");
         const lastComma = str.lastIndexOf(",");
-        return `${str.substr(0, lastComma + 1)} and ${str.slice(lastComma + 2)}`;
+        const and = l10n$2.x_y_and_z;
+        return `${str.substr(0, lastComma)}${and}${str.slice(lastComma + 2)}`;
       }
     }
   }
@@ -3467,14 +3453,14 @@ window.respecVersion = "25.3.0";
 
   function htmlJoinComma(array, mapper = item => item) {
     const items = array.map(mapper);
-    const joined = items.slice(0, -1).map(item => hyperHTML$2`${item}, `);
-    return hyperHTML$2`${joined}${items[items.length - 1]}`;
+    const joined = items.slice(0, -1).map(item => html$1`${item}, `);
+    return html$1`${joined}${items[items.length - 1]}`;
   }
 
   /**
    * Creates and sets an ID to an element (elem)
    * using a specific prefix if provided, and a specific text if given.
-   * @param {HTMLElement} elem element
+   * @param {Element} elem element
    * @param {String} pfx prefix
    * @param {String} txt text
    * @param {Boolean} noLC do not convert to lowercase
@@ -3498,9 +3484,7 @@ window.respecVersion = "25.3.0";
 
     if (!id) {
       id = "generatedID";
-    } else if (pfx === "example") {
-      id = txt;
-    } else if (/\.$/.test(id) || !/^[a-z]/i.test(id)) {
+    } else if (/\.$/.test(id) || !/^[a-z]/i.test(pfx || id)) {
       id = `x${id}`; // trailing . doesn't play well with jQuery
     }
     if (pfx) {
@@ -3688,7 +3672,7 @@ window.respecVersion = "25.3.0";
    * @param {Node} outer outer node to be modified
    * @param {Element} wrapper wrapper node to be appended
    */
-  function wrapInner$1(outer, wrapper) {
+  function wrapInner(outer, wrapper) {
     wrapper.append(...outer.childNodes);
     outer.appendChild(wrapper);
     return outer;
@@ -3712,34 +3696,6 @@ window.respecVersion = "25.3.0";
       parent = closest.parentElement;
     }
     return list;
-  }
-
-  /**
-   * Applies the selector for direct descendants.
-   * This is a helper function for browsers without :scope support.
-   * Note that this doesn't support comma separated selectors.
-   * @param {Element} element
-   * @param {string} selector
-   * @returns {NodeListOf<HTMLElement>}
-   */
-  function children(element, selector) {
-    try {
-      return element.querySelectorAll(`:scope > ${selector}`);
-    } catch {
-      let tempId = "";
-      // We give a temporary id, to overcome lack of ":scope" support in Edge.
-      if (!element.id) {
-        tempId = `temp-${String(Math.random()).substr(2)}`;
-        element.id = tempId;
-      }
-      const query = `#${element.id} > ${selector}`;
-      /** @type {NodeListOf<HTMLElement>} */
-      const elements = element.parentElement.querySelectorAll(query);
-      if (tempId) {
-        element.id = "";
-      }
-      return elements;
-    }
   }
 
   /**
@@ -3846,9 +3802,13 @@ window.respecVersion = "25.3.0";
     }
   }
 
+  /**
+   * @template ValueType
+   * @extends {Map<string, ValueType>}
+   */
   class CaseInsensitiveMap extends Map {
     /**
-     * @param {Array<[String, HTMLElement]>} [entries]
+     * @param {Array<[string, ValueType]>} [entries]
      */
     constructor(entries = []) {
       super();
@@ -3859,7 +3819,7 @@ window.respecVersion = "25.3.0";
     }
     /**
      * @param {String} key
-     * @param {*} value
+     * @param {ValueType} value
      */
     set(key, value) {
       super.set(key.toLowerCase(), value);
@@ -4549,10 +4509,20 @@ window.respecVersion = "25.3.0";
     });
   }
 
-  const respecUI = hyperHTML$2`<div id='respec-ui' class='removeOnSave' hidden></div>`;
-  const menu = hyperHTML$2`<ul id=respec-menu role=menu aria-labelledby='respec-pill' hidden></ul>`;
-  const closeButton = hyperHTML$2`<button class="close-button" onclick=${() =>
-  ui.closeModal()} title="Close">❌</button>`;
+  const respecUI = html$1`<div id="respec-ui" class="removeOnSave" hidden></div>`;
+  const menu = html$1`<ul
+  id="respec-menu"
+  role="menu"
+  aria-labelledby="respec-pill"
+  hidden
+></ul>`;
+  const closeButton = html$1`<button
+  class="close-button"
+  onclick=${() => ui.closeModal()}
+  title="Close"
+>
+  ❌
+</button>`;
   window.addEventListener("load", () => trapFocus(menu));
   let modal;
   let overlay;
@@ -4563,7 +4533,7 @@ window.respecVersion = "25.3.0";
   sub("start-all", () => document.body.prepend(respecUI), { once: true });
   sub("end-all", () => document.body.prepend(respecUI), { once: true });
 
-  const respecPill = hyperHTML$2`<button id='respec-pill' disabled>ReSpec</button>`;
+  const respecPill = html$1`<button id="respec-pill" disabled>ReSpec</button>`;
   respecUI.appendChild(respecPill);
   respecPill.addEventListener("click", e => {
     e.stopPropagation();
@@ -4645,10 +4615,13 @@ window.respecVersion = "25.3.0";
 
   function createWarnButton(butName, arr, title) {
     const buttonId = `respec-pill-${butName}`;
-    const button = hyperHTML$2`<button id='${buttonId}' class='respec-info-button'>`;
+    const button = html$1`<button
+    id="${buttonId}"
+    class="respec-info-button"
+  ></button>`;
     button.addEventListener("click", () => {
       button.setAttribute("aria-expanded", "true");
-      const ol = hyperHTML$2`<ol class='${`respec-${butName}-list`}'></ol>`;
+      const ol = html$1`<ol class="${`respec-${butName}-list`}"></ol>`;
       for (const err of arr) {
         const fragment = document
           .createRange()
@@ -4691,10 +4664,14 @@ window.respecVersion = "25.3.0";
     addCommand(label, handler, keyShort, icon) {
       icon = icon || "";
       const id = `respec-button-${label.toLowerCase().replace(/\s+/, "-")}`;
-      const button = hyperHTML$2`<button id="${id}" class="respec-option" title="${keyShort}">
+      const button = html$1`<button
+      id="${id}"
+      class="respec-option"
+      title="${keyShort}"
+    >
       <span class="respec-cmd-icon" aria-hidden="true">${icon}</span> ${label}…
     </button>`;
-      const menuItem = hyperHTML$2`<li role=menuitem>${button}</li>`;
+      const menuItem = html$1`<li role="menuitem">${button}</li>`;
       menuItem.addEventListener("click", handler);
       menu.appendChild(menuItem);
       if (keyShort) shortcut.add(keyShort, handler);
@@ -4726,13 +4703,18 @@ window.respecVersion = "25.3.0";
     freshModal(title, content, currentOwner) {
       if (modal) modal.remove();
       if (overlay) overlay.remove();
-      overlay = hyperHTML$2`<div id='respec-overlay' class='removeOnSave'></div>`;
+      overlay = html$1`<div id="respec-overlay" class="removeOnSave"></div>`;
       const id = `${currentOwner.id}-modal`;
       const headingId = `${id}-heading`;
-      modal = hyperHTML$2`<div id='${id}' class='respec-modal removeOnSave' role='dialog' aria-labelledby='${headingId}'>
+      modal = html$1`<div
+      id="${id}"
+      class="respec-modal removeOnSave"
+      role="dialog"
+      aria-labelledby="${headingId}"
+    >
       ${closeButton}
       <h3 id="${headingId}">${title}</h3>
-      <div class='inside'>${content}</div>
+      <div class="inside">${content}</div>
     </div>`;
       const ariaMap = new Map([["labelledby", headingId]]);
       ariaDecorate(modal, ariaMap);
@@ -4873,12 +4855,7 @@ window.respecVersion = "25.3.0";
     const metas = doc.querySelectorAll("meta[charset]");
     const val = [];
     for (const meta of metas) {
-      val.push(
-        meta
-          .getAttribute("charset")
-          .trim()
-          .toLowerCase()
-      );
+      val.push(meta.getAttribute("charset").trim().toLowerCase());
     }
     const utfExists = val.includes("utf-8");
 
@@ -5266,13 +5243,15 @@ window.respecVersion = "25.3.0";
       "check-charset": false,
       "privsec-section": false,
     },
-    pluralize: false,
+    pluralize: true,
     specStatus: "base",
     highlightVars: true,
     addSectionLinks: true,
   };
 
   // @ts-check
+
+  /** @type {CaseInsensitiveMap<Set<HTMLElement>>} */
   const definitionMap = new CaseInsensitiveMap();
 
   /**
@@ -5710,10 +5689,11 @@ window.respecVersion = "25.3.0";
   };
 
   Object.keys(additions).forEach(key => {
+    if (!l10n[key]) l10n[key] = {};
     Object.assign(l10n[key], additions[key]);
   });
 
-  var l10n$2 = /*#__PURE__*/Object.freeze({
+  var l10n$3 = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$j
   });
@@ -5732,7 +5712,7 @@ window.respecVersion = "25.3.0";
     };
   });
 
-  const localizationStrings = {
+  const localizationStrings$1 = {
     en: {
       file_a_bug: "File a bug",
       participate: "Participate",
@@ -5766,7 +5746,7 @@ window.respecVersion = "25.3.0";
       commit_history: "Revisionen",
     },
   };
-  const l10n$3 = getIntlData(localizationStrings);
+  const l10n$4 = getIntlData(localizationStrings$1);
 
   async function run$8(conf) {
     if (!conf.hasOwnProperty("github") || !conf.github) {
@@ -5819,18 +5799,18 @@ window.respecVersion = "25.3.0";
       shortName: repo,
     };
     const otherLink = {
-      key: l10n$3.participate,
+      key: l10n$4.participate,
       data: [
         {
           value: `GitHub ${org}/${repo}`,
           href: ghURL,
         },
         {
-          value: l10n$3.file_a_bug,
+          value: l10n$4.file_a_bug,
           href: newProps.issueBase,
         },
         {
-          value: l10n$3.commit_history,
+          value: l10n$4.commit_history,
           href: new URL(`./commits/${branch}`, ghURL.href).href,
         },
         {
@@ -5991,7 +5971,7 @@ window.respecVersion = "25.3.0";
    */
   const name$m = "core/title";
 
-  const localizationStrings$1 = {
+  const localizationStrings$2 = {
     en: {
       default_title: "No Title",
     },
@@ -6000,12 +5980,12 @@ window.respecVersion = "25.3.0";
     },
   };
 
-  const l10n$4 = getIntlData(localizationStrings$1);
+  const l10n$5 = getIntlData(localizationStrings$2);
 
   function run$a(conf) {
     /** @type {HTMLElement} */
     const h1Elem =
-      document.querySelector("h1#title") || hyperHTML$2`<h1 id="title">`;
+      document.querySelector("h1#title") || html$1`<h1 id="title"></h1>`;
 
     // check existing element is ok to use
     if (h1Elem.isConnected && h1Elem.textContent.trim() === "") {
@@ -6032,14 +6012,14 @@ window.respecVersion = "25.3.0";
     // If the h1 is newly created, it won't be connected. In this case
     // we use the <title> or a localized fallback.
     if (!h1Elem.isConnected) {
-      h1Elem.textContent = document.title || `${l10n$4.default_title}`;
+      h1Elem.textContent = document.title || `${l10n$5.default_title}`;
     }
 
     let documentTitle = norm(h1Elem.textContent);
 
     if (conf.isPreview && conf.prNumber) {
       const prUrl = conf.prUrl || `${conf.github.repoURL}pull/${conf.prNumber}`;
-      const { childNodes } = hyperHTML$2`
+      const { childNodes } = html$1`
       Preview of PR <a href="${prUrl}">#${conf.prNumber}</a>:
     `;
       h1Elem.prepend(...childNodes);
@@ -6061,7 +6041,6 @@ window.respecVersion = "25.3.0";
   });
 
   // @ts-check
-  const html$1 = hyperHTML$2;
 
   var showLink = link => {
     if (!link.key) {
@@ -6093,14 +6072,14 @@ window.respecVersion = "25.3.0";
 
   var showLogo = obj => {
     /** @type {HTMLAnchorElement} */
-    const a = hyperHTML$2`
+    const a = html$1`
     <a href="${obj.url || ""}" class="logo"></a>
   `;
     if (!obj.alt) {
       showInlineWarning(a, "Found spec logo without an `alt` attribute");
     }
     /** @type {HTMLImageElement} */
-    const img = hyperHTML$2`
+    const img = html$1`
     <img
       id="${obj.id}"
       alt="${obj.alt}"
@@ -6109,7 +6088,7 @@ window.respecVersion = "25.3.0";
     />
   `;
     // avoid triggering 404 requests from dynamically generated
-    // hyperHTML attribute values
+    // html attribute values
     img.src = obj.src;
     a.append(img);
     return a;
@@ -6117,7 +6096,7 @@ window.respecVersion = "25.3.0";
 
   // @ts-check
 
-  const localizationStrings$2 = {
+  const localizationStrings$3 = {
     en: {
       until: "Until",
     },
@@ -6126,42 +6105,42 @@ window.respecVersion = "25.3.0";
     },
   };
 
-  const lang$9 = lang in localizationStrings$2 ? lang : "en";
+  const lang$9 = lang in localizationStrings$3 ? lang : "en";
 
   var showPeople = (items = []) => {
-    const l10n = localizationStrings$2[lang$9];
+    const l10n = localizationStrings$3[lang$9];
     return items.map(getItem);
 
     function getItem(p) {
-      const personName = [p.name]; // treated as opt-in HTML by hyperHTML
+      const personName = [p.name]; // treated as opt-in HTML by html
       const company = [p.company];
       const editorid = p.w3cid ? parseInt(p.w3cid, 10) : null;
       /** @type {HTMLElement} */
-      const dd = hyperHTML$2`
+      const dd = html$1`
       <dd class="p-author h-card vcard" data-editor-id="${editorid}"></dd>
     `;
       const span = document.createDocumentFragment();
       const contents = [];
       if (p.mailto) {
-        contents.push(hyperHTML$2`
+        contents.push(html$1`
         <a class="ed_mailto u-email email p-name" href="${`mailto:${p.mailto}`}"
           >${personName}</a
         >
       `);
       } else if (p.url) {
-        contents.push(hyperHTML$2`
+        contents.push(html$1`
         <a class="u-url url p-name fn" href="${p.url}">${personName}</a>
       `);
       } else {
         contents.push(
-          hyperHTML$2`
+          html$1`
           <span class="p-name fn">${personName}</span>
         `
         );
       }
       if (p.orcid) {
         contents.push(
-          hyperHTML$2`
+          html$1`
           <a class="p-name orcid" href="${p.orcid}"
             ><svg
               width="16"
@@ -6190,7 +6169,7 @@ window.respecVersion = "25.3.0";
       if (p.company) {
         if (p.companyURL) {
           contents.push(
-            hyperHTML$2`
+            html$1`
             (<a class="p-org org h-org h-card" href="${p.companyURL}"
               >${company}</a
             >)
@@ -6198,7 +6177,7 @@ window.respecVersion = "25.3.0";
           );
         } else {
           contents.push(
-            hyperHTML$2`
+            html$1`
             (${company})
           `
           );
@@ -6231,25 +6210,25 @@ window.respecVersion = "25.3.0";
         }
         timeElem.dateTime = toShortIsoDate(retiredDate);
         contents.push(
-          hyperHTML$2`
+          html$1`
           - ${l10n.until.concat(" ")}${timeElem}
         `
         );
       }
 
-      // @ts-ignore: hyperhtml types only support Element but we use a DocumentFragment here
-      hyperHTML$2.bind(span)`${contents}`;
+      // @ts-ignore: html types only support Element but we use a DocumentFragment here
+      html$1.bind(span)`${contents}`;
       dd.appendChild(span);
       return dd;
     }
 
     function getExtra(extra) {
-      const span = hyperHTML$2`
+      const span = html$1`
       <span class="${extra.class || null}"></span>
     `;
       let textContainer = span;
       if (extra.href) {
-        textContainer = hyperHTML$2`
+        textContainer = html$1`
         <a href="${extra.href}"></a>
       `;
         span.appendChild(textContainer);
@@ -6261,7 +6240,7 @@ window.respecVersion = "25.3.0";
 
   // @ts-check
 
-  const localizationStrings$3 = {
+  const localizationStrings$4 = {
     en: {
       author: "Author:",
       authors: "Authors:",
@@ -6324,7 +6303,7 @@ window.respecVersion = "25.3.0";
     },
   };
 
-  const l10n$5 = getIntlData(localizationStrings$3);
+  const l10n$6 = getIntlData(localizationStrings$4);
 
   const ccLicense = "https://creativecommons.org/licenses/by/3.0/";
 
@@ -6365,7 +6344,7 @@ window.respecVersion = "25.3.0";
   }
 
   var headersTmpl = conf => {
-    return hyperHTML$2`
+    return html$1`
     <div class="head">
       <div id="respec-banner">
         <span id="respec-banner-status">${conf.maturity}</span>&nbsp;&mdash;&nbsp;
@@ -6381,17 +6360,17 @@ window.respecVersion = "25.3.0";
       </h2>
       <dl>
         ${!conf.isNoTrack
-          ? hyperHTML$2`
-              <dt>${l10n$5.this_version}</dt>
+          ? html$1`
+              <dt>${l10n$6.this_version}</dt>
               <dd>
                 <a class="u-url" href="${conf.thisVersion}"
                   >${conf.thisVersion}</a
                 >
               </dd>
-              <dt>${l10n$5.latest_published_version}</dt>
+              <dt>${l10n$6.latest_published_version}</dt>
               <dd>
                 ${conf.latestVersion
-                  ? hyperHTML$2`
+                  ? html$1`
                       <a href="${conf.latestVersion}">${conf.latestVersion}</a>
                     `
                   : "none"}
@@ -6399,19 +6378,19 @@ window.respecVersion = "25.3.0";
             `
           : ""}
         ${conf.edDraftURI
-          ? hyperHTML$2`
-              <dt>${l10n$5.latest_editors_draft}</dt>
+          ? html$1`
+              <dt>${l10n$6.latest_editors_draft}</dt>
               <dd><a href="${conf.edDraftURI}">${conf.edDraftURI}</a></dd>
             `
           : ""}
         ${conf.testSuiteURI
-          ? hyperHTML$2`
+          ? html$1`
               <dt>Test suite:</dt>
               <dd><a href="${conf.testSuiteURI}">${conf.testSuiteURI}</a></dd>
             `
           : ""}
         ${conf.implementationReportURI
-          ? hyperHTML$2`
+          ? html$1`
               <dt>Implementation report:</dt>
               <dd>
                 <a href="${conf.implementationReportURI}"
@@ -6421,19 +6400,19 @@ window.respecVersion = "25.3.0";
             `
           : ""}
         ${conf.bugTrackerHTML
-          ? hyperHTML$2`
-              <dt>${l10n$5.bug_tracker}</dt>
+          ? html$1`
+              <dt>${l10n$6.bug_tracker}</dt>
               <dd>${[conf.bugTrackerHTML]}</dd>
             `
           : ""}
         ${conf.isED && conf.prevED
-          ? hyperHTML$2`
+          ? html$1`
               <dt>Previous editor's draft:</dt>
               <dd><a href="${conf.prevED}">${conf.prevED}</a></dd>
             `
           : ""}
         ${conf.showPreviousVersion
-          ? hyperHTML$2`
+          ? html$1`
               <dt>Previous version:</dt>
               <dd><a href="${conf.prevVersion}">${conf.prevVersion}</a></dd>
             `
@@ -6441,30 +6420,30 @@ window.respecVersion = "25.3.0";
         ${!conf.prevRecURI
           ? ""
           : conf.isRec
-          ? hyperHTML$2`
+          ? html$1`
               <dt>Previous Recommendation:</dt>
               <dd><a href="${conf.prevRecURI}">${conf.prevRecURI}</a></dd>
             `
-          : hyperHTML$2`
+          : html$1`
               <dt>Latest Recommendation:</dt>
               <dd><a href="${conf.prevRecURI}">${conf.prevRecURI}</a></dd>
             `}
-        <dt>${conf.multipleEditors ? l10n$5.editors : l10n$5.editor}</dt>
+        <dt>${conf.multipleEditors ? l10n$6.editors : l10n$6.editor}</dt>
         ${showPeople(conf.editors)}
         ${Array.isArray(conf.formerEditors) && conf.formerEditors.length > 0
-          ? hyperHTML$2`
+          ? html$1`
               <dt>
                 ${conf.multipleFormerEditors
-                  ? l10n$5.former_editors
-                  : l10n$5.former_editor}
+                  ? l10n$6.former_editors
+                  : l10n$6.former_editor}
               </dt>
               ${showPeople(conf.formerEditors)}
             `
           : ""}
         ${conf.authors
-          ? hyperHTML$2`
+          ? html$1`
               <dt>
-                ${conf.multipleAuthors ? l10n$5.authors : l10n$5.author}
+                ${conf.multipleAuthors ? l10n$6.authors : l10n$6.author}
               </dt>
               ${showPeople(conf.authors)}
             `
@@ -6472,7 +6451,7 @@ window.respecVersion = "25.3.0";
         ${conf.otherLinks ? conf.otherLinks.map(showLink) : ""}
       </dl>
       ${conf.errata
-        ? hyperHTML$2`
+        ? html$1`
             <p>
               Please check the
               <a href="${conf.errata}"><strong>errata</strong></a> for any
@@ -6481,7 +6460,7 @@ window.respecVersion = "25.3.0";
           `
         : ""}
       ${conf.alternateFormats
-        ? hyperHTML$2`
+        ? html$1`
             <p>
               ${conf.multipleAlternates
                 ? "This document is also available in these non-normative formats:"
@@ -6502,7 +6481,7 @@ window.respecVersion = "25.3.0";
    * @param {string=} cssClass
    */
   function linkLicense(text, url, cssClass) {
-    return hyperHTML$2`
+    return html$1`
     <a rel="license" href="${url}" class="${cssClass}">${text}</a>
   `;
   }
@@ -6510,12 +6489,12 @@ window.respecVersion = "25.3.0";
   function renderCopyright(conf) {
     return conf.isUnofficial
       ? conf.additionalCopyrightHolders
-        ? hyperHTML$2`
+        ? html$1`
           <p class="copyright">${[conf.additionalCopyrightHolders]}</p>
         `
         : conf.overrideCopyright
         ? [conf.overrideCopyright]
-        : hyperHTML$2`
+        : html$1`
           <p class="copyright">
             This document is licensed under a
             ${linkLicense(
@@ -6531,13 +6510,13 @@ window.respecVersion = "25.3.0";
   }
 
   function renderOfficialCopyright(conf) {
-    return hyperHTML$2`
+    return html$1`
     <p class="copyright">
       Copyright&copy;
       ${conf.copyrightStart ? `${conf.copyrightStart}-` : ""}${conf.publishYear}
       <a href="http://www.pcisig.com">PCI-SIG</a>
       ${conf.additionalCopyrightHolders
-        ? hyperHTML$2`
+        ? html$1`
             &amp; ${[conf.additionalCopyrightHolders]}
           `
         : ""}
@@ -6580,61 +6559,52 @@ window.respecVersion = "25.3.0";
   // @ts-check
 
   var sotdTmpl = (conf, opts) => {
-    return hyperHTML$2`
+    return html$1`
     <h2>${conf.l10n.sotd}</h2>
     ${conf.isPreview ? renderPreview(conf) : ""}
-    ${
-      conf.isUnofficial
-        ? renderIsUnofficial(opts)
-        : conf.isTagFinding
-        ? opts.additionalContent
-        : conf.isNoTrack
-        ? renderIsNoTrack(conf, opts)
-        : hyperHTML$2`
+    ${conf.isUnofficial
+      ? renderIsUnofficial(opts)
+      : conf.isTagFinding
+      ? opts.additionalContent
+      : conf.isNoTrack
+      ? renderIsNoTrack(conf, opts)
+      : html$1`
           <p><em>${[conf.l10n.status_at_publication]}</em></p>
-          ${
-            conf.isSubmission
-              ? noteForSubmission(conf, opts)
-              : hyperHTML$2`
+          ${conf.isSubmission
+            ? noteForSubmission(conf, opts)
+            : html$1`
                 ${!conf.sotdAfterWGinfo ? opts.additionalContent : ""}
-                ${
-                  !conf.overrideStatus
-                    ? hyperHTML$2`
+                ${!conf.overrideStatus
+                  ? html$1`
                       ${linkToWorkingGroup(conf)} ${linkToCommunity(conf, opts)}
-                      ${
-                        conf.isCR || conf.isPER || conf.isPR
-                          ? hyperHTML$2`
+                      ${conf.isCR || conf.isPER || conf.isPR
+                        ? html$1`
                             <p>
-                              ${
-                                conf.isCR
-                                  ? `
+                              ${conf.isCR
+                                ? `
                   PCI-SIG publishes a Candidate Recommendation to indicate that the document is believed to be
                   stable and to encourage implementation by the developer community. This Candidate
                   Recommendation is expected to advance to Proposed Recommendation no earlier than
                   ${conf.humanCREnd}.
                 `
-                                  : ""
-                              }
-                              ${
-                                conf.isPER
-                                  ? hyperHTML$2`
-                                    PCI-SIG Advisory Committee Members are invited
-                                    to send formal review comments on this
-                                    Proposed Edited Recommendation to the PCI-SIG
-                                    Team until ${conf.humanPEREnd}. Members of
-                                    the Advisory Committee will find the
-                                    appropriate review form for this document by
-                                    consulting their list of current
+                                : ""}
+                              ${conf.isPER
+                                ? html$1`
+                                    PCI-SIG Advisory Committee Members are
+                                    invited to send formal review comments on
+                                    this Proposed Edited Recommendation to the
+                                    PCI-SIG Team until ${conf.humanPEREnd}.
+                                    Members of the Advisory Committee will find
+                                    the appropriate review form for this
+                                    document by consulting their list of current
                                     <a
                                       href="https://www.pcisig.com/2002/09/wbs/myQuestionnaires"
                                       >WBS questionnaires</a
                                     >.
                                   `
-                                  : ""
-                              }
-                              ${
-                                conf.isPR
-                                  ? hyperHTML$2`
+                                : ""}
+                              ${conf.isPR
+                                ? html$1`
                                     The PCI-SIG Membership and other interested
                                     parties are invited to review the document
                                     and send comments to
@@ -6644,9 +6614,7 @@ window.respecVersion = "25.3.0";
                                       >${conf.wgPublicList}@pcisig.com</a
                                     >
                                     (<a
-                                      href="${
-                                        opts.mailToWGPublicListSubscription
-                                      }"
+                                      href="${opts.mailToWGPublicListSubscription}"
                                       >subscribe</a
                                     >,
                                     <a
@@ -6663,20 +6631,15 @@ window.respecVersion = "25.3.0";
                                     Recommendation review period that ended
                                     ${conf.humanCREnd}.
                                   `
-                                  : ""
-                              }
+                                : ""}
                             </p>
                           `
-                          : ""
-                      }
+                        : ""}
                     `
-                    : ""
-                }
-                ${
-                  conf.implementationReportURI
-                    ? renderImplementationReportURI(conf)
-                    : ""
-                }
+                  : ""}
+                ${conf.implementationReportURI
+                  ? renderImplementationReportURI(conf)
+                  : ""}
                 ${conf.sotdAfterWGinfo ? opts.additionalContent : ""}
                 ${conf.notRec ? renderNotRec(conf) : ""}
                 <p>
@@ -6687,47 +6650,39 @@ window.respecVersion = "25.3.0";
                     >PCI-SIG Specification Development Procedures 08/08/2017</a
                   >.
                 </p>
-                ${
-                  conf.addPatentNote
-                    ? hyperHTML$2`
+                ${conf.addPatentNote
+                  ? html$1`
                       <p>${[conf.addPatentNote]}</p>
                     `
-                    : ""
-                }
-              `
-          }
-        `
-    }
+                  : ""}
+              `}
+        `}
     ${opts.additionalSections}
   `;
   };
 
   function renderPreview(conf) {
     const { prUrl, prNumber, edDraftURI } = conf;
-    return hyperHTML$2`
+    return html$1`
     <details class="annoying-warning" open="">
       <summary
         >This is a
-        preview${
-          prUrl && prNumber
-            ? hyperHTML$2`
+        preview${prUrl && prNumber
+          ? html$1`
               of pull request
               <a href="${prUrl}">#${prNumber}</a>
             `
-            : ""
-        }</summary
+          : ""}</summary
       >
       <p>
         Do not attempt to implement this version of the specification. Do not
         reference this version as authoritative in any way.
-        ${
-          edDraftURI
-            ? hyperHTML$2`
+        ${edDraftURI
+          ? html$1`
               Instead, see
               <a href="${edDraftURI}">${edDraftURI}</a> for the Editor's draft.
             `
-            : ""
-        }
+          : ""}
       </p>
     </details>
   `;
@@ -6735,7 +6690,7 @@ window.respecVersion = "25.3.0";
 
   function renderIsUnofficial(opts) {
     const { additionalContent } = opts;
-    return hyperHTML$2`
+    return html$1`
     <p>
       This document is draft of a potential specification. It has no official
       standing of any kind and does not represent the support or consensus of
@@ -6748,7 +6703,7 @@ window.respecVersion = "25.3.0";
   function renderIsNoTrack(conf, opts) {
     const { isMO } = conf;
     const { additionalContent } = opts;
-    return hyperHTML$2`
+    return html$1`
     <p>
       This document is merely a PCI-SIG-internal
       ${isMO ? "member-confidential" : ""} document. It has no official standing
@@ -6760,7 +6715,7 @@ window.respecVersion = "25.3.0";
 
   function renderImplementationReportURI(conf) {
     const { implementationReportURI } = conf;
-    return hyperHTML$2`
+    return html$1`
     <p>
       Please see the Working Group's
       <a href="${implementationReportURI}">implementation report</a>.
@@ -6770,26 +6725,24 @@ window.respecVersion = "25.3.0";
 
   function renderNotRec(conf) {
     const { anOrA, textStatus } = conf;
-    return hyperHTML$2`
+    return html$1`
     <p>
       Publication as ${anOrA} ${textStatus} does not imply endorsement by the
-      PCI-SIG Membership. This is a draft document and may be updated, replaced or
-      obsoleted by other documents at any time. It is inappropriate to cite this
-      document as other than work in progress.
+      PCI-SIG Membership. This is a draft document and may be updated, replaced
+      or obsoleted by other documents at any time. It is inappropriate to cite
+      this document as other than work in progress.
     </p>
   `;
   }
 
   function noteForSubmission(conf, opts) {
-    return hyperHTML$2`
+    return html$1`
     ${opts.additionalContent}
-    ${
-      conf.isMemberSubmission
-        ? noteForMemberSubmission(conf)
-        : conf.isTeamSubmission
-        ? noteForTeamSubmission(conf, opts)
-        : ""
-    }
+    ${conf.isMemberSubmission
+      ? noteForMemberSubmission(conf)
+      : conf.isTeamSubmission
+      ? noteForTeamSubmission(conf, opts)
+      : ""}
   `;
   }
 
@@ -6797,15 +6750,15 @@ window.respecVersion = "25.3.0";
     const teamComment = `https://www.pcisig.com/Submission/${conf.publishDate.getUTCFullYear()}/${
     conf.submissionCommentNumber
   }/Comment/`;
-    return hyperHTML$2`
+    return html$1`
     <p>
       By publishing this document, PCI-SIG acknowledges that the
       <a href="${conf.thisVersion}">Submitting Members</a> have made a formal
-      Submission request to PCI-SIG for discussion. Publication of this document by
-      PCI-SIG indicates no endorsement of its content by PCI-SIG, nor that PCI-SIG has, is,
-      or will be allocating any resources to the issues addressed by it. This
-      document is not the product of a chartered PCI-SIG group, but is published as
-      potential input to the
+      Submission request to PCI-SIG for discussion. Publication of this document
+      by PCI-SIG indicates no endorsement of its content by PCI-SIG, nor that
+      PCI-SIG has, is, or will be allocating any resources to the issues
+      addressed by it. This document is not the product of a chartered PCI-SIG
+      group, but is published as potential input to the
       <a href="https://www.pcisig.com/Consortium/Process">PCI-SIG Process</a>. A
       <a href="${teamComment}">PCI-SIG Team Comment</a> has been published in
       conjunction with this Member Submission. Publication of acknowledged
@@ -6824,27 +6777,28 @@ window.respecVersion = "25.3.0";
   }
 
   function noteForTeamSubmission(conf, opts) {
-    return hyperHTML$2`
+    return html$1`
     <p>
       If you wish to make comments regarding this document, please send them to
       <a href="${opts.mailToWGPublicListWithSubject}"
         >${conf.wgPublicList}@pcisig.com</a
       >
       (<a href="${opts.mailToWGPublicListSubscription}">subscribe</a>,
-      <a href="${`https://lists.pcisig.com/Archives/Public/${conf.wgPublicList}/`}"
+      <a
+        href="${`https://lists.pcisig.com/Archives/Public/${conf.wgPublicList}/`}"
         >archives</a
-      >)${
-        conf.subjectPrefix
-          ? hyperHTML$2`
+      >)${conf.subjectPrefix
+        ? html$1`
             with <code>${conf.subjectPrefix}</code> at the start of your email's
             subject
           `
-          : ""
-      }.
+        : ""}.
     </p>
     <p>
       Please consult the complete
-      <a href="https://www.pcisig.com/TeamSubmission/">list of Team Submissions</a>.
+      <a href="https://www.pcisig.com/TeamSubmission/"
+        >list of Team Submissions</a
+      >.
     </p>
   `;
   }
@@ -6853,15 +6807,13 @@ window.respecVersion = "25.3.0";
     if (!conf.wg) {
       return;
     }
-    return hyperHTML$2`
+    return html$1`
     <p>
       This document was published by ${[conf.wgHTML]} as ${conf.anOrA}
       ${conf.longStatus}.
-      ${
-        conf.notYetRec
-          ? "This document is intended to become a PCI-SIG Recommendation."
-          : ""
-      }
+      ${conf.notYetRec
+        ? "This document is intended to become a PCI-SIG Recommendation."
+        : ""}
     </p>
   `;
   }
@@ -6870,24 +6822,19 @@ window.respecVersion = "25.3.0";
     if (!conf.github && !conf.wgPublicList) {
       return;
     }
-    return hyperHTML$2`
+    return html$1`
     <p>
-      ${
-        conf.github
-          ? hyperHTML$2`
+      ${conf.github
+        ? html$1`
             <a href="${conf.issueBase}">GitHub Issues</a> are preferred for
             discussion of this specification.
           `
-          : ""
-      }
-      ${
-        conf.wgPublicList
-          ? hyperHTML$2`
-            ${
-              conf.github && conf.wgPublicList
-                ? "Alternatively, you can send comments to our mailing list."
-                : "Comments regarding this document are welcome."
-            }
+        : ""}
+      ${conf.wgPublicList
+        ? html$1`
+            ${conf.github && conf.wgPublicList
+              ? "Alternatively, you can send comments to our mailing list."
+              : "Comments regarding this document are welcome."}
             Please send them to
             <a href="${opts.mailToWGPublicListWithSubject}"
               >${conf.wgPublicList}@pcisig.com</a
@@ -6895,17 +6842,14 @@ window.respecVersion = "25.3.0";
             (<a
               href="${`https://lists.pcisig.com/Archives/Public/${conf.wgPublicList}/`}"
               >archives</a
-            >)${
-              conf.subjectPrefix
-                ? hyperHTML$2`
+            >)${conf.subjectPrefix
+              ? html$1`
                   with <code>${conf.subjectPrefix}</code> at the start of your
                   email's subject
                 `
-                : ""
-            }.
+              : ""}.
           `
-          : ""
-      }
+        : ""}
     </p>
   `;
   }
@@ -7499,9 +7443,9 @@ window.respecVersion = "25.3.0";
 
     // invent toc if not already present
     if (!document.body.querySelector("#toc")) {
-      document("body").prepend(
-        '<nav id="toc"><section class="introductory"></section></nav>'
-      );
+      document
+        .querySelector("body")
+        .prepend('<nav id="toc"><section class="introductory"></section></nav>');
     }
 
     // handle Revision History
@@ -7535,7 +7479,7 @@ window.respecVersion = "25.3.0";
     conf.memReviewEnd = validateDateAndRecover(conf, "memReviewEnd");
     conf.humanMemReviewEnd = PCISIGDate.format(conf.memReviewEnd);
 
-    hyperHTML$2.bind(sotd)`${populateSoTD(conf, sotd)}`;
+    html$1.bind(sotd)`${populateSoTD(conf, sotd)}`;
 
     // Requested by https://github.com/w3c/respec/issues/504
     // Makes a record of a few auto-generated things.
@@ -7654,15 +7598,28 @@ window.respecVersion = "25.3.0";
       const id = addId(footnote, "footnote", `${index + 1}`);
       footnote.insertAdjacentHTML(
         "beforebegin",
-        hyperHTML`<label class="footnote-online"> Footnote: <input class="footnote-checkbox" type="checkbox" name="${id}" value="checked"/></label>`
+        html$1`
+        <label class="footnote-online">
+          Footnote:
+          <input
+            class="footnote-checkbox"
+            type="checkbox"
+            name="${id}"
+            value="checked"
+        /></label>
+      `
       );
       footnote.insertAdjacentHTML(
         "afterbegin",
-        hyperHTML`<span class='footnote-online'> [</span>`
+        html$1`
+        <span class="footnote-online"> [</span>
+      `
       );
       footnote.insertAdjacentHTML(
         "beforeend",
-        hyperHTML`<span class='footnote-online'>] </span>`
+        html$1`
+        <span class="footnote-online">] </span>
+      `
       );
     });
   }
@@ -7678,25 +7635,25 @@ window.respecVersion = "25.3.0";
   const name$p = "pcisig/tablenotes";
 
   function run$d() {
-    console.log("in tablenotes");
+    // console.log("in tablenotes");
     const tableid_to_notes_entries = new Map();
     //
     // find all tables that contain elements with index entries, go through them sequentially
     //
     const note_list = document.querySelectorAll("table span.tablenote");
     note_list.forEach(note => {
-      console.log(`tablenotes: note = ${note.outerHTML}`);
+      // console.log(`tablenotes: note = ${note.outerHTML}`);
       const table = note.closest("table");
       if (table) {
         addId(table, "tbl");
-        console.log(`tablenotes: tf.closest("table") = ${table.id}`);
+        // console.log(`tablenotes: tf.closest("table") = ${table.id}`);
         if (!tableid_to_notes_entries.has(table.id)) {
           tableid_to_notes_entries.set(table.id, []);
-          console.log(
-            `tablenotes: tableid_to_notes_entries.keys() = ${Array.from(
-            tableid_to_notes_entries.keys()
-          )}`
-          );
+          // console.log(
+          //   `tablenotes: tableid_to_notes_entries.keys() = ${Array.from(
+          //     tableid_to_notes_entries.keys()
+          //   )}`
+          // );
         }
         const ent = tableid_to_notes_entries.get(table.id);
         const str = note.innerHTML;
@@ -7727,12 +7684,12 @@ window.respecVersion = "25.3.0";
         // for each unique note in that table
         const tfid = `${tableid}_tablenote_${index + 1}`;
         const li = document.createElement("li");
-        console.log(`tablenotes: add li for "${tfid}"`);
+        // console.log(`tablenotes: add li for "${tfid}"`);
         li.id = `li_${tfid}`;
         li.classList.add("tablenote-li");
         const refs = table.querySelectorAll(`a[href="#${li.id}"]`);
         const alist = [];
-        console.log(`tablenotes: refs.length = ${refs.length}`);
+        // console.log(`tablenotes: refs.length = ${refs.length}`);
         refs.forEach(a => {
           a.setAttribute("id", `a_${tfid}_${alist.length + 1}`);
           alist.push(`<a href="#${a.id}">&#8673;</a>&nbsp;`);
@@ -7740,7 +7697,7 @@ window.respecVersion = "25.3.0";
         li.innerHTML = `${alist.join("")}${entry}`;
         tfcontainer.appendChild(li);
       });
-      console.log(`tablenotes: add notes tbody to "${table.id}"`);
+      // console.log(`tablenotes: add notes tbody to "${table.id}"`);
       table.appendChild(tbody);
     });
   }
@@ -7964,7 +7921,7 @@ window.respecVersion = "25.3.0";
     // Check if base is a local variable in a section
     const { identifier, renderParent } = details;
     if (renderParent) {
-      return hyperHTML$2`<a data-xref-type="_IDL_"><code>${identifier}</code></a>`;
+      return html$1`<a data-xref-type="_IDL_"><code>${identifier}</code></a>`;
     }
   }
 
@@ -7976,12 +7933,14 @@ window.respecVersion = "25.3.0";
     const { identifier, parent, renderParent } = details;
     const { identifier: linkFor } = parent || {};
     const lt = `[[${identifier}]]`;
-    const html = hyperHTML$2`${parent && renderParent ? "." : ""}<a
-    data-xref-type="attribute"
-    data-link-for=${linkFor}
-    data-xref-for=${linkFor}
-    data-lt="${lt}"><code>[[${identifier}]]</code></a>`;
-    return html;
+    const element = html$1`${parent && renderParent ? "." : ""}<a
+      data-xref-type="attribute"
+      data-link-for=${linkFor}
+      data-xref-for=${linkFor}
+      data-lt="${lt}"
+      ><code>[[${identifier}]]</code></a
+    >`;
+    return element;
   }
 
   /**
@@ -7991,12 +7950,13 @@ window.respecVersion = "25.3.0";
   function renderAttribute(details) {
     const { parent, identifier, renderParent } = details;
     const { identifier: linkFor } = parent || {};
-    const html = hyperHTML$2`${renderParent ? "." : ""}<a
+    const element = html$1`${renderParent ? "." : ""}<a
       data-xref-type="attribute|dict-member"
       data-link-for="${linkFor}"
       data-xref-for="${linkFor}"
-    ><code>${identifier}</code></a>`;
-    return html;
+      ><code>${identifier}</code></a
+    >`;
+    return element;
   }
 
   /**
@@ -8006,15 +7966,16 @@ window.respecVersion = "25.3.0";
   function renderMethod(details) {
     const { args, identifier, type, parent, renderParent } = details;
     const { identifier: linkFor } = parent || {};
-    const argsText = htmlJoinComma(args, arg => hyperHTML$2`<var>${arg}</var>`);
+    const argsText = htmlJoinComma(args, arg => html$1`<var>${arg}</var>`);
     const searchText = `${identifier}(${args.join(", ")})`;
-    const html = hyperHTML$2`${parent && renderParent ? "." : ""}<a
-    data-xref-type="${type}"
-    data-link-for="${linkFor}"
-    data-xref-for="${linkFor}"
-    data-lt="${searchText}"
-    ><code>${identifier}</code></a><code>(${argsText})</code>`;
-    return html;
+    const element = html$1`${parent && renderParent ? "." : ""}<a
+      data-xref-type="${type}"
+      data-link-for="${linkFor}"
+      data-xref-for="${linkFor}"
+      data-lt="${searchText}"
+      ><code>${identifier}</code></a
+    ><code>(${argsText})</code>`;
+    return element;
   }
 
   /**
@@ -8026,13 +7987,14 @@ window.respecVersion = "25.3.0";
   function renderEnum(details) {
     const { identifier, enumValue, parent } = details;
     const forContext = parent ? parent.identifier : identifier;
-    const html = hyperHTML$2`"<a
-    data-xref-type="enum-value"
-    data-link-for="${forContext}"
-    data-xref-for="${forContext}"
-    data-lt="${!enumValue ? "the-empty-string" : null}"
-    ><code>${enumValue}</code></a>"`;
-    return html;
+    const element = html$1`"<a
+      data-xref-type="enum-value"
+      data-link-for="${forContext}"
+      data-xref-for="${forContext}"
+      data-lt="${!enumValue ? "the-empty-string" : null}"
+      ><code>${enumValue}</code></a
+    >"`;
+    return element;
   }
 
   /**
@@ -8042,11 +8004,10 @@ window.respecVersion = "25.3.0";
    */
   function renderException(details) {
     const { identifier } = details;
-    const html = hyperHTML$2`"<a
-    data-cite="WebIDL"
-    data-xref-type="exception"
-    ><code>${identifier}</code></a>"`;
-    return html;
+    const element = html$1`"<a data-cite="WebIDL" data-xref-type="exception"
+      ><code>${identifier}</code></a
+    >"`;
+    return element;
   }
 
   /**
@@ -8056,11 +8017,10 @@ window.respecVersion = "25.3.0";
    */
   function renderIdlPrimitiveType(details) {
     const { identifier } = details;
-    const html = hyperHTML$2`<a
-    data-cite="WebIDL"
-    data-xref-type="interface"
-    ><code>${identifier}</code></a>`;
-    return html;
+    const element = html$1`<a data-cite="WebIDL" data-xref-type="interface"
+    ><code>${identifier}</code></a
+  >`;
+    return element;
   }
 
   /**
@@ -8073,11 +8033,11 @@ window.respecVersion = "25.3.0";
     try {
       results = parseInlineIDL(str);
     } catch (error) {
-      const el = hyperHTML$2`<span>{{ ${str} }}</span>`;
+      const el = html$1`<span>{{ ${str} }}</span>`;
       showInlineError(el, error.message, "Error: Invalid inline IDL string");
       return el;
     }
-    const render = hyperHTML$2(document.createDocumentFragment());
+    const render = html$1(document.createDocumentFragment());
     const output = [];
     for (const details of results) {
       switch (details.type) {
@@ -8320,6 +8280,8 @@ window.respecVersion = "25.3.0";
   });
   document.head.appendChild(link);
   let doneResolver$2;
+
+  /** @type {Promise<Conf['biblio']>} */
   const done$2 = new Promise(resolve => {
     doneResolver$2 = resolve;
   });
@@ -8343,6 +8305,7 @@ window.respecVersion = "25.3.0";
     if ((!options.forceUpdate && !response.ok) || response.status !== 200) {
       return null;
     }
+    /** @type {Conf['biblio']} */
     const data = await response.json();
     try {
       await biblioDB.addAll(data);
@@ -8354,6 +8317,7 @@ window.respecVersion = "25.3.0";
 
   /**
    * @param {string} key
+   * @returns {Promise<BiblioData>}
    */
   async function resolveRef(key) {
     const biblio = await done$2;
@@ -8478,7 +8442,7 @@ window.respecVersion = "25.3.0";
 
   const name$t = "core/render-biblio";
 
-  const localizationStrings$4 = {
+  const localizationStrings$5 = {
     en: {
       info_references: "Informative references",
       norm_references: "Normative references",
@@ -8509,7 +8473,7 @@ window.respecVersion = "25.3.0";
     },
   };
 
-  const l10n$6 = getIntlData(localizationStrings$4);
+  const l10n$7 = getIntlData(localizationStrings$5);
 
   const REF_STATUSES = new Map([
     ["CR", "W3C Candidate Recommendation"],
@@ -8536,80 +8500,71 @@ window.respecVersion = "25.3.0";
 
   const endWithDot = endNormalizer(".");
 
+  /** @param {Conf} conf */
   function run$g(conf) {
     const informs = Array.from(conf.informativeReferences);
     const norms = Array.from(conf.normativeReferences);
 
     if (!informs.length && !norms.length) return;
 
+    /** @type {HTMLElement} */
     const refSection =
       document.querySelector("section#references") ||
-      hyperHTML$2`<section id='references'></section>`;
+      html$1`<section id="references"></section>`;
 
     if (!document.querySelector("section#references > h2")) {
-      refSection.prepend(hyperHTML$2`<h2>${l10n$6.references}</h2>`);
+      refSection.prepend(html$1`<h2>${l10n$7.references}</h2>`);
     }
 
     refSection.classList.add("appendix");
 
-    for (const type of ["Normative", "Informative"]) {
-      const refs = type === "Normative" ? norms : informs;
-      if (!refs.length) continue;
-
-      const sec = hyperHTML$2`
-      <section>
-        <h3>${
-          type === "Normative" ? l10n$6.norm_references : l10n$6.info_references
-        }</h3>
-      </section>`;
-      addId(sec);
-
-      const { goodRefs, badRefs } = refs.map(toRefContent).reduce(
-        (refObjects, ref) => {
-          const refType = ref.refcontent ? "goodRefs" : "badRefs";
-          refObjects[refType].push(ref);
-          return refObjects;
-        },
-        { goodRefs: [], badRefs: [] }
-      );
-
-      const uniqueRefs = [
-        ...goodRefs
-          .reduce((uniqueRefs, ref) => {
-            if (!uniqueRefs.has(ref.refcontent.id)) {
-              // the condition ensures that only the first used [[TERM]]
-              // shows up in #references section
-              uniqueRefs.set(ref.refcontent.id, ref);
-            }
-            return uniqueRefs;
-          }, new Map())
-          .values(),
-      ];
-
-      const refsToShow = uniqueRefs
-        .concat(badRefs)
-        .sort((a, b) =>
-          a.ref.toLocaleLowerCase().localeCompare(b.ref.toLocaleLowerCase())
-        );
-
-      sec.appendChild(hyperHTML$2`
-      <dl class='bibliography'>
-        ${refsToShow.map(showRef)}
-      </dl>`);
+    if (norms.length) {
+      const sec = createReferencesSection(norms, l10n$7.norm_references);
       refSection.appendChild(sec);
-
-      const aliases = getAliases(goodRefs);
-      decorateInlineReference(uniqueRefs, aliases);
-      warnBadRefs(badRefs);
+    }
+    if (informs.length) {
+      const sec = createReferencesSection(informs, l10n$7.info_references);
+      refSection.appendChild(sec);
     }
 
     document.body.appendChild(refSection);
   }
 
   /**
+   * @param {string[]} refs
+   * @param {string} title
+   * @returns {HTMLElement}
+   */
+  function createReferencesSection(refs, title) {
+    const { goodRefs, badRefs } = groupRefs(refs.map(toRefContent));
+    const uniqueRefs = getUniqueRefs(goodRefs);
+
+    const refsToShow = uniqueRefs
+      .concat(badRefs)
+      .sort((a, b) =>
+        a.ref.toLocaleLowerCase().localeCompare(b.ref.toLocaleLowerCase())
+      );
+
+    const sec = html$1`<section>
+    <h3>${title}</h3>
+    <dl class="bibliography">
+      ${refsToShow.map(showRef)}
+    </dl>
+  </section>`;
+    addId(sec, "", title);
+
+    const aliases = getAliases(goodRefs);
+    decorateInlineReference(uniqueRefs, aliases);
+    warnBadRefs(badRefs);
+
+    return sec;
+  }
+
+  /**
    * returns refcontent and unique key for a reference among its aliases
    * and warns about circular references
    * @param {String} ref
+   * @typedef {ReturnType<typeof toRefContent>} Ref
    */
   function toRefContent(ref) {
     let refcontent = biblio[ref];
@@ -8632,30 +8587,64 @@ window.respecVersion = "25.3.0";
     return { ref, refcontent };
   }
 
+  /** @param {Ref[]} refs */
+  function groupRefs(refs) {
+    const goodRefs = [];
+    const badRefs = [];
+    for (const ref of refs) {
+      if (ref.refcontent) {
+        goodRefs.push(ref);
+      } else {
+        badRefs.push(ref);
+      }
+    }
+    return { goodRefs, badRefs };
+  }
+
+  /** @param {Ref[]} refs */
+  function getUniqueRefs(refs) {
+    /** @type {Map<string, Ref>} */
+    const uniqueRefs = new Map();
+    for (const ref of refs) {
+      if (!uniqueRefs.has(ref.refcontent.id)) {
+        // the condition ensures that only the first used [[TERM]]
+        // shows up in #references section
+        uniqueRefs.set(ref.refcontent.id, ref);
+      }
+    }
+    return [...uniqueRefs.values()];
+  }
+
   /**
    * Render an inline citation
    *
    * @param {String} ref the inline reference.
+   * @param {String} [linkText] custom link text
    * @returns HTMLElement
    */
-  function renderInlineCitation(ref) {
+  function renderInlineCitation(ref, linkText) {
     const key = ref.replace(/^(!|\?)/, "");
     const href = `#bib-${key.toLowerCase()}`;
-    return hyperHTML$2`[<cite><a class="bibref" href="${href}" data-link-type="biblio">${key}</a></cite>]`;
+    const text = linkText || key;
+    const elem = html$1`<cite
+    ><a class="bibref" href="${href}" data-link-type="biblio">${text}</a></cite
+  >`;
+    return linkText ? elem : html$1`[${elem}]`;
   }
 
   /**
    * renders a reference
+   * @param {Ref} ref
    */
   function showRef({ ref, refcontent }) {
     const refId = `bib-${ref.toLowerCase()}`;
     if (refcontent) {
-      return hyperHTML$2`
+      return html$1`
       <dt id="${refId}">[${ref}]</dt>
       <dd>${{ html: stringifyReference(refcontent) }}</dd>
     `;
     } else {
-      return hyperHTML$2`
+      return html$1`
       <dt id="${refId}">[${ref}]</dt>
       <dd><em class="respec-offending-element">Reference not found.</em></dd>
     `;
@@ -8678,7 +8667,7 @@ window.respecVersion = "25.3.0";
     const ref = Object.assign({}, defaultsReference, rawRef);
     const authors = ref.authors.join("; ") + (ref.etAl ? " et al" : "");
     const status = REF_STATUSES.get(ref.status) || ref.status;
-    return hyperHTML$2.wire(ref)`
+    return html$1.wire(ref)`
     <cite>
       <a
         href="${ref.href}"
@@ -8701,6 +8690,7 @@ window.respecVersion = "25.3.0";
   `;
   }
 
+  /** @param {BiblioData|string} ref */
   function stringifyReference(ref) {
     if (typeof ref === "string") return ref;
     let output = `<cite>${ref.title}</cite>`;
@@ -8789,7 +8779,7 @@ window.respecVersion = "25.3.0";
   const name$u = "core/inlines";
   const rfc2119Usage = {};
 
-  const localizationStrings$5 = {
+  const localizationStrings$6 = {
     en: {
       rfc2119Keywords() {
         return new RegExp(
@@ -8823,7 +8813,7 @@ window.respecVersion = "25.3.0";
       },
     },
   };
-  const l10n$7 = getIntlData(localizationStrings$5);
+  const l10n$8 = getIntlData(localizationStrings$6);
 
   // Inline `code`
   // TODO: Replace (?!`) at the end with (?:<!`) at the start when Firefox + Safari
@@ -8831,7 +8821,7 @@ window.respecVersion = "25.3.0";
   const inlineCodeRegExp = /(?:`[^`]+`)(?!`)/; // `code`
   const inlineIdlReference = /(?:{{[^}]+}})/; // {{ WebIDLThing }}
   const inlineVariable = /\B\|\w[\w\s]*(?:\s*:[\w\s&;<>]+)?\|\B/; // |var : Type|
-  const inlineCitation = /(?:\[\[(?:!|\\|\?)?[A-Za-z0-9.-]+\]\])/; // [[citation]]
+  const inlineCitation = /(?:\[\[(?:!|\\|\?)?[\w.-]+(?:|[^\]]+)?\]\])/; // [[citation]]
   const inlineExpansion = /(?:\[\[\[(?:!|\\|\?)?#?[\w-.]+\]\]\])/; // [[[expand]]]
   const inlineAnchor = /(?:\[=[^=]+=\])/; // Inline [= For/link =]
   const inlineElement = /(?:\[\^[^^]+\^\])/; // Inline [^element^]
@@ -8848,11 +8838,12 @@ window.respecVersion = "25.3.0";
     const [xrefType, xrefFor, textContent] = attribute
       ? ["element-attr", element, attribute]
       : ["element", null, element];
-    const html = hyperHTML$2`<code><a
-    data-xref-type="${xrefType}"
-    data-xref-for="${xrefFor}"
-    >${textContent}</a></code>`;
-    return html;
+    const code = html$1`<code
+    ><a data-xref-type="${xrefType}" data-xref-for="${xrefFor}"
+      >${textContent}</a
+    ></code
+  >`;
+    return code;
   }
 
   /**
@@ -8861,7 +8852,7 @@ window.respecVersion = "25.3.0";
    */
   function inlineRFC2119Matches(matched) {
     const value = norm(matched);
-    const nodeElement = hyperHTML$2`<em class="rfc2119" title="${value}">${value}</em>`;
+    const nodeElement = html$1`<em class="rfc2119" title="${value}">${value}</em>`;
     // remember which ones were used
     rfc2119Usage[value] = true;
     return nodeElement;
@@ -8875,12 +8866,12 @@ window.respecVersion = "25.3.0";
     // slices "[[[" at the beginning and "]]]" at the end
     const ref = matched.slice(3, -3).trim();
     if (!ref.startsWith("#")) {
-      return hyperHTML$2`<a data-cite="${ref}"></a>`;
+      return html$1`<a data-cite="${ref}"></a>`;
     }
     if (document.querySelector(ref)) {
-      return hyperHTML$2`<a href="${ref}"></a>`;
+      return html$1`<a href="${ref}"></a>`;
     }
-    const badReference = hyperHTML$2`<span>${matched}</span>`;
+    const badReference = html$1`<span>${matched}</span>`;
     showInlineError(
       badReference, // cite element
       `Wasn't able to expand ${matched} as it didn't match any id in the document.`,
@@ -8912,12 +8903,15 @@ window.respecVersion = "25.3.0";
     if (ref.startsWith("\\")) {
       return [`[[${ref.slice(1)}]]`];
     }
-    const { type, illegal } = refTypeFromContext(ref, txt.parentNode);
-    const cite = renderInlineCitation(ref);
-    const cleanRef = ref.replace(/^(!|\?)/, "");
+
+    const [spec, linkText] = ref.split("|").map(norm);
+    const { type, illegal } = refTypeFromContext(spec, txt.parentNode);
+    const cite = renderInlineCitation(spec, linkText);
+    const cleanRef = spec.replace(/^(!|\?)/, "");
     if (illegal && !conf.normativeReferences.has(cleanRef)) {
+      const citeElem = cite.childNodes[1] || cite;
       showInlineWarning(
-        cite.childNodes[1], // cite element
+        citeElem,
         "Normative references in informative sections are not allowed. " +
           `Remove '!' from the start of the reference \`[[${ref}]]\``
       );
@@ -8928,7 +8922,7 @@ window.respecVersion = "25.3.0";
     } else {
       conf.normativeReferences.add(cleanRef);
     }
-    return cite.childNodes;
+    return cite.childNodes[1] ? cite.childNodes : [cite];
   }
 
   /**
@@ -8939,7 +8933,7 @@ window.respecVersion = "25.3.0";
   function inlineAbbrMatches(matched, txt, abbrMap) {
     return txt.parentElement.tagName === "ABBR"
       ? matched
-      : hyperHTML$2`<abbr title="${abbrMap.get(matched)}">${matched}</abbr>`;
+      : html$1`<abbr title="${abbrMap.get(matched)}">${matched}</abbr>`;
   }
 
   /**
@@ -8951,7 +8945,7 @@ window.respecVersion = "25.3.0";
     // remove "|" at the beginning and at the end, then split at an optional `:`
     const matches = matched.slice(1, -1).split(":", 2);
     const [varName, type] = matches.map(s => s.trim());
-    return hyperHTML$2`<var data-type="${type}">${varName}</var>`;
+    return html$1`<var data-type="${type}">${varName}</var>`;
   }
 
   /**
@@ -8970,12 +8964,17 @@ window.respecVersion = "25.3.0";
       : [null, content];
     const processedContent = processInlineContent(text);
     const forContext = isFor ? norm(isFor) : null;
-    return hyperHTML$2`<a data-link-for="${forContext}" data-xref-for="${forContext}" data-lt="${linkingText}">${processedContent}</a>`;
+    return html$1`<a
+    data-link-for="${forContext}"
+    data-xref-for="${forContext}"
+    data-lt="${linkingText}"
+    >${processedContent}</a
+  >`;
   }
 
   function inlineCodeMatches(matched) {
     const clean = matched.slice(1, -1); // Chop ` and `
-    return hyperHTML$2`<code>${clean}</code>`;
+    return html$1`<code>${clean}</code>`;
   }
 
   function processInlineContent(text) {
@@ -9017,7 +9016,7 @@ window.respecVersion = "25.3.0";
     const txts = getTextNodes(document.body, exclusions, {
       wsNodes: false, // we don't want nodes with just whitespace
     });
-    const keywords = l10n$7.rfc2119Keywords();
+    const keywords = l10n$8.rfc2119Keywords();
     const rx = new RegExp(
       `(${[
       keywords.source,
@@ -9100,24 +9099,23 @@ window.respecVersion = "25.3.0";
       item => `<em class="rfc2119">${item}</em>`
     );
     const plural = terms.length > 1;
-    const content = hyperHTML$2`
+    const content = html$1`
     <h2>Conformance</h2>
     <p>
       As well as sections marked as non-normative, all examples, implementation
       notes, and notes in this specification are non-normative. Everything else
       in this specification is normative.
     </p>
-    ${
-      terms.length
-        ? hyperHTML$2`
+    ${terms.length
+      ? html$1`
           <p>
             The key word${plural ? "s" : ""} ${[keywords]} in this document
             ${plural ? "are" : "is"} to be interpreted as described when, and
             only when, they appear in all capitals, as shown here.
           </p>
         `
-        : null
-    }`;
+      : null}
+  `;
     conformance.prepend(...content.childNodes);
   }
 
@@ -9286,7 +9284,7 @@ window.respecVersion = "25.3.0";
 
   const name$z = "core/examples";
 
-  const localizationStrings$6 = {
+  const localizationStrings$7 = {
     en: {
       example: "Example",
     },
@@ -9307,7 +9305,7 @@ window.respecVersion = "25.3.0";
     },
   };
 
-  const l10n$8 = getIntlData(localizationStrings$6);
+  const l10n$9 = getIntlData(localizationStrings$7);
 
   const cssPromise = loadStyle$2();
 
@@ -9335,16 +9333,12 @@ window.respecVersion = "25.3.0";
     if (report.title) elem.removeAttribute("title");
     const number = num > 0 ? ` ${num}` : "";
     const title = report.title
-      ? hyperHTML$2`
-        <span class="example-title">: ${report.title}</span>
-      `
+      ? html$1`<span class="example-title">: ${report.title}</span>`
       : "";
-    return hyperHTML$2`
-    <div class="marker">
-      <a class="self-link">${l10n$8.example}<bdi>${number}</bdi></a
-      >${title}
-    </div>
-  `;
+    return html$1`<div class="marker">
+    <a class="self-link">${l10n$9.example}<bdi>${number}</bdi></a
+    >${title}
+  </div>`;
   }
 
   async function run$m() {
@@ -9356,11 +9350,9 @@ window.respecVersion = "25.3.0";
 
     const css = await cssPromise;
     document.head.insertBefore(
-      hyperHTML$2`
-      <style>
-        ${css}
-      </style>
-    `,
+      html$1`<style>
+      ${css}
+    </style>`,
       document.querySelector("link")
     );
 
@@ -9381,7 +9373,7 @@ window.respecVersion = "25.3.0";
           addId(example, `example-${number}`, title); // title gets used
         } else {
           // use the number as the title... so, e.g., "example-5"
-          addId(example, `example`, String(number));
+          addId(example, "example", String(number));
         }
         const { id } = example;
         const selfLink = div.querySelector("a.self-link");
@@ -9399,11 +9391,9 @@ window.respecVersion = "25.3.0";
         const id = example.id ? example.id : null;
         if (id) example.removeAttribute("id");
         const exampleTitle = makeTitle(example, inAside ? 0 : number, report);
-        const div = hyperHTML$2`
-        <div class="example" id="${id}">
-          ${exampleTitle} ${example.cloneNode(true)}
-        </div>
-      `;
+        const div = html$1`<div class="example" id="${id}">
+        ${exampleTitle} ${example.cloneNode(true)}
+      </div>`;
         if (title) {
           addId(div, `example-${number}`, title);
         }
@@ -9426,12 +9416,13 @@ window.respecVersion = "25.3.0";
 
   const name$A = "core/issues-notes";
 
-  const localizationStrings$7 = {
+  const localizationStrings$8 = {
     en: {
       editors_note: "Editor's note",
       feature_at_risk: "(Feature at Risk) Issue",
       issue: "Issue",
       issue_summary: "Issue Summary",
+      implementation_note: "Implementation Note",
       no_issues_in_spec: "There are no issues listed in this specification.",
       note: "Note",
       warning: "Warning",
@@ -9483,7 +9474,7 @@ window.respecVersion = "25.3.0";
     }
   }
 
-  const l10n$9 = getIntlData(localizationStrings$7);
+  const l10n$a = getIntlData(localizationStrings$8);
 
   /**
    * @typedef {object} Report
@@ -9507,33 +9498,26 @@ window.respecVersion = "25.3.0";
    * @param {*} conf
    */
   function handleIssues(ins, ghIssues, conf) {
-    const hasDataNum = !!document.querySelector(".issue[data-number]");
-    let issueNum = 0;
+    const getIssueNumber = createIssueNumberGetter();
     const issueList = document.createElement("ul");
     ins.forEach(inno => {
       const { type, displayType, isFeatureAtRisk } = getIssueType(inno);
       const isIssue = type === "issue";
       const isInline = inno.localName === "span";
       const { number: dataNum } = inno.dataset;
-      /** @type {Partial<Report>} */
       const report = {
         type,
         inline: isInline,
         title: inno.title,
+        number: getIssueNumber(inno),
       };
-      if (isIssue && !isInline && !hasDataNum) {
-        issueNum++;
-        report.number = issueNum;
-      } else if (dataNum) {
-        report.number = Number(dataNum);
-      }
       // wrap
       if (!isInline) {
         const cssClass = isFeatureAtRisk ? `${type} atrisk` : type;
         const ariaRole = type === "note" || type === "impnote" ? "note" : null;
-        const div = hyperHTML$2`<div class="${cssClass}" role="${ariaRole}"></div>`;
+        const div = html$1`<div class="${cssClass}" role="${ariaRole}"></div>`;
         const title = document.createElement("span");
-        const titleParent = hyperHTML$2`
+        const titleParent = html$1`
         <div role='heading' class='${`${type}-title marker`}'>${title}</div>`;
         addId(titleParent, "h", type);
         let text = displayType;
@@ -9550,10 +9534,10 @@ window.respecVersion = "25.3.0";
         /** @type {GitHubIssue} */
         let ghIssue;
         if (isIssue) {
-          if (!hasDataNum) {
-            text += ` ${issueNum}`;
-          } else if (dataNum) {
-            text += ` ${dataNum}`;
+          if (report.number !== undefined) {
+            text += ` ${report.number}`;
+          }
+          if (inno.dataset.hasOwnProperty("number")) {
             const link = linkToIssueTracker(dataNum, conf, { isFeatureAtRisk });
             if (link) {
               title.before(link);
@@ -9570,7 +9554,7 @@ window.respecVersion = "25.3.0";
           }
           if (report.number !== undefined) {
             // Add entry to #issue-summary.
-            issueList.append(createIssueSummaryEntry(l10n$9.issue, report, div.id));
+            issueList.append(createIssueSummaryEntry(l10n$a.issue, report, div.id));
           }
         }
         title.textContent = text;
@@ -9602,6 +9586,23 @@ window.respecVersion = "25.3.0";
     makeIssueSectionSummary(issueList);
   }
 
+  function createIssueNumberGetter() {
+    if (document.querySelector(".issue[data-number]")) {
+      return element => {
+        if (element.dataset.number) {
+          return Number(element.dataset.number);
+        }
+      };
+    }
+
+    let issueNumber = 0;
+    return element => {
+      if (element.classList.contains("issue") && element.localName !== "span") {
+        return ++issueNumber;
+      }
+    };
+  }
+
   /**
    * @typedef {object} IssueType
    * @property {string} type
@@ -9628,15 +9629,15 @@ window.respecVersion = "25.3.0";
       : "note";
     const displayType = isIssue
       ? isFeatureAtRisk
-        ? l10n$9.feature_at_risk
-        : l10n$9.issue
+        ? l10n$a.feature_at_risk
+        : l10n$a.issue
       : isWarning
-      ? l10n$9.warning
+      ? l10n$a.warning
       : isEdNote
-      ? l10n$9.editors_note
+      ? l10n$a.editors_note
       : isImpNote
-      ? l10n$9.implementation_note
-      : l10n$9.note;
+      ? l10n$a.implementation_note
+      : l10n$a.note;
     return { type, displayType, isFeatureAtRisk };
   }
 
@@ -9647,22 +9648,22 @@ window.respecVersion = "25.3.0";
   function linkToIssueTracker(dataNum, conf, { isFeatureAtRisk = false } = {}) {
     // Set issueBase to cause issue to be linked to the external issue tracker
     if (!isFeatureAtRisk && conf.issueBase) {
-      return hyperHTML$2`<a href='${conf.issueBase + dataNum}'/>`;
+      return html$1`<a href='${conf.issueBase + dataNum}'/>`;
     } else if (isFeatureAtRisk && conf.atRiskBase) {
-      return hyperHTML$2`<a href='${conf.atRiskBase + dataNum}'/>`;
+      return html$1`<a href='${conf.atRiskBase + dataNum}'/>`;
     }
   }
 
   /**
    * @param {string} l10nIssue
-   * @param {Partial<Report>} report
+   * @param {Report} report
    */
   function createIssueSummaryEntry(l10nIssue, report, id) {
     const issueNumberText = `${l10nIssue} ${report.number}`;
     const title = report.title
-      ? hyperHTML$2`<span style="text-transform: none">: ${report.title}</span>`
+      ? html$1`<span style="text-transform: none">: ${report.title}</span>`
       : "";
-    return hyperHTML$2`
+    return html$1`
     <li><a href="${`#${id}`}">${issueNumberText}</a>${title}</li>
   `;
   }
@@ -9678,24 +9679,16 @@ window.respecVersion = "25.3.0";
 
     issueList.hasChildNodes()
       ? issueSummaryElement.append(issueList)
-      : issueSummaryElement.append(hyperHTML$2`<p>${l10n$9.no_issues_in_spec}</p>`);
+      : issueSummaryElement.append(html$1`<p>${l10n$a.no_issues_in_spec}</p>`);
     if (
       !heading ||
       (heading && heading !== issueSummaryElement.firstElementChild)
     ) {
       issueSummaryElement.insertAdjacentHTML(
         "afterbegin",
-        `<h2>${l10n$9.issue_summary}</h2>`
+        `<h2>${l10n$a.issue_summary}</h2>`
       );
     }
-  }
-
-  function isLight(rgb) {
-    const red = (rgb >> 16) & 0xff;
-    const green = (rgb >> 8) & 0xff;
-    const blue = (rgb >> 0) & 0xff;
-    const illumination = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-    return illumination > 140;
   }
 
   /**
@@ -9712,11 +9705,16 @@ window.respecVersion = "25.3.0";
     }
     if (labelNames.length) {
       const ariaLabel = `This issue is labelled as ${joinedNames}.`;
-      return hyperHTML$2`<span
+      return html$1`<span
       class="issue-label"
       aria-label="${ariaLabel}">: ${title}${labelsGroup}</span>`;
     }
-    return hyperHTML$2`<span class="issue-label"><span class="issue-label-colon">: </span>${title}${labelsGroup}</span>`;
+    return html$1`<span class="issue-label"><span class="issue-label-colon">: </span>${title}${labelsGroup}</span>`;
+  }
+
+  /** @param {string} bgColorHex background color as a hex value without '#' */
+  function textColorFromBgColor(bgColorHex) {
+    return parseInt(bgColorHex, 16) > 0xffffff / 2 ? "#000" : "#fff";
   }
 
   /**
@@ -9724,15 +9722,13 @@ window.respecVersion = "25.3.0";
    * @param {string} repoURL
    */
   function createLabel(label, repoURL) {
-    const { color, name } = label;
+    const { color: bgColor, name } = label;
     const issuesURL = new URL("./issues/", repoURL);
     issuesURL.searchParams.set("q", `is:issue is:open label:"${label.name}"`);
-    const rgb = parseInt(color, 16);
-    const textColorClass = isNaN(rgb) || isLight(rgb) ? "light" : "dark";
-    const cssClasses = `respec-gh-label respec-label-${textColorClass}`;
-    const style = `background-color: #${color}`;
-    return hyperHTML$2`<a
-    class="${cssClasses}"
+    const color = textColorFromBgColor(bgColor);
+    const style = `background-color: #${bgColor}; color: ${color}`;
+    return html$1`<a
+    class="respec-gh-label"
     style="${style}"
     href="${issuesURL.href}">${name}</a>`;
   }
@@ -9781,7 +9777,7 @@ window.respecVersion = "25.3.0";
     const css = await cssPromise$1;
     const { head: headElem } = document;
     headElem.insertBefore(
-      hyperHTML$2`<style>${css}</style>`,
+      html$1`<style>${css}</style>`,
       headElem.querySelector("link")
     );
     handleIssues(issuesAndNotes, ghIssues, conf);
@@ -9802,7 +9798,7 @@ window.respecVersion = "25.3.0";
 
   const name$B = "core/best-practices";
 
-  const localizationStrings$8 = {
+  const localizationStrings$9 = {
     en: {
       best_practice: "Best Practice ",
     },
@@ -9813,8 +9809,8 @@ window.respecVersion = "25.3.0";
       best_practice: "Musterbeispiel ",
     },
   };
-  const l10n$a = getIntlData(localizationStrings$8);
-  const lang$a = lang in localizationStrings$8 ? lang : "en";
+  const l10n$b = getIntlData(localizationStrings$9);
+  const lang$a = lang in localizationStrings$9 ? lang : "en";
 
   function run$o() {
     /** @type {NodeListOf<HTMLElement>} */
@@ -9823,14 +9819,13 @@ window.respecVersion = "25.3.0";
     const summaryItems = bpSummary ? document.createElement("ul") : null;
     [...bps].forEach((bp, num) => {
       const id = addId(bp, "bp");
-      const localizedBpName = hyperHTML$2`
-      <a class="marker self-link" href="${`#${id}`}"><bdi lang="${lang$a}">${
-      l10n$a.best_practice
-    }${num + 1}</bdi></a>`;
+      const localizedBpName = html$1`<a class="marker self-link" href="${`#${id}`}"
+      ><bdi lang="${lang$a}">${l10n$b.best_practice}${num + 1}</bdi></a
+    >`;
 
       // Make the summary items, if we have a summary
       if (summaryItems) {
-        const li = hyperHTML$2`
+        const li = html$1`
         <li>
           ${localizedBpName}: ${makeSafeCopy(bp)}
         </li>
@@ -9847,12 +9842,12 @@ window.respecVersion = "25.3.0";
 
       // Make the advisement box
       container.classList.add("advisement");
-      const title = hyperHTML$2`${localizedBpName.cloneNode(true)}: ${bp}`;
+      const title = html$1`${localizedBpName.cloneNode(true)}: ${bp}`;
       container.prepend(...title.childNodes);
     });
     if (bps.length) {
       if (bpSummary) {
-        bpSummary.appendChild(hyperHTML$2`<h2>Best Practices Summary</h2>`);
+        bpSummary.appendChild(html$1`<h2>Best Practices Summary</h2>`);
         bpSummary.appendChild(summaryItems);
       }
     } else if (bpSummary) {
@@ -9970,10 +9965,7 @@ window.respecVersion = "25.3.0";
     if (!dfnElem.id) {
       const lCaseParent = parent.toLowerCase();
       const middle = lCaseParent ? `${lCaseParent}-` : "";
-      let last = name
-        .toLowerCase()
-        .replace(/[()]/g, "")
-        .replace(/\s/g, "-");
+      let last = name.toLowerCase().replace(/[()]/g, "").replace(/\s/g, "-");
       if (last === "") last = "the-empty-string";
       dfnElem.id = `dom-${middle}${last}`;
     }
@@ -9998,7 +9990,7 @@ window.respecVersion = "25.3.0";
     ) {
       const code = dfnElem.ownerDocument.createElement("code");
       code.classList.add("code-dfn");
-      wrapInner$1(dfnElem, code);
+      wrapInner(dfnElem, code);
     }
 
     // Add data-lt and data-local-lt values and register them
@@ -10061,7 +10053,13 @@ window.respecVersion = "25.3.0";
                   last_lsb - 1 === msb
                     ? `${msb + 1}`
                     : `${last_lsb - 1}:${msb + 1}`;
-                const new_row = hyperHTML$2`<tr><td>${bit_location}</td><td>${json.defaultUnused}</td><td>${json.defaultUnused}</td></tr>`;
+                const new_row = html$1`
+                <tr>
+                  <td>${bit_location}</td>
+                  <td>${json.defaultUnused}</td>
+                  <td>${json.defaultUnused}</td>
+                </tr>
+              `;
                 tbody.appendChild(new_row);
                 // console.log(`rows[${item.index}].after(${new_row})`);
               }
@@ -10071,14 +10069,26 @@ window.respecVersion = "25.3.0";
         }
         if (last_lsb > 0) {
           const bit_location = last_lsb - 1 === 1 ? "0" : `${last_lsb - 1}:0`;
-          const new_row = hyperHTML$2`<tr><td>${bit_location}</td><td>${json.defaultUnused}</td><td>${json.defaultUnused}</td></tr>`;
+          const new_row = html$1`
+          <tr>
+            <td>${bit_location}</td>
+            <td>${json.defaultUnused}</td>
+            <td>${json.defaultUnused}</td>
+          </tr>
+        `;
           tbody.appendChild(new_row);
           // console.log(`tbody.appendChild(${new_row}`);
           // console.log(`tbody=${tbody.innerHTML}`);
         }
       } else {
         const bit_location = last_lsb - 1 === 1 ? "0" : `${last_lsb - 1}:0`;
-        const new_row = hyperHTML$2`<tr><td>${bit_location}</td><td>${json.defaultUnused}</td><td>${json.defaultUnused}</td></tr>`;
+        const new_row = html$1`
+        <tr>
+          <td>${bit_location}</td>
+          <td>${json.defaultUnused}</td>
+          <td>${json.defaultUnused}</td>
+        </tr>
+      `;
         tbody.appendChild(new_row);
         // console.log(`tbody.appendChild(${new_row})`);
       }
@@ -10184,6 +10194,7 @@ window.respecVersion = "25.3.0";
           dfn.setAttribute("data-dfn-type", "field");
           addId(dfn, "field", `${tblName}-${fieldName.toLowerCase()}`);
           decorateDfn(
+            // @ts-ignore
             dfn,
             { type: "field", generic: "field" },
             tblName,
@@ -10197,6 +10208,7 @@ window.respecVersion = "25.3.0";
               value = JSON.parse(val.textContent.trim());
             } catch (e) {
               showInlineError(
+                // @ts-ignore
                 val,
                 `Invalid json in next span.value ${e.toString()}`,
                 ""
@@ -10256,6 +10268,7 @@ window.respecVersion = "25.3.0";
       .querySelectorAll("figure.regipct-generated")
       .forEach(item => item.remove());
     document.querySelectorAll("table.register").forEach(tbl => {
+      // @ts-ignore
       const json = parse_table(tbl);
       // console.log(
       //   `draw-csrs.table.register json = ${JSON.stringify(json, null, 2)}`
@@ -21380,9 +21393,9 @@ window.respecVersion = "25.3.0";
 
   async function loadStyle$4() {
     try {
-      return (await Promise.resolve().then(function () { return examples$2; })).default;
+      return (await Promise.resolve().then(function () { return regpict$2; })).default;
     } catch {
-      return fetchAsset("examples.css");
+      return fetchAsset("regpict.css");
     }
   }
 
@@ -22480,9 +22493,11 @@ window.respecVersion = "25.3.0";
     if (!conf.noRegpictCSS) {
       const css = await cssPromise$2;
       document.head.insertBefore(
-        hyperHTML$2`<style>
-${css}
-</style>`,
+        html$1`
+        <style>
+          ${css}
+        </style>
+      `,
         document.querySelector("link")
       );
     }
@@ -22533,6 +22548,7 @@ ${css}
             mergeJSON$1(json, fig.getAttribute("data-json"));
           } catch (e) {
             console.log(`error: ${e.toString()}`);
+            // @ts-ignore
             showInlineError(fig, "Invalid data-json attribute", "");
           }
         }
@@ -22550,6 +22566,7 @@ ${css}
             pre.classList.add("hide");
           } catch (e) {
             showInlineError(
+              // @ts-ignore
               pre,
               `Invalid JSON in pre.json, div.json, or span.json ${e.toString()}`,
               ""
@@ -22578,9 +22595,11 @@ ${css}
           render.forEach(node => {
             const temp = mergeElementJSON(mergeJSON$1({}, json), node);
             const divsvg = create_divsvg();
+            // @ts-ignore
             draw_regpict(divsvg, temp);
           });
         } else {
+          // @ts-ignore
           draw_regpict(create_divsvg(), json);
         }
       });
@@ -22597,7 +22616,7 @@ ${css}
 
   const name$E = "core/figures";
 
-  const localizationStrings$9 = {
+  const localizationStrings$a = {
     en: {
       list_of_figures: "List of Figures",
       fig: "Figure ",
@@ -22628,7 +22647,7 @@ ${css}
     },
   };
 
-  const l10n$b = getIntlData(localizationStrings$9);
+  const l10n$c = getIntlData(localizationStrings$a);
 
   function run$r() {
     normalizeImages(document);
@@ -22640,8 +22659,10 @@ ${css}
     if (tof.length && tofElement) {
       decorateTableOfFigures(tofElement);
       tofElement.append(
-        hyperHTML$2`<h2>${l10n$b.list_of_figures}</h2>`,
-        hyperHTML$2`<ul class='tof'>${tof}</ul>`
+        html$1`<h2>${l10n$c.list_of_figures}</h2>`,
+        html$1`<ul class="tof">
+        ${tof}
+      </ul>`
       );
     }
   }
@@ -22674,10 +22695,10 @@ ${css}
     const title = caption.textContent;
     addId(figure, "fig", title);
     // set proper caption title
-    wrapInner$1(caption, hyperHTML$2`<span class='fig-title'></span>`);
+    wrapInner(caption, html$1`<span class='fig-title'></span>`);
     caption.prepend(
-      hyperHTML$2`<span class='fighdr'>${l10n$b.fig}</span>`,
-      hyperHTML$2`<bdi class='figno'>${i + 1}</bdi>`,
+      html$1`<span class='fighdr'>${l10n$c.fig}</span>`,
+      html$1`<bdi class='figno'>${i + 1}</bdi>`,
       " "
     );
   }
@@ -22706,7 +22727,7 @@ ${css}
         // footnotes, issues, errors, and text explicitly marked noToC are not in a ToC
         anchor.remove();
       });
-    return hyperHTML$2`<li class='tofline'>
+    return html$1`<li class='tofline'>
     <a class='tocxref' href='${`#${figureId}`}'>${tofCaption.childNodes}</a>
   </li>`;
   }
@@ -22782,16 +22803,14 @@ ${css}
 
   const name$F = "core/equations";
 
-  const localizationStrings$a = {
+  const localizationStrings$b = {
     en: {
       list_of_equations: "List of Equations",
       eqn: "Equation ",
     },
   };
 
-  const lang$b = lang in localizationStrings$a ? lang : "en";
-
-  const l10n$c = localizationStrings$a[lang$b];
+  const l10n$d = getIntlData(localizationStrings$b);
 
   function run$s() {
     normalizeImages$1(document);
@@ -22803,8 +22822,14 @@ ${css}
     if (toe.length && toeElement) {
       decorateTableOfEquations(toeElement);
       toeElement.append(
-        hyperHTML$2`<h2>${l10n$c.list_of_equations}</h2>`,
-        hyperHTML$2`<ul class='toe'>${toe}</ul>`
+        html$1`
+        <h2>${l10n$d.list_of_equations}</h2>
+      `,
+        html$1`
+        <ul class="toe">
+          ${toe}
+        </ul>
+      `
       );
     }
   }
@@ -22822,6 +22847,7 @@ ${css}
         decorateEquation(eqn, caption, i);
         toe.push(getTableOfEquationsListItem(eqn.id, caption));
       } else {
+        // @ts-ignore
         showInlineWarning(eqn, "Found a `<figure>` without a `<figcaption>`");
       }
     });
@@ -22829,7 +22855,7 @@ ${css}
   }
 
   /**
-   * @param {HTMLElement} equation
+   * @param {Element} equation
    * @param {HTMLElement} caption
    * @param {number} i
    */
@@ -22837,10 +22863,19 @@ ${css}
     const title = caption.textContent;
     addId(equation, "eqn", title);
     // set proper caption title
-    wrapInner$1(caption, hyperHTML$2`<span class='eqn-title'></span>`);
+    wrapInner(
+      caption,
+      html$1`
+      <span class="eqn-title"></span>
+    `
+    );
     caption.prepend(
-      hyperHTML$2`<span class='eqnhdr'>${l10n$c.eqn}</span>`,
-      hyperHTML$2`<bdi class='eqnno'>${i + 1}</bdi>`,
+      html$1`
+      <span class="eqnhdr">${l10n$d.eqn}</span>
+    `,
+      html$1`
+      <bdi class="eqnno">${i + 1}</bdi>
+    `,
       " "
     );
   }
@@ -22855,8 +22890,8 @@ ${css}
     toeCaption.querySelectorAll("a").forEach(anchor => {
       renameElement(anchor, "span").removeAttribute("href");
     });
-    toeCaption.querySelectorAll("dfn").forEach(anchor => {
-      renameElement(anchor, "span");
+    toeCaption.querySelectorAll("dfn").forEach(dfn => {
+      renameElement(dfn, "span");
     });
     toeCaption.querySelectorAll("[id]").forEach(anchor => {
       anchor.removeAttribute("id");
@@ -22869,9 +22904,11 @@ ${css}
         // footnotes, issues, errors, and text explicitly marked noToC are not in a ToC
         anchor.remove();
       });
-    return hyperHTML$2`<li class='toeline'>
-    <a class='tocxref' href='${`#${equationId}`}'>${toeCaption.childNodes}</a>
-  </li>`;
+    return html$1`
+    <li class="toeline">
+      <a class="tocxref" href="${`#${equationId}`}">${toeCaption.childNodes}</a>
+    </li>
+  `;
   }
 
   function normalizeImages$1(doc) {
@@ -22945,16 +22982,14 @@ ${css}
 
   const name$G = "core/tables";
 
-  const localizationStrings$b = {
+  const localizationStrings$c = {
     en: {
       list_of_tables: "List of Tables",
       tbl: "Table ",
     },
   };
 
-  const lang$c = lang in localizationStrings$b ? lang : "en";
-
-  const l10n$d = localizationStrings$b[lang$c];
+  const l10n$e = getIntlData(localizationStrings$c);
 
   function run$t() {
     const tot = collectTables();
@@ -22964,8 +22999,14 @@ ${css}
     if (tot.length && totElement) {
       decorateTableOfTables(totElement);
       totElement.append(
-        hyperHTML$2`<h2>${l10n$d.list_of_tables}</h2>`,
-        hyperHTML$2`<ul class='tot'>${tot}</ul>`
+        html$1`
+        <h2>${l10n$e.list_of_tables}</h2>
+      `,
+        html$1`
+        <ul class="tot">
+          ${tot}
+        </ul>
+      `
       );
     }
   }
@@ -22998,10 +23039,19 @@ ${css}
     const title = caption.textContent;
     addId(table, "tbl", title);
     // set proper caption title
-    wrapInner$1(caption, hyperHTML$2`<span class='tbl-title'></span>`);
+    wrapInner(
+      caption,
+      html$1`
+      <span class="tbl-title"></span>
+    `
+    );
     caption.prepend(
-      hyperHTML$2`<span class='tblhdr'>${l10n$d.tbl}</span>`,
-      hyperHTML$2`<bdi class='tblno'>${i + 1}</bdi>`,
+      html$1`
+      <span class="tblhdr">${l10n$e.tbl}</span>
+    `,
+      html$1`
+      <bdi class="tblno">${i + 1}</bdi>
+    `,
       " "
     );
   }
@@ -23016,8 +23066,8 @@ ${css}
     totCaption.querySelectorAll("a").forEach(anchor => {
       renameElement(anchor, "span").removeAttribute("href");
     });
-    totCaption.querySelectorAll("dfn").forEach(anchor => {
-      renameElement(anchor, "span");
+    totCaption.querySelectorAll("dfn").forEach(dfn => {
+      renameElement(dfn, "span");
     });
     totCaption.querySelectorAll("[id]").forEach(anchor => {
       anchor.removeAttribute("id");
@@ -23030,9 +23080,11 @@ ${css}
         // footnotes, issues, errors, and text explicitly marked noToC are not in a ToC
         anchor.remove();
       });
-    return hyperHTML$2`<li class='totline'>
-    <a class='tocxref' href='${`#${tableId}`}'>${totCaption.childNodes}</a>
-  </li>`;
+    return html$1`
+    <li class="totline">
+      <a class="tocxref" href="${`#${tableId}`}">${totCaption.childNodes}</a>
+    </li>
+  `;
   }
 
   /**
@@ -23093,85 +23145,91 @@ ${css}
   // @ts-check
   const name$H = "core/data-cite";
 
-  function requestLookup(conf) {
-    const toCiteDetails = citeDetailsConverter(conf);
-    return async elem => {
-      const originalKey = elem.dataset.cite;
-      const { key, frag, path } = toCiteDetails(elem);
-      let href = "";
-      let title = "";
-      // This is just referring to this document
-      if (key.toLowerCase() === conf.shortName.toLowerCase()) {
-        console.log(
-          elem,
-          `The reference "${key}" is resolved into the current document per \`conf.shortName\`.`
-        );
-        href = document.location.href;
-      } else {
-        // Let's go look it up in spec ref...
-        const entry = await resolveRef(key);
-        cleanElement(elem);
-        if (!entry) {
-          showInlineWarning(elem, `Couldn't find a match for "${originalKey}"`);
-          return;
-        }
-        href = entry.href;
-        title = entry.title;
+  /**
+   * An arbitrary constant value used as an alias to current spec's shortname. It
+   * exists to simplify code as passing `conf.shortName` everywhere gets clumsy.
+   */
+  const THIS_SPEC = "__SPEC__";
+
+  /**
+   * @param {CiteDetails} citeDetails
+   */
+  async function getLinkProps(citeDetails) {
+    const { key, frag, path } = citeDetails;
+    let href = "";
+    let title = "";
+    // This is just referring to this document
+    if (key === THIS_SPEC) {
+      href = document.location.href;
+    } else {
+      // Let's go look it up in spec ref...
+      const entry = await resolveRef(key);
+      if (!entry) {
+        return null;
       }
-      if (path) {
-        // See: https://github.com/w3c/respec/issues/1856#issuecomment-429579475
-        const relPath = path.startsWith("/") ? `.${path}` : path;
-        href = new URL(relPath, href).href;
-      }
-      if (frag) {
-        href = new URL(frag, href).href;
-      }
-      switch (elem.localName) {
-        case "a": {
-          if (elem.textContent === "" && elem.dataset.lt !== "the-empty-string") {
-            elem.textContent = title;
-          }
-          elem.href = href;
-          if (!path && !frag) {
-            const cite = document.createElement("cite");
-            elem.replaceWith(cite);
-            cite.append(elem);
-          }
-          break;
-        }
-        case "dfn": {
-          const anchor = document.createElement("a");
-          anchor.href = href;
-          if (!elem.textContent) {
-            anchor.textContent = title;
-            elem.append(anchor);
-          } else {
-            wrapInner$1(elem, anchor);
-          }
-          if (!path && !frag) {
-            const cite = document.createElement("cite");
-            cite.append(anchor);
-            elem.append(cite);
-          }
-          if ("export" in elem.dataset) {
-            showInlineError(
-              elem,
-              "Exporting an linked external definition is not allowed. Please remove the `data-export` attribute",
-              "Please remove the `data-export` attribute."
-            );
-            delete elem.dataset.export;
-          }
-          elem.dataset.noExport = "";
-          break;
-        }
-      }
-    };
+      href = entry.href;
+      title = entry.title;
+    }
+    if (path) {
+      // See: https://github.com/w3c/respec/issues/1856#issuecomment-429579475
+      const relPath = path.startsWith("/") ? `.${path}` : path;
+      href = new URL(relPath, href).href;
+    }
+    if (frag) {
+      href = new URL(frag, href).href;
+    }
+    return { href, title };
   }
 
-  function cleanElement(elem) {
-    ["data-cite", "data-cite-frag"]
-      .filter(attrName => elem.hasAttribute(attrName))
-      .forEach(attrName => elem.removeAttribute(attrName));
+  /**
+   * @param {HTMLElement} elem
+   * @param {object} linkProps
+   * @param {string} linkProps.href
+   * @param {string} linkProps.title
+   * @param {CiteDetails} citeDetails
+   */
+  function linkElem(elem, linkProps, citeDetails) {
+    const { href, title } = linkProps;
+    const wrapInCiteEl = !citeDetails.path && !citeDetails.frag;
+
+    if (elem.localName === "a") {
+      const anchor = /** @type {HTMLAnchorElement} */ (elem);
+      if (anchor.textContent === "" && anchor.dataset.lt !== "the-empty-string") {
+        anchor.textContent = title;
+      }
+      anchor.href = href;
+      if (wrapInCiteEl) {
+        const cite = document.createElement("cite");
+        anchor.replaceWith(cite);
+        cite.append(anchor);
+      }
+      return;
+    }
+
+    if (elem.localName === "dfn") {
+      const anchor = document.createElement("a");
+      anchor.href = href;
+      if (!elem.textContent) {
+        anchor.textContent = title;
+        elem.append(anchor);
+      } else {
+        wrapInner(elem, anchor);
+      }
+      if (wrapInCiteEl) {
+        const cite = document.createElement("cite");
+        cite.append(anchor);
+        elem.append(cite);
+      }
+      if ("export" in elem.dataset) {
+        showInlineError(
+          elem,
+          "Exporting an linked external definition is not allowed. Please remove the `data-export` attribute",
+          "Please remove the `data-export` attribute."
+        );
+        delete elem.dataset.export;
+      }
+      elem.dataset.noExport = "";
+    }
   }
 
   /**
@@ -23185,6 +23243,9 @@ ${css}
     };
   }
 
+  const findFrag = makeComponentFinder("#");
+  const findPath = makeComponentFinder("/");
+
   /**
    * @typedef {object} CiteDetails
    * @property {string} key
@@ -23192,619 +23253,112 @@ ${css}
    * @property {string} frag
    * @property {string} path
    *
-   * @return {(elem: HTMLElement) => CiteDetails};
+   * @param {HTMLElement} elem
+   * @return {CiteDetails};
    */
-  function citeDetailsConverter(conf) {
-    const findFrag = makeComponentFinder("#");
-    const findPath = makeComponentFinder("/");
-    return function toCiteDetails(elem) {
-      const { dataset } = elem;
-      const { cite: rawKey, citeFrag, citePath } = dataset;
-      // The key is a fragment, resolve using the shortName as key
-      if (rawKey.startsWith("#") && !citeFrag) {
-        // Closes data-cite not starting with "#"
-        /** @type {HTMLElement} */
-        const closest = elem.parentElement.closest(
-          `[data-cite]:not([data-cite^="#"])`
-        );
-        const { key: parentKey, isNormative: closestIsNormative } = closest
-          ? toCiteDetails(closest)
-          : { key: conf.shortName || "", isNormative: false };
-        dataset.cite = closestIsNormative ? parentKey : `?${parentKey}`;
-        dataset.citeFrag = rawKey.replace("#", ""); // the key is acting as fragment
-        return toCiteDetails(elem);
-      }
-      const frag = citeFrag ? `#${citeFrag}` : findFrag(rawKey);
-      const path = citePath || findPath(rawKey).split("#")[0]; // path is always before "#"
-      const { type } = refTypeFromContext(rawKey, elem);
-      const isNormative = type === "normative";
-      // key is before "/" and "#" but after "!" or "?" (e.g., ?key/path#frag)
-      const hasPrecedingMark = /^[?|!]/.test(rawKey);
-      const key = rawKey.split(/[/|#]/)[0].substring(Number(hasPrecedingMark));
-      const details = { key, isNormative, frag, path };
-      return details;
-    };
+  function toCiteDetails(elem) {
+    const { dataset } = elem;
+    const { cite: rawKey, citeFrag, citePath } = dataset;
+    // The key is a fragment, resolve using the shortName as key
+    if (rawKey.startsWith("#") && !citeFrag) {
+      // Closes data-cite not starting with "#"
+      /** @type {HTMLElement} */
+      const closest = elem.parentElement.closest(
+        `[data-cite]:not([data-cite^="#"])`
+      );
+      const { key: parentKey, isNormative: closestIsNormative } = closest
+        ? toCiteDetails(closest)
+        : { key: THIS_SPEC, isNormative: false };
+      dataset.cite = closestIsNormative ? parentKey : `?${parentKey}`;
+      dataset.citeFrag = rawKey.replace("#", ""); // the key is acting as fragment
+      return toCiteDetails(elem);
+    }
+    const frag = citeFrag ? `#${citeFrag}` : findFrag(rawKey);
+    const path = citePath || findPath(rawKey).split("#")[0]; // path is always before "#"
+    const { type } = refTypeFromContext(rawKey, elem);
+    const isNormative = type === "normative";
+    // key is before "/" and "#" but after "!" or "?" (e.g., ?key/path#frag)
+    const hasPrecedingMark = /^[?|!]/.test(rawKey);
+    const key = rawKey.split(/[/|#]/)[0].substring(Number(hasPrecedingMark));
+    const details = { key, isNormative, frag, path };
+    return details;
   }
 
-  async function run$u(conf) {
-    const toCiteDetails = citeDetailsConverter(conf);
+  async function run$u() {
     /** @type {NodeListOf<HTMLElement>} */
-    const cites = document.querySelectorAll("dfn[data-cite], a[data-cite]");
-    Array.from(cites)
-      .filter(el => el.dataset.cite)
-      .map(toCiteDetails)
-      // it's not the same spec
-      .filter(({ key }) => {
-        return key.toLowerCase() !== (conf.shortName || "").toLowerCase();
-      })
-      .forEach(({ isNormative, key }) => {
-        if (!isNormative && !conf.normativeReferences.has(key)) {
-          conf.informativeReferences.add(key);
-          return;
-        }
-        conf.normativeReferences.add(key);
-        conf.informativeReferences.delete(key);
-      });
+    const elems = document.querySelectorAll(
+      "dfn[data-cite]:not([data-cite='']), a[data-cite]:not([data-cite=''])"
+    );
+
+    await updateBiblio([...elems]);
+
+    for (const elem of elems) {
+      const originalKey = elem.dataset.cite;
+      const citeDetails = toCiteDetails(elem);
+      const linkProps = await getLinkProps(citeDetails);
+      if (linkProps) {
+        linkElem(elem, linkProps, citeDetails);
+      } else {
+        showInlineWarning(elem, `Couldn't find a match for "${originalKey}"`);
+      }
+    }
+
+    sub("beforesave", cleanup);
+
+    // Added message for legacy compat with Aria specs
+    // See https://github.com/w3c/respec/issues/793,
+    //
+    // Why `core/link-to-dfn` and not `core/data-cite`? For backward compatibility
+    // after a refactor (https://github.com/w3c/respec/issues/2830)
+    pub("end", "core/link-to-dfn");
   }
 
   /**
-   * @param {Document} doc
-   * @param {*} conf
+   * Fetch and update `biblio` with entries corresponding to given elements
+   * @param {HTMLElement[]} elems
    */
-  async function linkInlineCitations(doc, conf = respecConfig) {
-    const toLookupRequest = requestLookup(conf);
-    const elems = [
-      ...doc.querySelectorAll(
-        "dfn[data-cite]:not([data-cite='']), a[data-cite]:not([data-cite=''])"
-      ),
-    ];
-    const citeConverter = citeDetailsConverter(conf);
-
-    const promisesForMissingEntries = elems
-      .map(citeConverter)
-      .map(async entry => {
-        const result = await resolveRef(entry.key);
-        return { entry, result };
-      });
-    const bibEntries = await Promise.all(promisesForMissingEntries);
+  async function updateBiblio(elems) {
+    const promisesForBibEntries = elems.map(toCiteDetails).map(async entry => {
+      const result = await resolveRef(entry.key);
+      return { entry, result };
+    });
+    const bibEntries = await Promise.all(promisesForBibEntries);
 
     const missingBibEntries = bibEntries
       .filter(({ result }) => result === null)
       .map(({ entry: { key } }) => key);
 
-    // we now go to network to fetch missing entries
     const newEntries = await updateFromNetwork(missingBibEntries);
-    if (newEntries) Object.assign(biblio, newEntries);
+    if (newEntries) {
+      Object.assign(biblio, newEntries);
+    }
+  }
 
-    const lookupRequests = [...new Set(elems)].map(toLookupRequest);
-    return await Promise.all(lookupRequests);
+  /** @param {Document} doc */
+  function cleanup(doc) {
+    const attrToRemove = ["data-cite", "data-cite-frag", "data-cite-path"];
+    const elems = doc.querySelectorAll("a[data-cite], dfn[data-cite]");
+    elems.forEach(elem =>
+      attrToRemove.forEach(attr => elem.removeAttribute(attr))
+    );
   }
 
   var dataCite = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$H,
-    run: run$u,
-    linkInlineCitations: linkInlineCitations
+    THIS_SPEC: THIS_SPEC,
+    toCiteDetails: toCiteDetails,
+    run: run$u
   });
 
   // @ts-check
 
-  /**
-   * @typedef {import('core/xref').RequestEntry} RequestEntry
-   * @typedef {import('core/xref').Response} Response
-   * @typedef {import('core/xref').SearchResultEntry} SearchResultEntry
-   */
-
-  const VERSION_CHECK_WAIT = 5 * 60 * 1000; // 5 min
-
-  async function getIdbCache() {
-    const db = await idb.openDB("xref", 1, {
-      upgrade(db) {
-        db.createObjectStore("xrefs");
-      },
-    });
-    return new IDBKeyVal(db, "xrefs");
-  }
-
-  /**
-   * @param {RequestEntry[]} uniqueQueryKeys
-   * @returns {Promise<Map<string, SearchResultEntry[]>>}
-   */
-  async function resolveXrefCache(uniqueQueryKeys) {
-    try {
-      const cache = await getIdbCache();
-      return await resolveFromCache(uniqueQueryKeys, cache);
-    } catch (err) {
-      console.error(err);
-      return new Map();
-    }
-  }
-
-  /**
-   * @param {RequestEntry[]} keys
-   * @param {IDBKeyVal} cache
-   * @returns {Promise<Map<string, SearchResultEntry[]>>}
-   */
-  async function resolveFromCache(keys, cache) {
-    const bustCache = await shouldBustCache(cache);
-    if (bustCache) {
-      await cache.clear();
-      return new Map();
-    }
-
-    const cachedData = await cache.getMany(keys.map(key => key.id));
-    return cachedData;
-  }
-
-  /**
-   * Get last updated timestamp from server and bust cache based on that. This
-   * way, we prevent dirty/erroneous/stale data being kept on a client (which is
-   * possible if we use a `MAX_AGE` based caching strategy).
-   * @param {IDBKeyVal} cache
-   */
-  async function shouldBustCache(cache) {
-    const lastChecked = await cache.get("__LAST_VERSION_CHECK__");
-    const now = Date.now();
-
-    if (!lastChecked) {
-      await cache.set("__LAST_VERSION_CHECK__", now);
-      return false;
-    }
-    if (now - lastChecked < VERSION_CHECK_WAIT) {
-      // avoid checking network for any data update if old cache "fresh"
-      return false;
-    }
-
-    const url = new URL("meta/version", API_URL).href;
-    const res = await fetch(url);
-    if (!res.ok) return false;
-    const lastUpdated = await res.text();
-    await cache.set("__LAST_VERSION_CHECK__", now);
-    return parseInt(lastUpdated, 10) > lastChecked;
-  }
-
-  /**
-   * @param {Map<string, SearchResultEntry[]>} data
-   */
-  async function cacheXrefData(data) {
-    try {
-      const cache = await getIdbCache();
-      // add data to cache
-      await cache.addMany(data);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  // @ts-check
-
-  const profiles = {
-    "web-platform": ["HTML", "INFRA", "URL", "WEBIDL", "DOM", "FETCH"],
-  };
-
-  const API_URL = "https://respec.org/xref/";
-
-  if (
-    !document.querySelector("link[rel='preconnect'][href='https://respec.org']")
-  ) {
-    const link = createResourceHint({
-      hint: "preconnect",
-      href: "https://respec.org",
-    });
-    document.head.appendChild(link);
-  }
-
-  /**
-   * main external reference driver
-   * @param {Object} conf respecConfig
-   * @param {HTMLElement[]} elems possibleExternalLinks
-   */
-  async function run$v(conf, elems) {
-    const xref = normalizeConfig(conf.xref);
-    if (xref.specs) {
-      const bodyCite = document.body.dataset.cite
-        ? document.body.dataset.cite.split(/\s+/)
-        : [];
-      document.body.dataset.cite = bodyCite.concat(xref.specs).join(" ");
-    }
-
-    if (!elems.length) return;
-
-    /** @type {RequestEntry[]} */
-    const queryKeys = [];
-    for (const elem of elems) {
-      const entry = getRequestEntry(elem);
-      const id = await objectHash(entry);
-      queryKeys.push({ ...entry, id });
-    }
-
-    const data = await getData(queryKeys, xref.url);
-    addDataCiteToTerms(elems, queryKeys, data, conf);
-  }
-
-  /**
-   * converts conf.xref to object with url and spec properties
-   */
-  function normalizeConfig(xref) {
-    const defaults = {
-      url: API_URL,
-      specs: null,
-    };
-
-    const config = Object.assign({}, defaults);
-
-    const type = Array.isArray(xref) ? "array" : typeof xref;
-    switch (type) {
-      case "boolean":
-        // using defaults already, as above
-        break;
-      case "string":
-        if (xref.toLowerCase() in profiles) {
-          Object.assign(config, { specs: profiles[xref.toLowerCase()] });
-        } else {
-          invalidProfileError(xref);
-        }
-        break;
-      case "array":
-        Object.assign(config, { specs: xref });
-        break;
-      case "object":
-        Object.assign(config, xref);
-        if (xref.profile) {
-          const profile = xref.profile.toLowerCase();
-          if (profile in profiles) {
-            const specs = (xref.specs || []).concat(profiles[profile]);
-            Object.assign(config, { specs });
-          } else {
-            invalidProfileError(xref.profile);
-          }
-        }
-        break;
-      default:
-        pub(
-          "error",
-          `Invalid value for \`xref\` configuration option. Received: "${xref}".`
-        );
-    }
-    return config;
-
-    function invalidProfileError(profile) {
-      const supportedProfiles = Object.keys(profiles)
-        .map(p => `"${p}"`)
-        .join(", ");
-      const msg =
-        `Invalid profile "${profile}" in \`respecConfig.xref\`. ` +
-        `Please use one of the supported profiles: ${supportedProfiles}.`;
-      pub("error", msg);
-    }
-  }
-
-  /**
-   * get xref API request entry (term and context) for given xref element
-   * @param {HTMLElement} elem
-   */
-  function getRequestEntry(elem) {
-    const isIDL = "xrefType" in elem.dataset;
-
-    let term = getTermFromElement(elem);
-    if (!isIDL) term = term.toLowerCase();
-
-    const specs = getSpecContext(elem);
-    const types = getTypeContext(elem, isIDL);
-    const forContext = getForContext(elem, isIDL);
-
-    return {
-      term,
-      types,
-      ...(specs.length && { specs }),
-      ...(typeof forContext === "string" && { for: forContext }),
-    };
-  }
-
-  /** @param {HTMLElement} elem */
-  function getTermFromElement(elem) {
-    const { lt: linkingText } = elem.dataset;
-    let term = linkingText ? linkingText.split("|", 1)[0] : elem.textContent;
-    term = norm(term);
-    return term === "the-empty-string" ? "" : term;
-  }
-
-  /**
-   * Get spec context as a fallback chain, where each level (sub-array) represents
-   * decreasing priority.
-   * @param {HTMLElement} elem
-   */
-  function getSpecContext(elem) {
-    /** @type {string[][]} */
-    const specs = [];
-
-    /** @type {HTMLElement} */
-    let dataciteElem = elem.closest("[data-cite]");
-
-    // If element itself contains data-cite, we don't take inline context into
-    // account. The inline bibref context has highest priority, if available.
-    if (dataciteElem !== elem) {
-      const closestSection = elem.closest("section");
-      /** @type {Iterable<HTMLElement>} */
-      const bibrefs = closestSection
-        ? closestSection.querySelectorAll("a.bibref")
-        : [];
-      const inlineRefs = [...bibrefs].map(el => el.textContent.toLowerCase());
-      if (inlineRefs.length) {
-        specs.push(inlineRefs);
-      }
-    }
-
-    // Traverse up towards the root element, adding levels of lower priority specs
-    while (dataciteElem) {
-      const cite = dataciteElem.dataset.cite.toLowerCase().replace(/[!?]/g, "");
-      const cites = cite.split(/\s+/).filter(s => s);
-      if (cites.length) {
-        specs.push(cites);
-      }
-      if (dataciteElem === elem) break;
-      dataciteElem = dataciteElem.parentElement.closest("[data-cite]");
-    }
-
-    const uniqueSpecContext = dedupeSpecContext(specs);
-    return uniqueSpecContext;
-  }
-
-  /**
-   * If we already have a spec in a higher priority level (closer to element) of
-   * fallback chain, skip it from low priority levels, to prevent duplication.
-   * @param {string[][]} specs
-   * */
-  function dedupeSpecContext(specs) {
-    /** @type {string[][]} */
-    const unique = [];
-    for (const level of specs) {
-      const higherPriority = unique[unique.length - 1] || [];
-      const uniqueSpecs = [...new Set(level)].filter(
-        spec => !higherPriority.includes(spec)
-      );
-      unique.push(uniqueSpecs.sort());
-    }
-    return unique;
-  }
-
-  /**
-   * @param {HTMLElement} elem
-   * @param {boolean} isIDL
-   */
-  function getForContext(elem, isIDL) {
-    if (elem.dataset.xrefFor) {
-      return norm(elem.dataset.xrefFor);
-    }
-
-    if (isIDL) {
-      /** @type {HTMLElement} */
-      const dataXrefForElem = elem.closest("[data-xref-for]");
-      if (dataXrefForElem) {
-        return norm(dataXrefForElem.dataset.xrefFor);
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * @param {HTMLElement} elem
-   * @param {boolean} isIDL
-   */
-  function getTypeContext(elem, isIDL) {
-    if (isIDL) {
-      if (elem.dataset.xrefType) {
-        return elem.dataset.xrefType.split("|");
-      }
-      return ["_IDL_"];
-    }
-
-    return ["_CONCEPT_"];
-  }
-
-  /**
-   * @param {RequestEntry[]} queryKeys
-   * @param {string} apiUrl
-   * @returns {Promise<Map<string, SearchResultEntry[]>>}
-   */
-  async function getData(queryKeys, apiUrl) {
-    const uniqueIds = new Set();
-    const uniqueQueryKeys = queryKeys.filter(key => {
-      return uniqueIds.has(key.id) ? false : uniqueIds.add(key.id) && true;
-    });
-
-    const resultsFromCache = await resolveXrefCache(uniqueQueryKeys);
-
-    const termsToLook = uniqueQueryKeys.filter(
-      key => !resultsFromCache.get(key.id)
-    );
-    const fetchedResults = await fetchFromNetwork(termsToLook, apiUrl);
-    if (fetchedResults.size) {
-      // add data to cache
-      await cacheXrefData(fetchedResults);
-    }
-
-    return new Map([...resultsFromCache, ...fetchedResults]);
-  }
-
-  /**
-   * @param {RequestEntry[]} keys
-   * @param {string} url
-   * @returns {Promise<Map<string, SearchResultEntry[]>>}
-   */
-  async function fetchFromNetwork(keys, url) {
-    if (!keys.length) return new Map();
-
-    const query = { keys };
-    const options = {
-      method: "POST",
-      body: JSON.stringify(query),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-    const response = await fetch(url, options);
-    const json = await response.json();
-    return new Map(json.result);
-  }
-
-  /**
-   * Figures out from the tree structure if the reference is
-   * normative (true) or informative (false).
-   * @param {HTMLElement} elem
-   */
-  function isNormative(elem) {
-    const closestNormative = elem.closest(".normative");
-    const closestInform = elem.closest(nonNormativeSelector);
-    if (!closestInform || elem === closestNormative) {
-      return true;
-    }
-    return (
-      closestNormative &&
-      closestInform &&
-      closestInform.contains(closestNormative)
-    );
-  }
-
-  /**
-   * adds data-cite attributes to elems for each term for which results are found.
-   * adds citations to references section.
-   * collects and shows linking errors if any.
-   * @param {HTMLElement[]} elems
-   * @param {RequestEntry[]} queryKeys
-   * @param {Map<string, SearchResultEntry[]>} data
-   * @param {any} conf
-   */
-  function addDataCiteToTerms(elems, queryKeys, data, conf) {
-    /** @type {Errors} */
-    const errors = { ambiguous: new Map(), notFound: new Map() };
-
-    for (let i = 0, l = elems.length; i < l; i++) {
-      if (elems[i].closest("[data-no-xref]")) continue;
-
-      const elem = elems[i];
-      const query = queryKeys[i];
-
-      const { id } = query;
-      const results = data.get(id);
-      if (results.length === 1) {
-        addDataCite(elem, query, results[0], conf);
-      } else {
-        const collector = errors[results.length === 0 ? "notFound" : "ambiguous"];
-        if (!collector.has(id)) {
-          collector.set(id, { elems: [], results, query });
-        }
-        collector.get(id).elems.push(elem);
-      }
-    }
-
-    showErrors(errors);
-  }
-
-  /**
-   * @param {HTMLElement} elem
-   * @param {RequestEntry} query
-   * @param {SearchResultEntry} result
-   * @param {any} conf
-   */
-  function addDataCite(elem, query, result, conf) {
-    const { term } = query;
-    const { uri, shortname: cite, normative, type } = result;
-
-    const path = uri.includes("/") ? uri.split("/", 1)[1] : uri;
-    const [citePath, citeFrag] = path.split("#");
-    const dataset = { cite, citePath, citeFrag, type };
-    Object.assign(elem.dataset, dataset);
-
-    addToReferences(elem, cite, normative, term, conf);
-  }
-
-  /**
-   * add specs for citation (references section)
-   * @param {HTMLElement} elem
-   * @param {string} cite
-   * @param {boolean} normative
-   * @param {string} term
-   * @param {any} conf
-   */
-  function addToReferences(elem, cite, normative, term, conf) {
-    const isNormRef = isNormative(elem);
-    if (!isNormRef) {
-      // Only add it if not already normative...
-      if (!conf.normativeReferences.has(cite)) {
-        conf.informativeReferences.add(cite);
-      }
-      return;
-    }
-    if (normative) {
-      // If it was originally informative, we move the existing
-      // key to be normative.
-      const existingKey = conf.informativeReferences.has(cite)
-        ? conf.informativeReferences.getCanonicalKey(cite)
-        : cite;
-      conf.normativeReferences.add(existingKey);
-      conf.informativeReferences.delete(existingKey);
-      return;
-    }
-
-    const msg =
-      `Adding an informative reference to "${term}" from "${cite}" ` +
-      "in a normative section";
-    const title = "Error: Informative reference in normative section";
-    showInlineWarning(elem, msg, title);
-  }
-
-  /** @param {Errors} errors */
-  function showErrors({ ambiguous, notFound }) {
-    const getPrefilledFormURL = (term, query, specs = []) => {
-      const url = new URL(API_URL);
-      url.searchParams.set("term", term);
-      if (query.for) url.searchParams.set("for", query.for);
-      url.searchParams.set("types", query.types.join(","));
-      if (specs.length) url.searchParams.set("specs", specs.join(","));
-      return url;
-    };
-
-    for (const { query, elems } of notFound.values()) {
-      const specs = [...new Set(query.specs.flat())].sort();
-      const originalTerm = getTermFromElement(elems[0]);
-      const formUrl = getPrefilledFormURL(originalTerm, query);
-      const specsString = specs.map(spec => `\`${spec}\``).join(", ");
-      const msg =
-        `Couldn't match "**${originalTerm}**" to anything in the document or in any other document cited in this specification: ${specsString}. ` +
-        `See [how to cite to resolve the error](${formUrl})`;
-      showInlineError(elems, msg, "Error: No matching dfn found.");
-    }
-
-    for (const { query, elems, results } of ambiguous.values()) {
-      const specs = [...new Set(results.map(entry => entry.shortname))].sort();
-      const specsString = specs.map(s => `**${s}**`).join(", ");
-      const originalTerm = getTermFromElement(elems[0]);
-      const formUrl = getPrefilledFormURL(originalTerm, query, specs);
-      const msg =
-        `The term "**${originalTerm}**" is defined in ${specsString} in multiple ways, so it's ambiguous. ` +
-        `See [how to cite to resolve the error](${formUrl})`;
-      showInlineError(elems, msg, "Error: Linking an ambiguous dfn.");
-    }
-  }
-
-  function objectHash(obj) {
-    const str = JSON.stringify(obj, Object.keys(obj).sort());
-    const buffer = new TextEncoder().encode(str);
-    return crypto.subtle.digest("SHA-1", buffer).then(bufferToHexString);
-  }
-
-  /** @param {ArrayBuffer} buffer */
-  function bufferToHexString(buffer) {
-    const byteArray = new Uint8Array(buffer);
-    return [...byteArray].map(v => v.toString(16).padStart(2, "0")).join("");
-  }
-
-  // @ts-check
   const name$I = "core/link-to-dfn";
 
-  const localizationStrings$c = {
+  /** @type {HTMLElement[]} */
+  const possibleExternalLinks = [];
+
+  const localizationStrings$d = {
     en: {
       /**
        * @param {string} title
@@ -23834,60 +23388,57 @@ ${css}
         "Das Dokument enthält mehrere Definitionen dieses Eintrags.",
     },
   };
-  const l10n$e = getIntlData(localizationStrings$c);
+  const l10n$f = getIntlData(localizationStrings$d);
 
-  async function run$w(conf) {
+  async function run$v(conf) {
     const titleToDfns = mapTitleToDfns();
-    /** @type {HTMLElement[]} */
-    const possibleExternalLinks = [];
     /** @type {HTMLAnchorElement[]} */
     const badLinks = [];
 
-    const localLinkSelector =
-      "a[data-cite=''], a:not([href]):not([data-cite]):not(.logo):not(.externalDFN)";
-    document.querySelectorAll(localLinkSelector).forEach((
-      /** @type {HTMLAnchorElement} */ anchor
-    ) => {
+    /** @type {NodeListOf<HTMLAnchorElement>} */
+    const localAnchors = document.querySelectorAll(
+      "a[data-cite=''], a:not([href]):not([data-cite]):not(.logo):not(.externalDFN)"
+    );
+    for (const anchor of localAnchors) {
       const linkTargets = getLinkTargets(anchor);
-      const foundDfn = linkTargets.some(target => {
-        return findLinkTarget(target, anchor, titleToDfns, possibleExternalLinks);
-      });
-      if (!foundDfn && linkTargets.length !== 0) {
+      const linkTarget = linkTargets.find(
+        target =>
+          titleToDfns.has(target.title) &&
+          titleToDfns.get(target.title).has(target.for)
+      );
+      if (linkTarget) {
+        const foundLocalMatch = processAnchor(anchor, linkTarget, titleToDfns);
+        if (!foundLocalMatch) {
+          possibleExternalLinks.push(anchor);
+        }
+      } else {
         if (anchor.dataset.cite === "") {
           badLinks.push(anchor);
         } else {
           possibleExternalLinks.push(anchor);
         }
       }
-    });
+    }
 
     showLinkingError(badLinks);
 
-    if (conf.xref) {
-      possibleExternalLinks.push(...findExplicitExternalLinks());
-      try {
-        await run$v(conf, possibleExternalLinks);
-      } catch (error) {
-        console.error(error);
-        showLinkingError(possibleExternalLinks);
-      }
-    } else {
+    // This needs to run before core/xref adds its data-cite and updates
+    // conf.normativeReferences and conf.informativeReferences.
+    updateReferences(conf);
+
+    if (!conf.xref) {
       showLinkingError(possibleExternalLinks);
     }
-
-    await linkInlineCitations(document, conf);
-    // Added message for legacy compat with Aria specs
-    // See https://github.com/w3c/respec/issues/793
-    pub("end", "core/link-to-dfn");
   }
 
   function mapTitleToDfns() {
+    /** @type {CaseInsensitiveMap<Map<string, HTMLElement>>} */
     const titleToDfns = new CaseInsensitiveMap();
     for (const key of definitionMap.keys()) {
       const { result, duplicates } = collectDfns(key);
       titleToDfns.set(key, result);
       if (duplicates.length > 0) {
-        showInlineError(duplicates, l10n$e.duplicateMsg(key), l10n$e.duplicateTitle);
+        showInlineError(duplicates, l10n$f.duplicateMsg(key), l10n$f.duplicateTitle);
       }
     }
     return titleToDfns;
@@ -23924,36 +23475,28 @@ ${css}
   }
 
   /**
-   * @param {import("./utils.js").LinkTarget} target
    * @param {HTMLAnchorElement} anchor
-   * @param {CaseInsensitiveMap} titleToDfns
-   * @param {HTMLElement[]} possibleExternalLinks
+   * @param {import("./utils.js").LinkTarget} target
+   * @param {ReturnType<typeof mapTitleToDfns>} titleToDfns
    */
-  function findLinkTarget(target, anchor, titleToDfns, possibleExternalLinks) {
+  function processAnchor(anchor, target, titleToDfns) {
+    let noLocalMatch = false;
     const { linkFor } = anchor.dataset;
-    if (
-      !titleToDfns.has(target.title) ||
-      !titleToDfns.get(target.title).get(target.for)
-    ) {
-      return false;
-    }
     const dfn = titleToDfns.get(target.title).get(target.for);
     if (dfn.dataset.cite) {
       anchor.dataset.cite = dfn.dataset.cite;
     } else if (linkFor && !titleToDfns.get(linkFor)) {
-      possibleExternalLinks.push(anchor);
+      noLocalMatch = true;
     } else if (dfn.classList.contains("externalDFN")) {
       // data-lt[0] serves as unique id for the dfn which this element references
       const lt = dfn.dataset.lt ? dfn.dataset.lt.split("|") : [];
       anchor.dataset.lt = lt[0] || dfn.textContent;
-      possibleExternalLinks.push(anchor);
+      noLocalMatch = true;
+    } else if (anchor.dataset.idl !== "partial") {
+      anchor.href = `#${dfn.id}`;
+      anchor.classList.add("internalDFN");
     } else {
-      if (anchor.dataset.idl === "partial") {
-        possibleExternalLinks.push(anchor);
-      } else {
-        anchor.href = `#${dfn.id}`;
-        anchor.classList.add("internalDFN");
-      }
+      noLocalMatch = true;
     }
     if (!anchor.hasAttribute("data-link-type")) {
       anchor.dataset.linkType = "idl" in dfn.dataset ? "idl" : "dfn";
@@ -23961,7 +23504,7 @@ ${css}
     if (isCode(dfn)) {
       wrapAsCode(anchor, dfn);
     }
-    return true;
+    return !noLocalMatch;
   }
 
   /**
@@ -23993,7 +23536,7 @@ ${css}
     const isIDL = dfn.dataset.hasOwnProperty("idl");
     const needsCode = shouldWrapByCode(anchor) || shouldWrapByCode(dfn, term);
     if (!isIDL || needsCode) {
-      wrapInner$1(anchor, document.createElement("code"));
+      wrapInner(anchor, document.createElement("code"));
     }
   }
 
@@ -24029,29 +23572,6 @@ ${css}
     return false;
   }
 
-  /**
-   * Find additional references that need to be looked up externally.
-   * Examples: a[data-cite="spec"], dfn[data-cite="spec"], dfn.externalDFN
-   */
-  function findExplicitExternalLinks() {
-    /** @type {NodeListOf<HTMLElement>} */
-    const links = document.querySelectorAll(
-      "a[data-cite]:not([data-cite='']):not([data-cite*='#']), " +
-        "dfn[data-cite]:not([data-cite='']):not([data-cite*='#'])"
-    );
-    /** @type {NodeListOf<HTMLElement>} */
-    const externalDFNs = document.querySelectorAll("dfn.externalDFN");
-    return [...links]
-      .filter(el => {
-        // ignore empties
-        if (el.textContent.trim() === "") return false;
-        /** @type {HTMLElement} */
-        const closest = el.closest("[data-cite]");
-        return !closest || closest.dataset.cite !== "";
-      })
-      .concat(...externalDFNs);
-  }
-
   function showLinkingError(elems) {
     elems.forEach(elem => {
       showInlineWarning(
@@ -24062,16 +23582,48 @@ ${css}
     });
   }
 
+  /**
+   * Update references due to `data-cite` attributes.
+   *
+   * Also, make sure self-citing doesn't cause current document getting added to
+   * bibliographic references section.
+   * @param {Conf} conf
+   */
+  function updateReferences(conf) {
+    const shortName = new RegExp(
+      String.raw`\b${(conf.shortName || "").toLowerCase()}\b`,
+      "i"
+    );
+
+    /** @type {NodeListOf<HTMLElement>} */
+    const elems = document.querySelectorAll(
+      "dfn[data-cite]:not([data-cite='']), a[data-cite]:not([data-cite=''])"
+    );
+    for (const elem of elems) {
+      elem.dataset.cite = elem.dataset.cite.replace(shortName, THIS_SPEC);
+      const { key, isNormative } = toCiteDetails(elem);
+      if (key === THIS_SPEC) continue;
+
+      if (!isNormative && !conf.normativeReferences.has(key)) {
+        conf.informativeReferences.add(key);
+      } else {
+        conf.normativeReferences.add(key);
+        conf.informativeReferences.delete(key);
+      }
+    }
+  }
+
   var linkToDfn = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$I,
-    run: run$w
+    possibleExternalLinks: possibleExternalLinks,
+    run: run$v
   });
 
   // @ts-check
   const name$J = "core/contrib";
 
-  async function run$x(conf) {
+  async function run$w(conf) {
     const ghContributors = document.getElementById("gh-contributors");
     if (!ghContributors) {
       return;
@@ -24142,7 +23694,7 @@ ${css}
     });
 
     if (element.tagName === "UL") {
-      hyperHTML$2(element)`${sortedContributors.map(
+      html$1(element)`${sortedContributors.map(
       ({ name, login }) =>
         `<li><a href="https://github.com/${login}">${name || login}</a></li>`
     )}`;
@@ -24156,14 +23708,14 @@ ${css}
   var contrib = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$J,
-    run: run$x
+    run: run$w
   });
 
   // @ts-check
 
   const name$K = "core/fix-headers";
 
-  function run$y() {
+  function run$x() {
     [...document.querySelectorAll("section:not(.introductory)")]
       .map(sec => sec.querySelector("h1, h2, h3, h4, h5, h6"))
       .filter(h => h)
@@ -24185,7 +23737,7 @@ ${css}
   var fixHeaders = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$K,
-    run: run$y
+    run: run$x
   });
 
   // @ts-check
@@ -24195,7 +23747,7 @@ ${css}
 
   const name$L = "core/structure";
 
-  const localizationStrings$d = {
+  const localizationStrings$e = {
     en: {
       toc: "Table of Contents",
       section: "Section ",
@@ -24213,22 +23765,16 @@ ${css}
     },
     nl: {
       toc: "Inhoudsopgave",
-      section: "Section ", // TODO translate
-      chapter: "Chapter ", // TODO: translate
-      appendix: "Appendix ", // TODO: translate
     },
     es: {
       toc: "Tabla de Contenidos",
-      section: "Section ", // TODO: translate
-      chapter: "Chapter ", // TODO: translate
-      appendix: "Appendix ", // TODO: translate
     },
     de: {
       toc: "Inhaltsverzeichnis",
     },
   };
 
-  const l10n$f = getIntlData(localizationStrings$d);
+  const l10n$g = getIntlData(localizationStrings$e);
 
   /**
    * @typedef {object} SectionInfo
@@ -24250,7 +23796,7 @@ ${css}
       return null;
     }
     /** @type {HTMLElement} */
-    const ol = hyperHTML$2`<ol class='toc'>`;
+    const ol = html$1`<ol class="toc"></ol>`;
     for (const section of sections) {
       if (section.isAppendix && !prefix && !appendixMode) {
         lastNonAppendix = index;
@@ -24272,15 +23818,15 @@ ${css}
       const secthdr =
         level === 1
           ? appendixMode
-            ? l10n$f.appendix
-            : l10n$f.chapter
-          : l10n$f.section;
-      wrapInner(section.header, hyperHTML$2`<span class='sect-title'>`);
+            ? l10n$g.appendix
+            : l10n$g.chapter
+          : l10n$g.section;
+      wrapInner(section.header, html$1`<span class="sect-title"></span>`);
       if (!section.isIntro) {
         index += 1;
         section.header.prepend(
-          hyperHTML$2`<span class='secthdr' hidden>${secthdr}</span>`,
-          hyperHTML$2`<bdi class='secno'>${secno} </bdi>`
+          html$1`<span class="secthdr" hidden>${secthdr}</span>`,
+          html$1`<bdi class="secno">${secno} </bdi>`
         );
       }
 
@@ -24311,10 +23857,10 @@ ${css}
    * @param {Element} parent
    */
   function getSectionTree(parent, { tocIntroductory = false } = {}) {
-    const sectionElements = children(
-      parent,
-      tocIntroductory ? "section" : "section:not(.introductory)"
-    );
+    /** @type {NodeListOf<HTMLElement>} */
+    const sectionElements = tocIntroductory
+      ? parent.querySelectorAll(":scope > section")
+      : parent.querySelectorAll(":scope > section:not(.introductory)");
     /** @type {Section[]} */
     const sections = [];
 
@@ -24346,10 +23892,10 @@ ${css}
    * @param {string} id
    */
   function createTocListItem(header, id) {
-    const anchor = hyperHTML$2`<a href="${`#${id}`}" class="tocxref"/>`;
+    const anchor = html$1`<a href="${`#${id}`}" class="tocxref" />`;
     anchor.append(...header.cloneNode(true).childNodes);
     filterHeader(anchor);
-    return hyperHTML$2`<li class='tocline'>${anchor}</li>`;
+    return html$1`<li class="tocline">${anchor}</li>`;
   }
 
   /**
@@ -24372,7 +23918,7 @@ ${css}
     );
   }
 
-  function run$z(conf) {
+  function run$y(conf) {
     if ("tocIntroductory" in conf === false) {
       conf.tocIntroductory = false;
     }
@@ -24392,6 +23938,9 @@ ${css}
         createTableOfContents(result);
       }
     }
+
+    // See core/dfn-index
+    pub("toc");
   }
 
   function renameSectionHeaders() {
@@ -24431,8 +23980,8 @@ ${css}
     if (!ol) {
       return;
     }
-    const nav = hyperHTML$2`<nav id="toc">`;
-    const h2 = hyperHTML$2`<h2 class="introductory">${l10n$f.toc}</h2>`;
+    const nav = html$1`<nav id="toc"></nav>`;
+    const h2 = html$1`<h2 class="introductory">${l10n$g.toc}</h2>`;
     addId(h2);
     nav.append(h2, ol);
     const ref =
@@ -24447,7 +23996,9 @@ ${css}
       }
     }
 
-    const link = hyperHTML$2`<p role='navigation' id='back-to-top'><a href='#title'><abbr title='Back to Top'>&uarr;</abbr></a></p>`;
+    const link = html$1`<p role="navigation" id="back-to-top">
+    <a href="#title"><abbr title="Back to Top">&uarr;</abbr></a>
+  </p>`;
     document.body.append(link);
   }
 
@@ -24463,7 +24014,7 @@ ${css}
   var structure$1 = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$L,
-    run: run$z
+    run: run$y
   });
 
   // Module pcisig/fig-tbl-eqn-numbering
@@ -24495,7 +24046,7 @@ ${css}
     });
   }
 
-  function run$A(conf) {
+  function run$z(conf) {
     if (conf.numberByChapter) {
       const chapterSecnos = document.querySelectorAll(
         "body > section:not(.introductory) h2:first-child bdi.secno"
@@ -24525,14 +24076,14 @@ ${css}
   var figTblEqnNumbering = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$M,
-    run: run$A
+    run: run$z
   });
 
   // @ts-check
 
   const name$N = "core/informative";
 
-  const localizationStrings$e = {
+  const localizationStrings$f = {
     en: {
       informative: "This section is non-normative.",
     },
@@ -24550,21 +24101,21 @@ ${css}
     },
   };
 
-  const l10n$g = getIntlData(localizationStrings$e);
+  const l10n$h = getIntlData(localizationStrings$f);
 
-  function run$B() {
+  function run$A() {
     Array.from(document.querySelectorAll("section.informative"))
       .map(informative => informative.querySelector("h2, h3, h4, h5, h6"))
       .filter(heading => heading)
       .forEach(heading => {
-        heading.after(hyperHTML$2`<p><em>${l10n$g.informative}</em></p>`);
+        heading.after(html$1`<p><em>${l10n$h.informative}</em></p>`);
       });
   }
 
   var informative = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$N,
-    run: run$B
+    run: run$A
   });
 
   // @ts-check
@@ -24574,7 +24125,7 @@ ${css}
 
   const name$O = "core/id-headers";
 
-  function run$C(conf) {
+  function run$B(conf) {
     /** @type {NodeListOf<HTMLElement>} */
     const headings = document.querySelectorAll(
       `section:not(.head):not(.introductory) h2, h3, h4, h5, h6, figcaption, caption, div.impnote-title, div.note-title`
@@ -24587,7 +24138,7 @@ ${css}
         id = h.parentElement.id || h.id;
       }
       if (!conf.addSectionLinks) continue;
-      h.appendChild(hyperHTML$2`
+      h.appendChild(html$1`
       <a href="${`#${id}`}" class="self-link" aria-label="§"></a>
     `);
     }
@@ -24596,43 +24147,31 @@ ${css}
   var idHeaders = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$O,
-    run: run$C
+    run: run$B
   });
 
   // @ts-check
 
   const name$P = "core/caniuse";
 
-  const API_URL$1 = "https://respec.org/caniuse/";
+  const API_URL = "https://respec.org/caniuse/";
 
-  // browser name dictionary
-  const BROWSERS = new Map([
-    ["and_chr", "Chrome (Android)"],
-    ["and_ff", "Firefox (Android)"],
-    ["and_uc", "UC Browser (Android)"],
-    ["android", "Android"],
-    ["bb", "Blackberry"],
-    ["chrome", "Chrome"],
-    ["edge", "Edge"],
-    ["firefox", "Firefox"],
-    ["ie", "IE"],
-    ["ios_saf", "Safari (iOS)"],
-    ["op_mini", "Opera Mini"],
-    ["op_mob", "Opera Mobile"],
-    ["opera", "Opera"],
-    ["safari", "Safari"],
-    ["samsung", "Samsung Internet"],
-  ]);
-
-  // Keys from https://github.com/Fyrd/caniuse/blob/master/CONTRIBUTING.md
-  const supportTitles = new Map([
-    ["y", "Supported."],
-    ["a", "Almost supported (aka Partial support)."],
-    ["n", "No support, or disabled by default."],
-    ["p", "No support, but has Polyfill."],
-    ["u", "Support unknown."],
-    ["x", "Requires prefix to work."],
-    ["d", "Disabled by default (needs to enabled)."],
+  const BROWSERS = new Set([
+    "and_chr",
+    "and_ff",
+    "and_uc",
+    "android",
+    "bb",
+    "chrome",
+    "edge",
+    "firefox",
+    "ie",
+    "ios_saf",
+    "op_mini",
+    "op_mob",
+    "opera",
+    "safari",
+    "samsung",
   ]);
 
   if (
@@ -24655,7 +24194,7 @@ ${css}
     }
   }
 
-  async function run$D(conf) {
+  async function run$C(conf) {
     if (!conf.caniuse) {
       return; // nothing to do.
     }
@@ -24667,37 +24206,39 @@ ${css}
     const featureURL = new URL(options.feature, "https://caniuse.com/").href;
 
     const caniuseCss = await caniuseCssPromise;
-    document.head.appendChild(hyperHTML$2`
-    <style class="removeOnSave">${caniuseCss}</style>`);
+    document.head.appendChild(html$1`<style class="removeOnSave">
+    ${caniuseCss}
+  </style>`);
 
     const headDlElem = document.querySelector(".head dl");
     const contentPromise = (async () => {
       try {
-        const apiUrl = options.apiURL || API_URL$1;
+        const apiUrl = options.apiURL || API_URL;
         const stats = await fetchStats(apiUrl, options);
-        return createTableHTML(featureURL, stats);
+        return html$1`${{ html: stats }}`;
       } catch (err) {
         console.error(err);
         const msg =
           `Couldn't find feature "${options.feature}" on caniuse.com? ` +
           "Please check the feature key on [caniuse.com](https://caniuse.com)";
         pub("error", msg);
-        return hyperHTML$2`<a href="${featureURL}">caniuse.com</a>`;
+        return html$1`<a href="${featureURL}">caniuse.com</a>`;
       }
     })();
-    const definitionPair = hyperHTML$2`
-    <dt class="caniuse-title">Browser support:</dt>
-    <dd class="caniuse-stats">${{
-      any: contentPromise,
-      placeholder: "Fetching data from caniuse.com...",
-    }}</dd>`;
+    const definitionPair = html$1`<dt class="caniuse-title">Browser support:</dt>
+    <dd class="caniuse-stats">
+      ${{
+        any: contentPromise,
+        placeholder: "Fetching data from caniuse.com...",
+      }}
+    </dd>`;
     headDlElem.append(...definitionPair.childNodes);
     await contentPromise;
 
     // remove from export
     pub("amend-user-config", { caniuse: options.feature });
     sub("beforesave", outputDoc => {
-      hyperHTML$2.bind(outputDoc.querySelector(".caniuse-stats"))`
+      html$1.bind(outputDoc.querySelector(".caniuse-stats"))`
       <a href="${featureURL}">caniuse.com</a>`;
     });
   }
@@ -24730,7 +24271,6 @@ ${css}
   /**
    * @param {string} apiURL
    * @typedef {Record<string, [string, string[]][]>} ApiResponse
-   * @return {Promise<ApiResponse>}
    * @throws {Error} on failure
    */
   async function fetchStats(apiURL, options) {
@@ -24741,70 +24281,21 @@ ${css}
     if (Array.isArray(browsers)) {
       searchParams.set("browsers", browsers.join(","));
     }
+    searchParams.set("format", "html");
     const url = `${apiURL}?${searchParams.toString()}`;
     const response = await fetch(url);
-    const stats = await response.json();
+    if (!response.ok) {
+      const { status, statusText } = response;
+      throw new Error(`Failed to get caniuse data: (${status}) ${statusText}`);
+    }
+    const stats = await response.text();
     return stats;
-  }
-
-  /**
-   * Get HTML element for the canIUse support table.
-   * @param {string} featureURL
-   * @param {ApiResponse} stats
-   */
-  function createTableHTML(featureURL, stats) {
-    // render the support table
-    return hyperHTML$2`
-    ${Object.entries(stats).map(addBrowser)}
-    <a href="${featureURL}"
-      title="Get details at caniuse.com">More info
-    </a>`;
-  }
-
-  /**
-   * Add a browser and it's support to table.
-   * @param {[ string, ApiResponse["browserName"] ]} args
-   */
-  function addBrowser([browserName, browserData]) {
-    /** @param {string[]} supportKeys */
-    const getSupport = supportKeys => {
-      const titles = supportKeys
-        .filter(key => supportTitles.has(key))
-        .map(key => supportTitles.get(key));
-      return {
-        className: `caniuse-cell ${supportKeys.join(" ")}`,
-        title: titles.join(" "),
-      };
-    };
-
-    /** @param {[string, string[]]} args */
-    const addLatestVersion = ([version, supportKeys]) => {
-      const { className, title } = getSupport(supportKeys);
-      const buttonText = `${BROWSERS.get(browserName) || browserName} ${version}`;
-      return hyperHTML$2`
-      <button class="${className}" title="${title}">${buttonText}</button>`;
-    };
-
-    /** @param {[string, string[]]} args */
-    const addBrowserVersion = ([version, supportKeys]) => {
-      const { className, title } = getSupport(supportKeys);
-      return hyperHTML$2`<li class="${className}" title="${title}">${version}</li>`;
-    };
-
-    const [latestVersion, ...olderVersions] = browserData;
-    return hyperHTML$2`
-    <div class="caniuse-browser">
-      ${addLatestVersion(latestVersion)}
-      <ul>
-        ${olderVersions.map(addBrowserVersion)}
-      </ul>
-    </div>`;
   }
 
   var caniuse = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$P,
-    run: run$D
+    run: run$C
   });
 
   // @ts-check
@@ -24859,7 +24350,7 @@ ${css}
       // If the target ancestor already has a mdnBox inserted, we just use it
       return targetSibling;
     }
-    const mdnBox = hyperHTML$2`<aside class="mdn before wrapped"></aside>`;
+    const mdnBox = html$1`<aside class="mdn before wrapped"></aside>`;
     parentNode.insertBefore(mdnBox, targetAncestor);
     return mdnBox;
   }
@@ -24869,7 +24360,7 @@ ${css}
     container.innerHTML += `<button onclick="toggleMDNStatus(this.parentNode)" aria-label="Expand MDN details"><b>MDN</b></button>`;
     const mdnSubPath = slug.slice(slug.indexOf("/") + 1);
     const href = `${MDN_URL_BASE}${slug}`;
-    const mdnDetail = hyperHTML$2`
+    const mdnDetail = html$1`
     <div>
       <a title="${summary}" href="${href}">${mdnSubPath}</a>
     </div>
@@ -24883,7 +24374,7 @@ ${css}
       container.innerHTML += `<p class="nosupportdata">No support data.</p>`;
       return;
     }
-    const supportTable = hyperHTML$2`<p class="mdnsupport">
+    const supportTable = html$1`<p class="mdnsupport">
     ${buildBrowserSupportTable(mdnSpec.support)}
   </p>`;
     container.appendChild(supportTable);
@@ -24893,11 +24384,10 @@ ${css}
     function createRow(browserId, yesNoUnknown, version) {
       const displayStatus = yesNoUnknown === "Unknown" ? "?" : yesNoUnknown;
       const classList = `${browserId} ${yesNoUnknown.toLowerCase()}`;
-      return hyperHTML$2`
-      <span class="${classList}">
-        <span class="browser-name">${MDN_BROWSERS[browserId]}</span>
-        <span class="version">${version ? version : displayStatus}</span>
-      </span>`;
+      return html$1`<span class="${classList}">
+      <span class="browser-name">${MDN_BROWSERS[browserId]}</span>
+      <span class="version">${version ? version : displayStatus}</span>
+    </span>`;
     }
 
     function createRowFromBrowserData(browserId, versionData) {
@@ -24934,7 +24424,7 @@ ${css}
     return rows;
   }
 
-  async function run$E(conf) {
+  async function run$D(conf) {
     const { shortName, mdn } = conf;
     if (!shortName || !mdn) {
       // Nothing to do if shortName is not provided
@@ -24955,11 +24445,15 @@ ${css}
       maxAge
     );
     const mdnCss = await mdnCssPromise;
-    document.head.appendChild(hyperHTML$2`<style>${mdnCss}</style>`);
-    document.head.appendChild(hyperHTML$2`<script>
-     function toggleMDNStatus(div) {
-       div.parentNode.classList.toggle('wrapped');
-     }
+    document.head.appendChild(
+      html$1`<style>
+      ${mdnCss}
+    </style>`
+    );
+    document.head.appendChild(html$1`<script>
+    function toggleMDNStatus(div) {
+      div.parentNode.classList.toggle("wrapped");
+    }
   </script>`);
     const nodesWithId = document.querySelectorAll("[id]");
     [...nodesWithId]
@@ -24987,7 +24481,7 @@ ${css}
   var mdnAnnotation = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$Q,
-    run: run$E
+    run: run$D
   });
 
   // @ts-check
@@ -25019,7 +24513,7 @@ ${css}
 
   function serialize(format, doc) {
     const cloneDoc = doc.cloneNode(true);
-    cleanup(cloneDoc);
+    cleanup$1(cloneDoc);
     let result = "";
     switch (format) {
       case "xml":
@@ -25035,7 +24529,7 @@ ${css}
     return result;
   }
 
-  function cleanup(cloneDoc) {
+  function cleanup$1(cloneDoc) {
     const { head, body, documentElement } = cloneDoc;
     removeCommentNodes(cloneDoc);
 
@@ -25058,14 +24552,14 @@ ${css}
       "meta[charset], meta[content*='charset=']"
     );
     if (!metaCharset) {
-      metaCharset = hyperHTML$2`<meta charset="utf-8">`;
+      metaCharset = html$1`<meta charset="utf-8" />`;
     }
     insertions.appendChild(metaCharset);
 
     // Add meta generator
     const respecVersion = `ReSpec ${window.respecVersion || "Developer Channel"}`;
-    const metaGenerator = hyperHTML$2`
-    <meta name="generator" content="${respecVersion}">
+    const metaGenerator = html$1`
+    <meta name="generator" content="${respecVersion}" />
   `;
 
     insertions.appendChild(metaGenerator);
@@ -25079,7 +24573,7 @@ ${css}
 
   const name$R = "ui/save-html";
 
-  const localizationStrings$f = {
+  const localizationStrings$g = {
     en: {
       save_snapshot: "Export",
     },
@@ -25093,7 +24587,7 @@ ${css}
       save_snapshot: "Exportieren",
     },
   };
-  const l10n$h = getIntlData(localizationStrings$f);
+  const l10n$i = getIntlData(localizationStrings$g);
 
   // Create and download an EPUB 3 version of the content
   // Using (by default) the EPUB 3 conversion service set up at labs.w3.org/epub-generator
@@ -25134,32 +24628,31 @@ ${css}
 
   function toDownloadLink(details) {
     const { id, href, fileName, title, type } = details;
-    return hyperHTML$2`
-    <a
-      href="${href}"
-      id="${id}"
-      download="${fileName}"
-      type="${type}"
-      class="respec-save-button"
-      onclick=${() => ui.closeModal()}
-    >${title}</a>`;
+    return html$1`<a
+    href="${href}"
+    id="${id}"
+    download="${fileName}"
+    type="${type}"
+    class="respec-save-button"
+    onclick=${() => ui.closeModal()}
+    >${title}</a
+  >`;
   }
 
   const saveDialog = {
     async show(button) {
       await document.respecIsReady;
-      const div = hyperHTML$2`
-      <div class="respec-save-buttons">
-        ${downloadLinks.map(toDownloadLink)}
-      </div>`;
-      ui.freshModal(l10n$h.save_snapshot, div, button);
+      const div = html$1`<div class="respec-save-buttons">
+      ${downloadLinks.map(toDownloadLink)}
+    </div>`;
+      ui.freshModal(l10n$i.save_snapshot, div, button);
     },
   };
 
   const supportsDownload = "download" in HTMLAnchorElement.prototype;
   let button;
   if (supportsDownload) {
-    button = ui.addCommand(l10n$h.save_snapshot, show$1, "Ctrl+Shift+Alt+S", "💾");
+    button = ui.addCommand(l10n$i.save_snapshot, show$1, "Ctrl+Shift+Alt+S", "💾");
   }
 
   function show$1() {
@@ -25188,7 +24681,7 @@ ${css}
 
   // @ts-check
 
-  const localizationStrings$g = {
+  const localizationStrings$h = {
     en: {
       definition_list: "Definitions",
       list_of_definitions: "List of Definitions",
@@ -25206,10 +24699,10 @@ ${css}
       list_of_definitions: "Liste der Definitionen",
     },
   };
-  const l10n$i = getIntlData(localizationStrings$g);
+  const l10n$j = getIntlData(localizationStrings$h);
 
   const button$1 = ui.addCommand(
-    l10n$i.definition_list,
+    l10n$j.definition_list,
     show$2,
     "Ctrl+Shift+Alt+D",
     "📔"
@@ -25217,7 +24710,7 @@ ${css}
 
   const ul = document.createElement("ul");
   ul.classList.add("respec-dfn-list");
-  const render = hyperHTML$2.bind(ul);
+  const render = html$1.bind(ul);
 
   ul.addEventListener("click", ev => {
     if (ev.target instanceof HTMLElement && ev.target.matches("a")) {
@@ -25230,7 +24723,7 @@ ${css}
     const definitionLinks = Array.from(definitionMap)
       .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
       .map(([, [dfn]]) => {
-        return hyperHTML$2.wire(dfn, ":li>a")`
+        return html$1.wire(dfn, ":li>a")`
         <li>
           <a href="${`#${dfn.id}`}">
             ${dfn.textContent}
@@ -25240,7 +24733,7 @@ ${css}
       `;
       });
     render`${definitionLinks}`;
-    ui.freshModal(l10n$i.list_of_definitions, ul, button$1);
+    ui.freshModal(l10n$j.list_of_definitions, ul, button$1);
   }
 
   /**
@@ -25250,7 +24743,7 @@ ${css}
   function labelDfnIfExported(dfn) {
     const isExported = dfn.hasAttribute("data-export");
     if (isExported) {
-      return hyperHTML$2`<span class="dfn-status exported">exported</span>`;
+      return html$1`<span class="dfn-status exported">exported</span>`;
     }
     return null;
   }
@@ -25262,7 +24755,7 @@ ${css}
   function labelDfnIfUnused(dfn) {
     const isUsed = document.querySelector(`a[href^="#${dfn.id}"]`);
     if (!isUsed) {
-      return hyperHTML$2`<span class="dfn-status unused">unused</span>`;
+      return html$1`<span class="dfn-status unused">unused</span>`;
     }
     return null;
   }
@@ -25273,7 +24766,7 @@ ${css}
 
   // @ts-check
 
-  const localizationStrings$h = {
+  const localizationStrings$i = {
     en: {
       about_respec: "About",
     },
@@ -25290,14 +24783,14 @@ ${css}
       about_respec: "Über",
     },
   };
-  const l10n$j = getIntlData(localizationStrings$h);
+  const l10n$k = getIntlData(localizationStrings$i);
 
   // window.respecVersion is added at build time (see tools/builder.js)
   window.respecVersion = window.respecVersion || "Developer Edition";
   const div = document.createElement("div");
-  const render$1 = hyperHTML$2.bind(div);
+  const render$1 = html$1.bind(div);
   const button$2 = ui.addCommand(
-    `${l10n$j.about_respec} ${window.respecVersion}`,
+    `${l10n$k.about_respec} ${window.respecVersion}`,
     show$3,
     "Ctrl+Shift+Alt+A",
     "ℹ️"
@@ -25346,12 +24839,12 @@ ${css}
     <tbody>${entries}</tbody>
   </table>
 `;
-    ui.freshModal(`${l10n$j.about_respec} - ${window.respecVersion}`, div, button$2);
+    ui.freshModal(`${l10n$k.about_respec} - ${window.respecVersion}`, div, button$2);
   }
 
   function perfEntryToTR({ name, duration }) {
     const moduleURL = `https://github.com/w3c/respec/blob/develop/src/${name}.js`;
-    return hyperHTML$2`
+    return html$1`
     <tr>
       <td><a href="${moduleURL}">${name}</a></td>
       <td>${duration}</td>
@@ -25371,7 +24864,7 @@ ${css}
 
   const name$S = "core/seo";
 
-  function run$F() {
+  function run$E() {
     const firstParagraph = document.querySelector("#abstract p:first-of-type");
     if (!firstParagraph) {
       return; // no abstract, so nothing to do
@@ -25387,11 +24880,11 @@ ${css}
   var seo = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$S,
-    run: run$F
+    run: run$E
   });
 
   // @ts-check
-  const localizationStrings$i = {
+  const localizationStrings$j = {
     en: {
       missing_test_suite_uri:
         "Found tests in your spec, but missing '" +
@@ -25415,7 +24908,7 @@ ${css}
     },
   };
 
-  const l10n$k = getIntlData(localizationStrings$i);
+  const l10n$l = getIntlData(localizationStrings$j);
 
   const name$T = "core/data-tests";
 
@@ -25455,17 +24948,18 @@ ${css}
       emojiList.push(manualPerformEmoji);
     }
 
-    const testList = hyperHTML$2`
+    const testList = html$1`
     <li>
       <a href="${href}">
         ${testFileName}
-      </a> ${emojiList}
+      </a>
+      ${emojiList}
     </li>
   `;
     return testList;
   }
 
-  function run$G(conf) {
+  function run$F(conf) {
     /** @type {NodeListOf<HTMLElement>} */
     const elems = document.querySelectorAll("[data-tests]");
     const testables = [...elems].filter(elem => elem.dataset.tests);
@@ -25474,7 +24968,7 @@ ${css}
       return;
     }
     if (!conf.testSuiteURI) {
-      pub("error", l10n$k.missing_test_suite_uri);
+      pub("error", l10n$l.missing_test_suite_uri);
       return;
     }
 
@@ -25527,12 +25021,14 @@ ${css}
    */
   function toHTML$1(testURLs) {
     const uniqueList = [...new Set(testURLs)];
-    const details = hyperHTML$2`
+    const details = html$1`
     <details class="respec-tests-details removeOnSave">
       <summary>
         tests: ${uniqueList.length}
       </summary>
-      <ul>${uniqueList.map(toListItem)}</ul>
+      <ul>
+        ${uniqueList.map(toListItem)}
+      </ul>
     </details>
   `;
     return details;
@@ -25541,7 +25037,7 @@ ${css}
   var dataTests = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$T,
-    run: run$G
+    run: run$F
   });
 
   // @ts-check
@@ -25598,7 +25094,7 @@ ${css}
     return sortedElements;
   }
 
-  function run$H() {
+  function run$G() {
     /** @type {NodeListOf<HTMLElement>} */
     const sortables = document.querySelectorAll("[data-sort]");
     for (const elem of sortables) {
@@ -25633,17 +25129,17 @@ ${css}
     name: name$U,
     sortListItems: sortListItems,
     sortDefinitionTerms: sortDefinitionTerms,
-    run: run$H
+    run: run$G
   });
 
   // Constructs "dfn panels" which show all the local references to a dfn and a
 
   const name$V = "core/dfn-panel";
 
-  async function run$I() {
+  async function run$H() {
     const css = await loadStyle$7();
     document.head.insertBefore(
-      hyperHTML$2`<style>${css}</style>`,
+      html$1`<style class="removeOnSave">${css}</style>`,
       document.querySelector("link")
     );
 
@@ -25657,9 +25153,9 @@ ${css}
       switch (action) {
         case "show": {
           if (panel) panel.remove();
-          const dfn = el.closest("dfn");
+          const dfn = el.closest("dfn, .index-term");
           panel = createPanel(dfn);
-          displayPanel(dfn, panel);
+          displayPanel(dfn, panel, { x: event.clientX, y: event.clientY });
           break;
         }
         case "dock": {
@@ -25677,7 +25173,7 @@ ${css}
   /** @param {HTMLElement} clickTarget */
   function deriveAction(clickTarget) {
     const hitALink = !!clickTarget.closest("a");
-    if (clickTarget.closest("dfn")) {
+    if (clickTarget.closest("dfn, .index-term")) {
       return hitALink ? null : "show";
     }
     if (clickTarget.closest("#dfn-panel")) {
@@ -25697,11 +25193,11 @@ ${css}
   /** @param {HTMLElement} dfn */
   function createPanel(dfn) {
     const { id } = dfn;
-    const href = `#${id}`;
-    const links = document.querySelectorAll(`a[href="${href}"]`);
+    const href = dfn.dataset.href || `#${id}`;
+    const links = document.querySelectorAll(`a[href="${href}"]:not(.index-term)`);
 
     /** @type {HTMLElement} */
-    const panel = hyperHTML$2`
+    const panel = html$1`
     <aside class="dfn-panel" id="dfn-panel">
       <b><a class="self-link" href="${href}">Permalink</a></b>
       <b>Referenced in:</b>
@@ -25718,7 +25214,7 @@ ${css}
    */
   function referencesToHTML(id, links) {
     if (!links.length) {
-      return hyperHTML$2`<ul><li>Not referenced in this document.</li></ul>`;
+      return html$1`<ul><li>Not referenced in this document.</li></ul>`;
     }
 
     /** @type {Map<string, string[]>} */
@@ -25749,12 +25245,12 @@ ${css}
      * @returns {HTMLLIElement}
      */
     const listItemToHTML = entry =>
-      hyperHTML$2`<li>${toLinkProps(entry).map(
-      link => hyperHTML$2`<a href="#${link.id}">${link.title}</a>${" "}`
+      html$1`<li>${toLinkProps(entry).map(
+      link => html$1`<a href="#${link.id}">${link.title}</a>${" "}`
     )}</li>`;
 
     const listItems = [...titleToIDs].map(listItemToHTML);
-    return hyperHTML$2`<ul>${listItems}</ul>`;
+    return html$1`<ul>${listItems}</ul>`;
   }
 
   /** @param {HTMLAnchorElement} link */
@@ -25769,28 +25265,40 @@ ${css}
   /**
    * @param {HTMLElement} dfn
    * @param {HTMLElement} panel
+   * @param {{ x: number, y: number }} clickPosition
    */
-  function displayPanel(dfn, panel) {
+  function displayPanel(dfn, panel, { x, y }) {
     document.body.appendChild(panel);
+    // distance (px) between edge of panel and the pointing triangle (caret)
+    const MARGIN = 20;
 
-    const dfnRect = dfn.getBoundingClientRect();
-    const panelRect = panel.getBoundingClientRect();
-    const panelWidth = panelRect.right - panelRect.left;
-
-    let top = window.scrollY + dfnRect.top;
-    let left = dfnRect.left + dfnRect.width + 5;
-    if (left + panelWidth > document.body.scrollWidth) {
-      // Reposition, because the panel is overflowing
-      left = dfnRect.left - (panelWidth + 5);
-      if (left < 0) {
-        left = dfnRect.left;
-        top += dfnRect.height;
+    const dfnRects = dfn.getClientRects();
+    // Find the `top` offset when the `dfn` can be spread across multiple lines
+    let closestTop = 0;
+    let minDiff = Infinity;
+    for (const rect of dfnRects) {
+      const { top, bottom } = rect;
+      const diffFromClickY = Math.abs((top + bottom) / 2 - y);
+      if (diffFromClickY < minDiff) {
+        minDiff = diffFromClickY;
+        closestTop = top;
       }
     }
 
-    // Allows ".docked" rule to override the position, unlike `style.left = left`.
+    const top = window.scrollY + closestTop + dfnRects[0].height;
+    const left = x - MARGIN;
     panel.style.setProperty("--left", `${left}px`);
     panel.style.setProperty("--top", `${top}px`);
+
+    // Find if the panel is flowing out of the window
+    const panelRect = panel.getBoundingClientRect();
+    const SCREEN_WIDTH = Math.min(window.innerWidth, window.screen.width);
+    if (panelRect.right > SCREEN_WIDTH) {
+      const newLeft = Math.max(MARGIN, x + MARGIN - panelRect.width);
+      const newCaretOffset = left - newLeft;
+      panel.style.setProperty("--left", `${newLeft}px`);
+      panel.style.setProperty("--caret-offset", `${newCaretOffset}px`);
+    }
   }
 
   async function loadStyle$7() {
@@ -25804,7 +25312,7 @@ ${css}
   var dfnPanel = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$V,
-    run: run$I
+    run: run$H
   });
 
   // @ts-check
@@ -25821,7 +25329,7 @@ ${css}
     }
   }
 
-  async function run$J(conf) {
+  async function run$I(conf) {
     if (!conf.highlightVars) {
       return;
     }
@@ -25852,7 +25360,7 @@ ${css}
   var dataType = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$W,
-    run: run$J
+    run: run$I
   });
 
   // @ts-check
@@ -25869,7 +25377,7 @@ ${css}
     }
   }
 
-  async function run$K() {
+  async function run$J() {
     const elements = Array.from(document.querySelectorAll("ol.algorithm li"));
     elements
       .filter(li => li.textContent.trim().startsWith("Assert: "))
@@ -25884,7 +25392,7 @@ ${css}
   var algorithms = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$X,
-    run: run$K
+    run: run$J
   });
 
   // @ts-check
@@ -25893,7 +25401,7 @@ ${css}
 
   let sectionRefsByNumber = false;
 
-  function run$L(conf) {
+  function run$K(conf) {
     if (conf.hasOwnProperty("sectionRefsByNumber")) {
       sectionRefsByNumber = conf.sectionRefsByNumber;
     }
@@ -25934,6 +25442,7 @@ ${css}
           processTable(matchingElement, id, a);
           break;
         }
+        case "p":
         case "aside":
         case "div": {
           processBox(matchingElement, id, a);
@@ -25981,8 +25490,9 @@ ${css}
   function processFigure(matchingElement, id, a) {
     const figcaption = matchingElement.querySelector("figcaption");
     const figEqn =
-      !matchingElement.classList ||
-      (!matchingElement.classList.contains("equation") ? "fig" : "eqn");
+      matchingElement.classList && matchingElement.classList.contains("equation")
+        ? "eqn"
+        : "fig";
     if (!figcaption) {
       a.textContent = a.getAttribute("href");
       const msg = `Found matching figure "${id}", but figure is lacking a \`<figcaption>\`.`;
@@ -26097,14 +25607,14 @@ ${css}
   var anchorExpander = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$Y,
-    run: run$L
+    run: run$K
   });
 
   // @ts-check
 
   const name$Z = "pcisig/include-final-config";
 
-  function run$M(conf) {
+  function run$L(conf) {
     const script = document.createElement("script");
     script.id = "finalUserConfig";
     script.type = "application/json";
@@ -26115,7 +25625,7 @@ ${css}
   var includeFinalConfig = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$Z,
-    run: run$M
+    run: run$L
   });
 
   // @ts-check
@@ -26138,7 +25648,7 @@ ${css}
 
     connectedCallback() {
       const { from, to, filter } = this.props;
-      hyperHTML$2.bind(this)`
+      html$1.bind(this)`
       <ul>
       ${{
         any: fetchCommits(from, to, filter)
@@ -26191,8 +25701,8 @@ ${css}
       const [message, prNumber = null] = commit.message.split(/\(#(\d+)\)/, 2);
       const commitURL = `${repoURL}commit/${commit.hash}`;
       const prURL = prNumber ? `${repoURL}pull/${prNumber}` : null;
-      const pr = prNumber && hyperHTML$2` (<a href="${prURL}">#${prNumber}</a>)`;
-      return hyperHTML$2`<li><a href="${commitURL}">${message.trim()}</a>${pr}</li>`;
+      const pr = prNumber && html$1` (<a href="${prURL}">#${prNumber}</a>)`;
+      return html$1`<li><a href="${commitURL}">${message.trim()}</a>${pr}</li>`;
     });
   }
 
@@ -26208,7 +25718,7 @@ ${css}
 
   const name$$ = "core/custom-elements/index";
 
-  async function run$N() {
+  async function run$M() {
     // prepare and register elements
     CUSTOM_ELEMENTS.forEach(el => {
       customElements.define(el.name, el.element);
@@ -26226,70 +25736,1854 @@ ${css}
   var index = /*#__PURE__*/Object.freeze({
     __proto__: null,
     name: name$$,
+    run: run$M
+  });
+
+  const name$10 = "pcisig/structure";
+  // const funcs = {};
+  // export default funcs;
+
+  const cssPromise$4 = loadStyle$a();
+
+  async function loadStyle$a() {
+    try {
+      return (await Promise.resolve().then(function () { return railroad$2; })).default;
+    } catch {
+      return fetchAsset("railroad.css");
+    }
+  }
+
+  /* export */
+  const Options = {
+    DEBUG: true, // if true, writes some debug information into attributes
+    VS: 8, // minimum vertical separation between things. For a 3px stroke, must be at least 4
+    AR: 10, // radius of arcs
+    DIAGRAM_CLASS: "railroad-diagram", // class to put on the root <svg>
+    STROKE_ODD_PIXEL_LENGTH: true, // is the stroke width an odd (1px, 3px, etc) pixel length?
+    INTERNAL_ALIGNMENT: "center", // how to align items when they have extra space. left/right/center
+    CHAR_WIDTH: 8.5, // width of each monospace character. play until you find the right value for your font
+    COMMENT_CHAR_WIDTH: 7, // comments are in smaller text by default
+  };
+
+  /* export */ class FakeSVG {
+    constructor(tagName, attrs, text) {
+      if (text) this.children = text;
+      else this.children = [];
+      this.tagName = tagName;
+      this.attrs = unnull(attrs, {});
+    }
+    format(_x, _y, _width) {
+      // Virtual
+    }
+    addTo(parent) {
+      if (parent instanceof FakeSVG) {
+        parent.children.push(this);
+        return this;
+      } else {
+        const svg = this.toSVG();
+        parent.appendChild(svg);
+        return svg;
+      }
+    }
+    toSVG() {
+      const el = SVG$1(this.tagName, this.attrs);
+      if (typeof this.children == "string") {
+        el.textContent = this.children;
+      } else {
+        this.children.forEach(e => {
+          el.appendChild(e.toSVG());
+        });
+      }
+      return el;
+    }
+    toString() {
+      let str = `<${this.tagName}`;
+      const group = this.tagName === "g" || this.tagName === "svg";
+      for (const attr in this.attrs) {
+        if (this.attrs.hasOwnProperty(attr))
+          str += ` ${attr}="${`${this.attrs[attr]}`
+          .replace(/&/g, "&amp;")
+          .replace(/"/g, "&quot;")}"`;
+      }
+      str += ">";
+      if (group) str += "\n";
+      if (typeof this.children == "string") {
+        str += escapeString(this.children);
+      } else {
+        this.children.forEach(e => {
+          str += e;
+        });
+      }
+      str += `</${this.tagName}>\n`;
+      return str;
+    }
+    walk(cb) {
+      cb(this);
+    }
+  }
+
+  /* export */ class Path$2 extends FakeSVG {
+    constructor(x, y) {
+      super("path");
+      this.attrs.d = `M${x} ${y}`;
+    }
+    m(x, y) {
+      this.attrs.d += `m${x} ${y}`;
+      return this;
+    }
+    h(val) {
+      this.attrs.d += `h${val}`;
+      return this;
+    }
+    right(val) {
+      return this.h(Math.max(0, val));
+    }
+    left(val) {
+      return this.h(-Math.max(0, val));
+    }
+    v(val) {
+      this.attrs.d += `v${val}`;
+      return this;
+    }
+    down(val) {
+      return this.v(Math.max(0, val));
+    }
+    up(val) {
+      return this.v(-Math.max(0, val));
+    }
+    arc(sweep) {
+      // 1/4 of a circle
+      let x = Options.AR;
+      let y = Options.AR;
+      if (sweep[0] === "e" || sweep[1] === "w") {
+        x *= -1;
+      }
+      if (sweep[0] === "s" || sweep[1] === "n") {
+        y *= -1;
+      }
+      let cw;
+      if (sweep === "ne" || sweep === "es" || sweep === "sw" || sweep === "wn") {
+        cw = 1;
+      } else {
+        cw = 0;
+      }
+      this.attrs.d += `a${Options.AR} ${Options.AR} 0 0 ${cw} ${x} ${y}`;
+      return this;
+    }
+    arc_8(start, dir) {
+      // 1/8 of a circle
+      const arc = Options.AR;
+      const s2 = (1 / Math.sqrt(2)) * arc;
+      const s2inv = arc - s2;
+      let path = `a ${arc} ${arc} 0 0 ${dir === "cw" ? "1" : "0"} `;
+      const sd = start + dir;
+      const offset =
+        sd === "ncw"
+          ? [s2, s2inv]
+          : sd === "necw"
+          ? [s2inv, s2]
+          : sd === "ecw"
+          ? [-s2inv, s2]
+          : sd === "secw"
+          ? [-s2, s2inv]
+          : sd === "scw"
+          ? [-s2, -s2inv]
+          : sd === "swcw"
+          ? [-s2inv, -s2]
+          : sd === "wcw"
+          ? [s2inv, -s2]
+          : sd === "nwcw"
+          ? [s2, -s2inv]
+          : sd === "nccw"
+          ? [-s2, s2inv]
+          : sd === "nwccw"
+          ? [-s2inv, s2]
+          : sd === "wccw"
+          ? [s2inv, s2]
+          : sd === "swccw"
+          ? [s2, s2inv]
+          : sd === "sccw"
+          ? [s2, -s2inv]
+          : sd === "seccw"
+          ? [s2inv, -s2]
+          : sd === "eccw"
+          ? [-s2inv, -s2]
+          : sd === "neccw"
+          ? [-s2, -s2inv]
+          : null;
+      path += offset.join(" ");
+      this.attrs.d += path;
+      return this;
+    }
+    l(x, y) {
+      this.attrs.d += `l${x} ${y}`;
+      return this;
+    }
+    format() {
+      // All paths in this library start/end horizontally.
+      // The extra .5 ensures a minor overlap, so there's no seams in bad rasterizers.
+      this.attrs.d += "h.5";
+      return this;
+    }
+  }
+
+  /* export */ class DiagramMultiContainer extends FakeSVG {
+    constructor(tagName, items, attrs, text) {
+      super(tagName, attrs, text);
+      this.items = items.map(wrapString);
+    }
+    walk(cb) {
+      cb(this);
+      this.items.forEach(x => x.walk(cb));
+    }
+  }
+
+  /* export */ class Diagram extends DiagramMultiContainer {
+    constructor(...items) {
+      super("svg", items, { class: Options.DIAGRAM_CLASS });
+      if (!(this.items[0] instanceof Start)) {
+        this.items.unshift(new Start());
+      }
+      if (!(this.items[this.items.length - 1] instanceof End)) {
+        this.items.push(new End());
+      }
+      this.up = this.down = this.height = this.width = 0;
+      for (const item of this.items) {
+        this.width += item.width + (item.needsSpace ? 20 : 0);
+        this.up = Math.max(this.up, item.up - this.height);
+        this.height += item.height;
+        this.down = Math.max(this.down - item.height, item.down);
+      }
+      this.formatted = false;
+    }
+    format(paddingt, paddingr, paddingb, paddingl) {
+      paddingt = unnull(paddingt, 20);
+      paddingr = unnull(paddingr, paddingt, 20);
+      paddingb = unnull(paddingb, paddingt, 20);
+      paddingl = unnull(paddingl, paddingr, 20);
+      let x = paddingl;
+      let y = paddingt;
+      y += this.up;
+      const g = new FakeSVG(
+        "g",
+        Options.STROKE_ODD_PIXEL_LENGTH ? { transform: "translate(.5 .5)" } : {}
+      );
+      for (let i = 0; i < this.items.length; i++) {
+        const item = this.items[i];
+        if (item.needsSpace) {
+          new Path$2(x, y).h(10).addTo(g);
+          x += 10;
+        }
+        item.format(x, y, item.width).addTo(g);
+        x += item.width;
+        y += item.height;
+        if (item.needsSpace) {
+          new Path$2(x, y).h(10).addTo(g);
+          x += 10;
+        }
+      }
+      this.attrs.width = this.width + paddingl + paddingr;
+      this.attrs.height = this.up + this.height + this.down + paddingt + paddingb;
+      this.attrs.viewBox = `0 0 ${this.attrs.width} ${this.attrs.height}`;
+      g.addTo(this);
+      this.formatted = true;
+      return this;
+    }
+    addTo(parent) {
+      if (!parent) {
+        let scriptTag = document.getElementsByTagName("script");
+        scriptTag = scriptTag[scriptTag.length - 1];
+        parent = scriptTag.parentNode;
+      }
+      return super.addTo.call(this, parent);
+    }
+    toSVG() {
+      if (!this.formatted) {
+        this.format();
+      }
+      return super.toSVG.call(this);
+    }
+    toString() {
+      if (!this.formatted) {
+        this.format();
+      }
+      return super.toString.call(this);
+    }
+    // toStandalone(style) {
+    //   if (!this.formatted) {
+    //     this.format();
+    //   }
+    //   const s = new FakeSVG("style", {}, style || defaultCSS);
+    //   this.children.push(s);
+    //   this.attrs.xmlns = "http://www.w3.org/2000/svg";
+    //   this.attrs["xmlns:xlink"] = "http://www.w3.org/1999/xlink";
+    //   const result = super.toString.call(this);
+    //   this.children.pop();
+    //   delete this.attrs.xmlns;
+    //   return result;
+    // }
+  }
+  // funcs.Diagram = (...args) => new Diagram(...args);
+
+  /* export */ class ComplexDiagram extends Diagram {
+    constructor(...items) {
+      super(...items);
+      this.items[0] = new Start({ type: "complex" });
+      this.items[this.items.length - 1] = new End({ type: "complex" });
+    }
+  }
+  // funcs.ComplexDiagram = (...args) => new ComplexDiagram(...args);
+
+  /* export */ class Sequence extends DiagramMultiContainer {
+    constructor(...items) {
+      super("g", items);
+      // const numberOfItems = this.items.length;
+      this.needsSpace = true;
+      this.up = this.down = this.height = this.width = 0;
+      for (let i = 0; i < this.items.length; i++) {
+        const item = this.items[i];
+        this.width += item.width + (item.needsSpace ? 20 : 0);
+        this.up = Math.max(this.up, item.up - this.height);
+        this.height += item.height;
+        this.down = Math.max(this.down - item.height, item.down);
+      }
+      if (this.items[0].needsSpace) this.width -= 10;
+      if (this.items[this.items.length - 1].needsSpace) this.width -= 10;
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "sequence";
+      }
+    }
+    format(x, y, width) {
+      // Hook up the two sides if this is narrower than its stated width.
+      const gaps = determineGaps(width, this.width);
+      new Path$2(x, y).h(gaps[0]).addTo(this);
+      new Path$2(x + gaps[0] + this.width, y + this.height).h(gaps[1]).addTo(this);
+      x += gaps[0];
+
+      for (let i = 0; i < this.items.length; i++) {
+        const item = this.items[i];
+        if (item.needsSpace && i > 0) {
+          new Path$2(x, y).h(10).addTo(this);
+          x += 10;
+        }
+        item.format(x, y, item.width).addTo(this);
+        x += item.width;
+        y += item.height;
+        if (item.needsSpace && i < this.items.length - 1) {
+          new Path$2(x, y).h(10).addTo(this);
+          x += 10;
+        }
+      }
+      return this;
+    }
+  }
+  // funcs.Sequence = (...args) => new Sequence(...args);
+
+  /* export */ class Stack extends DiagramMultiContainer {
+    constructor(...items) {
+      super("g", items);
+      if (items.length === 0) {
+        throw new RangeError("Stack() must have at least one child.");
+      }
+      this.width = Math.max.apply(
+        null,
+        this.items.map(e => {
+          return e.width + (e.needsSpace ? 20 : 0);
+        })
+      );
+      // if (this.items[0].needsSpace) this.width -= 10;
+      // if (this.items[this.items.length-1].needsSpace) this.width -= 10;
+      if (this.items.length > 1) {
+        this.width += Options.AR * 2;
+      }
+      this.needsSpace = true;
+      this.up = this.items[0].up;
+      this.down = this.items[this.items.length - 1].down;
+
+      this.height = 0;
+      const last = this.items.length - 1;
+      for (let i = 0; i < this.items.length; i++) {
+        const item = this.items[i];
+        this.height += item.height;
+        if (i > 0) {
+          this.height += Math.max(Options.AR * 2, item.up + Options.VS);
+        }
+        if (i < last) {
+          this.height += Math.max(Options.AR * 2, item.down + Options.VS);
+        }
+      }
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "stack";
+      }
+    }
+    format(x, y, width) {
+      const gaps = determineGaps(width, this.width);
+      new Path$2(x, y).h(gaps[0]).addTo(this);
+      x += gaps[0];
+      const xInitial = x;
+      if (this.items.length > 1) {
+        new Path$2(x, y).h(Options.AR).addTo(this);
+        x += Options.AR;
+      }
+
+      for (let i = 0; i < this.items.length; i++) {
+        const item = this.items[i];
+        const innerWidth =
+          this.width - (this.items.length > 1 ? Options.AR * 2 : 0);
+        item.format(x, y, innerWidth).addTo(this);
+        x += innerWidth;
+        y += item.height;
+
+        if (i !== this.items.length - 1) {
+          new Path$2(x, y)
+            .arc("ne")
+            .down(Math.max(0, item.down + Options.VS - Options.AR * 2))
+            .arc("es")
+            .left(innerWidth)
+            .arc("nw")
+            .down(Math.max(0, this.items[i + 1].up + Options.VS - Options.AR * 2))
+            .arc("ws")
+            .addTo(this);
+          y +=
+            Math.max(item.down + Options.VS, Options.AR * 2) +
+            Math.max(this.items[i + 1].up + Options.VS, Options.AR * 2);
+          // y += Math.max(Options.AR*4, item.down + Options.VS*2 + this.items[i+1].up)
+          x = xInitial + Options.AR;
+        }
+      }
+
+      if (this.items.length > 1) {
+        new Path$2(x, y).h(Options.AR).addTo(this);
+        x += Options.AR;
+      }
+      new Path$2(x, y).h(gaps[1]).addTo(this);
+
+      return this;
+    }
+  }
+  // funcs.Stack = (...args) => new Stack(...args);
+
+  /* export */ class OptionalSequence extends DiagramMultiContainer {
+    constructor(...items) {
+      super("g", items);
+      if (items.length === 0) {
+        throw new RangeError("OptionalSequence() must have at least one child.");
+      }
+      if (items.length === 1) {
+        return new Sequence(items);
+      }
+      const arc = Options.AR;
+      this.needsSpace = false;
+      this.width = 0;
+      this.up = 0;
+      this.height = sum(this.items, x => {
+        return x.height;
+      });
+      this.down = this.items[0].down;
+      let heightSoFar = 0;
+      for (let i = 0; i < this.items.length; i++) {
+        const item = this.items[i];
+        this.up = Math.max(
+          this.up,
+          Math.max(arc * 2, item.up + Options.VS) - heightSoFar
+        );
+        heightSoFar += item.height;
+        if (i > 0) {
+          this.down =
+            Math.max(
+              this.height + this.down,
+              heightSoFar + Math.max(arc * 2, item.down + Options.VS)
+            ) - this.height;
+        }
+        const itemWidth = (item.needsSpace ? 10 : 0) + item.width;
+        if (i === 0) {
+          this.width += arc + Math.max(itemWidth, arc);
+        } else {
+          this.width += arc * 2 + Math.max(itemWidth, arc) + arc;
+        }
+      }
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "optseq";
+      }
+    }
+    format(x, y, width) {
+      const arc = Options.AR;
+      const gaps = determineGaps(width, this.width);
+      new Path$2(x, y).right(gaps[0]).addTo(this);
+      new Path$2(x + gaps[0] + this.width, y + this.height)
+        .right(gaps[1])
+        .addTo(this);
+      x += gaps[0];
+      const upperLineY = y - this.up;
+      const last = this.items.length - 1;
+      for (let i = 0; i < this.items.length; i++) {
+        const item = this.items[i];
+        const itemSpace = item.needsSpace ? 10 : 0;
+        const itemWidth = item.width + itemSpace;
+        if (i === 0) {
+          // Upper skip
+          new Path$2(x, y)
+            .arc("se")
+            .up(y - upperLineY - arc * 2)
+            .arc("wn")
+            .right(itemWidth - arc)
+            .arc("ne")
+            .down(y + item.height - upperLineY - arc * 2)
+            .arc("ws")
+            .addTo(this);
+          // Straight line
+          new Path$2(x, y).right(itemSpace + arc).addTo(this);
+          item.format(x + itemSpace + arc, y, item.width).addTo(this);
+          x += itemWidth + arc;
+          y += item.height;
+          // x ends on the far side of the first element,
+          // where the next element's skip needs to begin
+        } else if (i < last) {
+          // Upper skip
+          new Path$2(x, upperLineY)
+            .right(arc * 2 + Math.max(itemWidth, arc) + arc)
+            .arc("ne")
+            .down(y - upperLineY + item.height - arc * 2)
+            .arc("ws")
+            .addTo(this);
+          // Straight line
+          new Path$2(x, y).right(arc * 2).addTo(this);
+          item.format(x + arc * 2, y, item.width).addTo(this);
+          new Path$2(x + item.width + arc * 2, y + item.height)
+            .right(itemSpace + arc)
+            .addTo(this);
+          // Lower skip
+          new Path$2(x, y)
+            .arc("ne")
+            .down(
+              item.height + Math.max(item.down + Options.VS, arc * 2) - arc * 2
+            )
+            .arc("ws")
+            .right(itemWidth - arc)
+            .arc("se")
+            .up(item.down + Options.VS - arc * 2)
+            .arc("wn")
+            .addTo(this);
+          x += arc * 2 + Math.max(itemWidth, arc) + arc;
+          y += item.height;
+        } else {
+          // Straight line
+          new Path$2(x, y).right(arc * 2).addTo(this);
+          item.format(x + arc * 2, y, item.width).addTo(this);
+          new Path$2(x + arc * 2 + item.width, y + item.height)
+            .right(itemSpace + arc)
+            .addTo(this);
+          // Lower skip
+          new Path$2(x, y)
+            .arc("ne")
+            .down(
+              item.height + Math.max(item.down + Options.VS, arc * 2) - arc * 2
+            )
+            .arc("ws")
+            .right(itemWidth - arc)
+            .arc("se")
+            .up(item.down + Options.VS - arc * 2)
+            .arc("wn")
+            .addTo(this);
+        }
+      }
+      return this;
+    }
+  }
+  // funcs.OptionalSequence = (...args) => new OptionalSequence(...args);
+
+  /* export */ class AlternatingSequence extends DiagramMultiContainer {
+    constructor(...items) {
+      super("g", items);
+      if (items.length === 1) {
+        return new Sequence(items);
+      }
+      if (items.length !== 2) {
+        throw new RangeError(
+          "AlternatingSequence() must have one or two children."
+        );
+      }
+      this.needsSpace = false;
+
+      const arc = Options.AR;
+      const vert = Options.VS;
+      const max = Math.max;
+      const first = this.items[0];
+      const second = this.items[1];
+
+      const arcX = (1 / Math.sqrt(2)) * arc * 2;
+      const arcY = (1 - 1 / Math.sqrt(2)) * arc * 2;
+      const crossY = Math.max(arc, Options.VS);
+      const crossX = crossY - arcY + arcX;
+
+      const firstOut = max(
+        arc + arc,
+        crossY / 2 + arc + arc,
+        crossY / 2 + vert + first.down
+      );
+      this.up = firstOut + first.height + first.up;
+
+      const secondIn = max(
+        arc + arc,
+        crossY / 2 + arc + arc,
+        crossY / 2 + vert + second.up
+      );
+      this.down = secondIn + second.height + second.down;
+
+      this.height = 0;
+
+      const firstWidth = 2 * (first.needsSpace ? 10 : 0) + first.width;
+      const secondWidth = 2 * (second.needsSpace ? 10 : 0) + second.width;
+      this.width = 2 * arc + max(firstWidth, crossX, secondWidth) + 2 * arc;
+
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "altseq";
+      }
+    }
+    format(x, y, width) {
+      const arc = Options.AR;
+      const gaps = determineGaps(width, this.width);
+      new Path$2(x, y).right(gaps[0]).addTo(this);
+      x += gaps[0];
+      new Path$2(x + this.width, y).right(gaps[1]).addTo(this);
+      // bounding box
+      // new Path(x+gaps[0], y).up(this.up).right(this.width).down(this.up+this.down).left(this.width).up(this.down).addTo(this);
+      const first = this.items[0];
+      const second = this.items[1];
+
+      // top
+      const firstIn = this.up - first.up;
+      const firstOut = this.up - first.up - first.height;
+      new Path$2(x, y)
+        .arc("se")
+        .up(firstIn - 2 * arc)
+        .arc("wn")
+        .addTo(this);
+      first.format(x + 2 * arc, y - firstIn, this.width - 4 * arc).addTo(this);
+      new Path$2(x + this.width - 2 * arc, y - firstOut)
+        .arc("ne")
+        .down(firstOut - 2 * arc)
+        .arc("ws")
+        .addTo(this);
+
+      // bottom
+      const secondIn = this.down - second.down - second.height;
+      const secondOut = this.down - second.down;
+      new Path$2(x, y)
+        .arc("ne")
+        .down(secondIn - 2 * arc)
+        .arc("ws")
+        .addTo(this);
+      second.format(x + 2 * arc, y + secondIn, this.width - 4 * arc).addTo(this);
+      new Path$2(x + this.width - 2 * arc, y + secondOut)
+        .arc("se")
+        .up(secondOut - 2 * arc)
+        .arc("wn")
+        .addTo(this);
+
+      // crossover
+      const arcX = (1 / Math.sqrt(2)) * arc * 2;
+      const arcY = (1 - 1 / Math.sqrt(2)) * arc * 2;
+      const crossY = Math.max(arc, Options.VS);
+      const crossX = crossY - arcY + arcX;
+      const crossBar = (this.width - 4 * arc - crossX) / 2;
+      new Path$2(x + arc, y - crossY / 2 - arc)
+        .arc("ws")
+        .right(crossBar)
+        .arc_8("n", "cw")
+        .l(crossX - arcX, crossY - arcY)
+        .arc_8("sw", "ccw")
+        .right(crossBar)
+        .arc("ne")
+        .addTo(this);
+      new Path$2(x + arc, y + crossY / 2 + arc)
+        .arc("wn")
+        .right(crossBar)
+        .arc_8("s", "ccw")
+        .l(crossX - arcX, -(crossY - arcY))
+        .arc_8("nw", "cw")
+        .right(crossBar)
+        .arc("se")
+        .addTo(this);
+
+      return this;
+    }
+  }
+  // funcs.AlternatingSequence = (...args) => new AlternatingSequence(...args);
+
+  /* export */ class Choice extends DiagramMultiContainer {
+    constructor(normal, ...items) {
+      super("g", items);
+      if (typeof normal !== "number" || normal !== Math.floor(normal)) {
+        throw new TypeError("The first argument of Choice() must be an integer.");
+      } else if (normal < 0 || normal >= items.length) {
+        throw new RangeError(
+          "The first argument of Choice() must be an index for one of the items."
+        );
+      } else {
+        this.normal = normal;
+      }
+      const first = 0;
+      const last = items.length - 1;
+      this.width =
+        Math.max.apply(
+          null,
+          this.items.map(el => {
+            return el.width;
+          })
+        ) +
+        Options.AR * 4;
+      this.height = this.items[normal].height;
+      this.up = this.items[first].up;
+      let arcs;
+      for (let i = first; i < normal; i++) {
+        if (i === normal - 1) arcs = Options.AR * 2;
+        else arcs = Options.AR;
+        this.up += Math.max(
+          arcs,
+          this.items[i].height +
+            this.items[i].down +
+            Options.VS +
+            this.items[i + 1].up
+        );
+      }
+      this.down = this.items[last].down;
+      for (let i = normal + 1; i <= last; i++) {
+        if (i === normal + 1) arcs = Options.AR * 2;
+        else arcs = Options.AR;
+        this.down += Math.max(
+          arcs,
+          this.items[i - 1].height +
+            this.items[i - 1].down +
+            Options.VS +
+            this.items[i].up
+        );
+      }
+      this.down -= this.items[normal].height; // already counted in Choice.height
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "choice";
+      }
+    }
+    format(x, y, width) {
+      // Hook up the two sides if this is narrower than its stated width.
+      const gaps = determineGaps(width, this.width);
+      new Path$2(x, y).h(gaps[0]).addTo(this);
+      new Path$2(x + gaps[0] + this.width, y + this.height).h(gaps[1]).addTo(this);
+      x += gaps[0];
+
+      const last = this.items.length - 1;
+      const innerWidth = this.width - Options.AR * 4;
+
+      // Do the elements that curve above
+      let distanceFromY;
+      for (let i = this.normal - 1; i >= 0; i--) {
+        const item = this.items[i];
+        if (i === this.normal - 1) {
+          distanceFromY = Math.max(
+            Options.AR * 2,
+            this.items[this.normal].up + Options.VS + item.down + item.height
+          );
+        }
+        new Path$2(x, y)
+          .arc("se")
+          .up(distanceFromY - Options.AR * 2)
+          .arc("wn")
+          .addTo(this);
+        item
+          .format(x + Options.AR * 2, y - distanceFromY, innerWidth)
+          .addTo(this);
+        new Path$2(x + Options.AR * 2 + innerWidth, y - distanceFromY + item.height)
+          .arc("ne")
+          .down(distanceFromY - item.height + this.height - Options.AR * 2)
+          .arc("ws")
+          .addTo(this);
+        distanceFromY += Math.max(
+          Options.AR,
+          item.up +
+            Options.VS +
+            (i === 0 ? 0 : this.items[i - 1].down + this.items[i - 1].height)
+        );
+      }
+
+      // Do the straight-line path.
+      new Path$2(x, y).right(Options.AR * 2).addTo(this);
+      this.items[this.normal]
+        .format(x + Options.AR * 2, y, innerWidth)
+        .addTo(this);
+      new Path$2(x + Options.AR * 2 + innerWidth, y + this.height)
+        .right(Options.AR * 2)
+        .addTo(this);
+
+      // Do the elements that curve below
+      for (let i = this.normal + 1; i <= last; i++) {
+        const item = this.items[i];
+        if (i === this.normal + 1) {
+          distanceFromY = Math.max(
+            Options.AR * 2,
+            this.height + this.items[this.normal].down + Options.VS + item.up
+          );
+        }
+        new Path$2(x, y)
+          .arc("ne")
+          .down(distanceFromY - Options.AR * 2)
+          .arc("ws")
+          .addTo(this);
+        item
+          .format(x + Options.AR * 2, y + distanceFromY, innerWidth)
+          .addTo(this);
+        new Path$2(x + Options.AR * 2 + innerWidth, y + distanceFromY + item.height)
+          .arc("se")
+          .up(distanceFromY - Options.AR * 2 + item.height - this.height)
+          .arc("wn")
+          .addTo(this);
+        distanceFromY += Math.max(
+          Options.AR,
+          item.height +
+            item.down +
+            Options.VS +
+            (i === last ? 0 : this.items[i + 1].up)
+        );
+      }
+
+      return this;
+    }
+  }
+  // funcs.Choice = (...args) => new Choice(...args);
+
+  /* export */ class HorizontalChoice extends DiagramMultiContainer {
+    constructor(...items) {
+      super("g", items);
+      if (items.length === 0) {
+        throw new RangeError("HorizontalChoice() must have at least one child.");
+      }
+      if (items.length === 1) {
+        return new Sequence(items);
+      }
+      const allButLast = this.items.slice(0, -1);
+      const middles = this.items.slice(1, -1);
+      const first = this.items[0];
+      const last = this.items[this.items.length - 1];
+      this.needsSpace = false;
+
+      this.width = Options.AR; // starting track
+      this.width += Options.AR * 2 * (this.items.length - 1); // inbetween tracks
+      this.width += sum(this.items, x => x.width + (x.needsSpace ? 20 : 0)); // items
+      this.width += last.height > 0 ? Options.AR : 0; // needs space to curve up
+      this.width += Options.AR; // ending track
+
+      // Always exits at entrance height
+      this.height = 0;
+
+      // All but the last have a track running above them
+      this._upperTrack = Math.max(
+        Options.AR * 2,
+        Options.VS,
+        max$4(allButLast, x => x.up) + Options.VS
+      );
+      this.up = Math.max(this._upperTrack, last.up);
+
+      // All but the first have a track running below them
+      // Last either straight-lines or curves up, so has different calculation
+      this._lowerTrack = Math.max(
+        Options.VS,
+        max$4(
+          middles,
+          x => x.height + Math.max(x.down + Options.VS, Options.AR * 2)
+        ),
+        last.height + last.down + Options.VS
+      );
+      if (first.height < this._lowerTrack) {
+        // Make sure there's at least 2*AR room between first exit and lower track
+        this._lowerTrack = Math.max(
+          this._lowerTrack,
+          first.height + Options.AR * 2
+        );
+      }
+      this.down = Math.max(this._lowerTrack, first.height + first.down);
+
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "horizontalchoice";
+      }
+    }
+    format(x, y, width) {
+      // Hook up the two sides if this is narrower than its stated width.
+      const gaps = determineGaps(width, this.width);
+      new Path$2(x, y).h(gaps[0]).addTo(this);
+      new Path$2(x + gaps[0] + this.width, y + this.height).h(gaps[1]).addTo(this);
+      x += gaps[0];
+
+      const first = this.items[0];
+      const last = this.items[this.items.length - 1];
+      const allButFirst = this.items.slice(1);
+      const allButLast = this.items.slice(0, -1);
+
+      // upper track
+      const upperSpan =
+        sum(allButLast, x => x.width + (x.needsSpace ? 20 : 0)) +
+        (this.items.length - 2) * Options.AR * 2 -
+        Options.AR;
+      new Path$2(x, y)
+        .arc("se")
+        .v(-(this._upperTrack - Options.AR * 2))
+        .arc("wn")
+        .h(upperSpan)
+        .addTo(this);
+
+      // lower track
+      const lowerSpan =
+        sum(allButFirst, x => x.width + (x.needsSpace ? 20 : 0)) +
+        (this.items.length - 2) * Options.AR * 2 +
+        (last.height > 0 ? Options.AR : 0) -
+        Options.AR;
+      const lowerStart =
+        x +
+        Options.AR +
+        first.width +
+        (first.needsSpace ? 20 : 0) +
+        Options.AR * 2;
+      new Path$2(lowerStart, y + this._lowerTrack)
+        .h(lowerSpan)
+        .arc("se")
+        .v(-(this._lowerTrack - Options.AR * 2))
+        .arc("wn")
+        .addTo(this);
+
+      // Items
+      for (const [i, item] of enumerate(this.items)) {
+        // input track
+        if (i === 0) {
+          new Path$2(x, y).h(Options.AR).addTo(this);
+          x += Options.AR;
+        } else {
+          new Path$2(x, y - this._upperTrack)
+            .arc("ne")
+            .v(this._upperTrack - Options.AR * 2)
+            .arc("ws")
+            .addTo(this);
+          x += Options.AR * 2;
+        }
+
+        // item
+        const itemWidth = item.width + (item.needsSpace ? 20 : 0);
+        item.format(x, y, itemWidth).addTo(this);
+        x += itemWidth;
+
+        // output track
+        if (i === this.items.length - 1) {
+          if (item.height === 0) {
+            new Path$2(x, y).h(Options.AR).addTo(this);
+          } else {
+            new Path$2(x, y + item.height).arc("se").addTo(this);
+          }
+        } else if (i === 0 && item.height > this._lowerTrack) {
+          // Needs to arc up to meet the lower track, not down.
+          if (item.height - this._lowerTrack >= Options.AR * 2) {
+            new Path$2(x, y + item.height)
+              .arc("se")
+              .v(this._lowerTrack - item.height + Options.AR * 2)
+              .arc("wn")
+              .addTo(this);
+          } else {
+            // Not enough space to fit two arcs
+            // so just bail and draw a straight line for now.
+            new Path$2(x, y + item.height)
+              .l(Options.AR * 2, this._lowerTrack - item.height)
+              .addTo(this);
+          }
+        } else {
+          new Path$2(x, y + item.height)
+            .arc("ne")
+            .v(this._lowerTrack - item.height - Options.AR * 2)
+            .arc("ws")
+            .addTo(this);
+        }
+      }
+      return this;
+    }
+  }
+  // funcs.HorizontalChoice = (...args) => new HorizontalChoice(...args);
+
+  /* export */ class MultipleChoice extends DiagramMultiContainer {
+    constructor(normal, type, ...items) {
+      super("g", items);
+      if (typeof normal !== "number" || normal !== Math.floor(normal)) {
+        throw new TypeError(
+          "The first argument of MultipleChoice() must be an integer."
+        );
+      } else if (normal < 0 || normal >= items.length) {
+        throw new RangeError(
+          "The first argument of MultipleChoice() must be an index for one of the items."
+        );
+      } else {
+        this.normal = normal;
+      }
+      if (type !== "any" && type !== "all") {
+        throw new SyntaxError(
+          'The second argument of MultipleChoice must be "any" or "all".'
+        );
+      } else {
+        this.type = type;
+      }
+      this.needsSpace = true;
+      this.innerWidth = max$4(this.items, x => {
+        return x.width;
+      });
+      this.width = 30 + Options.AR + this.innerWidth + Options.AR + 20;
+      this.up = this.items[0].up;
+      this.down = this.items[this.items.length - 1].down;
+      this.height = this.items[normal].height;
+      for (let i = 0; i < this.items.length; i++) {
+        const item = this.items[i];
+        let minimum;
+        if (i === normal - 1 || i === normal + 1) minimum = 10 + Options.AR;
+        else minimum = Options.AR;
+        if (i < normal) {
+          this.up += Math.max(
+            minimum,
+            item.height + item.down + Options.VS + this.items[i + 1].up
+          );
+        } else if (i > normal) {
+          this.down += Math.max(
+            minimum,
+            item.up +
+              Options.VS +
+              this.items[i - 1].down +
+              this.items[i - 1].height
+          );
+        }
+      }
+      this.down -= this.items[normal].height; // already counted in this.height
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "multiplechoice";
+      }
+    }
+    format(x, y, width) {
+      const gaps = determineGaps(width, this.width);
+      new Path$2(x, y).right(gaps[0]).addTo(this);
+      new Path$2(x + gaps[0] + this.width, y + this.height)
+        .right(gaps[1])
+        .addTo(this);
+      x += gaps[0];
+
+      const normal = this.items[this.normal];
+
+      // Do the elements that curve above
+      let distanceFromY;
+      for (let i = this.normal - 1; i >= 0; i--) {
+        const item = this.items[i];
+        if (i === this.normal - 1) {
+          distanceFromY = Math.max(
+            10 + Options.AR,
+            normal.up + Options.VS + item.down + item.height
+          );
+        }
+        new Path$2(x + 30, y)
+          .up(distanceFromY - Options.AR)
+          .arc("wn")
+          .addTo(this);
+        item
+          .format(x + 30 + Options.AR, y - distanceFromY, this.innerWidth)
+          .addTo(this);
+        new Path$2(
+          x + 30 + Options.AR + this.innerWidth,
+          y - distanceFromY + item.height
+        )
+          .arc("ne")
+          .down(distanceFromY - item.height + this.height - Options.AR - 10)
+          .addTo(this);
+        if (i !== 0) {
+          distanceFromY += Math.max(
+            Options.AR,
+            item.up +
+              Options.VS +
+              this.items[i - 1].down +
+              this.items[i - 1].height
+          );
+        }
+      }
+
+      new Path$2(x + 30, y).right(Options.AR).addTo(this);
+      normal.format(x + 30 + Options.AR, y, this.innerWidth).addTo(this);
+      new Path$2(x + 30 + Options.AR + this.innerWidth, y + this.height)
+        .right(Options.AR)
+        .addTo(this);
+
+      for (let i = this.normal + 1; i < this.items.length; i++) {
+        const item = this.items[i];
+        if (i === this.normal + 1) {
+          distanceFromY = Math.max(
+            10 + Options.AR,
+            normal.height + normal.down + Options.VS + item.up
+          );
+        }
+        new Path$2(x + 30, y)
+          .down(distanceFromY - Options.AR)
+          .arc("ws")
+          .addTo(this);
+        item
+          .format(x + 30 + Options.AR, y + distanceFromY, this.innerWidth)
+          .addTo(this);
+        new Path$2(
+          x + 30 + Options.AR + this.innerWidth,
+          y + distanceFromY + item.height
+        )
+          .arc("se")
+          .up(distanceFromY - Options.AR + item.height - normal.height)
+          .addTo(this);
+        if (i !== this.items.length - 1) {
+          distanceFromY += Math.max(
+            Options.AR,
+            item.height + item.down + Options.VS + this.items[i + 1].up
+          );
+        }
+      }
+      const text = new FakeSVG("g", { class: "diagram-text" }).addTo(this);
+      new FakeSVG(
+        "title",
+        {},
+        this.type === "any"
+          ? "take one or more branches, once each, in any order"
+          : "take all branches, once each, in any order"
+      ).addTo(text);
+      new FakeSVG("path", {
+        d: `M ${x + 30} ${
+        y - 10
+      } h -26 a 4 4 0 0 0 -4 4 v 12 a 4 4 0 0 0 4 4 h 26 z`,
+        class: "diagram-text",
+      }).addTo(text);
+      new FakeSVG(
+        "text",
+        {
+          x: x + 15,
+          y: y + 4,
+          class: "diagram-text",
+        },
+        this.type === "any" ? "1+" : "all"
+      ).addTo(text);
+      new FakeSVG("path", {
+        d: `M ${x + this.width - 20} ${
+        y - 10
+      } h 16 a 4 4 0 0 1 4 4 v 12 a 4 4 0 0 1 -4 4 h -16 z`,
+        class: "diagram-text",
+      }).addTo(text);
+      new FakeSVG("path", {
+        d: `M ${x + this.width - 13} ${
+        y - 2
+      } a 4 4 0 1 0 6 -1 m 2.75 -1 h -4 v 4 m 0 -3 h 2`,
+        style: "stroke-width: 1.75",
+      }).addTo(text);
+      return this;
+    }
+  }
+  // funcs.MultipleChoice = (...args) => new MultipleChoice(...args);
+
+  /* export */ class Optional extends Choice {
+    constructor(item, skip) {
+      if (skip === undefined) super(1, new Skip(), item);
+      else if (skip === "skip") super(0, new Skip(), item);
+      else throw 'Unknown value for Optional()\'s "skip" argument.';
+    }
+  }
+  // funcs.Optional = (...args) => new Optional(...args);
+
+  /* export */ class OneOrMore extends FakeSVG {
+    constructor(item, rep) {
+      super("g");
+      rep = rep || new Skip();
+      this.item = wrapString(item);
+      this.rep = wrapString(rep);
+      this.width = Math.max(this.item.width, this.rep.width) + Options.AR * 2;
+      this.height = this.item.height;
+      this.up = this.item.up;
+      this.down = Math.max(
+        Options.AR * 2,
+        this.item.down +
+          Options.VS +
+          this.rep.up +
+          this.rep.height +
+          this.rep.down
+      );
+      this.needsSpace = true;
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "oneormore";
+      }
+    }
+    format(x, y, width) {
+      // Hook up the two sides if this is narrower than its stated width.
+      const gaps = determineGaps(width, this.width);
+      new Path$2(x, y).h(gaps[0]).addTo(this);
+      new Path$2(x + gaps[0] + this.width, y + this.height).h(gaps[1]).addTo(this);
+      x += gaps[0];
+
+      // Draw item
+      new Path$2(x, y).right(Options.AR).addTo(this);
+      this.item
+        .format(x + Options.AR, y, this.width - Options.AR * 2)
+        .addTo(this);
+      new Path$2(x + this.width - Options.AR, y + this.height)
+        .right(Options.AR)
+        .addTo(this);
+
+      // Draw repeat arc
+      const distanceFromY = Math.max(
+        Options.AR * 2,
+        this.item.height + this.item.down + Options.VS + this.rep.up
+      );
+      new Path$2(x + Options.AR, y)
+        .arc("nw")
+        .down(distanceFromY - Options.AR * 2)
+        .arc("ws")
+        .addTo(this);
+      this.rep
+        .format(x + Options.AR, y + distanceFromY, this.width - Options.AR * 2)
+        .addTo(this);
+      new Path$2(x + this.width - Options.AR, y + distanceFromY + this.rep.height)
+        .arc("se")
+        .up(distanceFromY - Options.AR * 2 + this.rep.height - this.item.height)
+        .arc("en")
+        .addTo(this);
+
+      return this;
+    }
+    walk(cb) {
+      cb(this);
+      this.item.walk(cb);
+      this.rep.walk(cb);
+    }
+  }
+  // funcs.OneOrMore = (...args) => new OneOrMore(...args);
+
+  /* export */ class ZeroOrMore extends Optional {
+    constructor(item, rep, skip) {
+      super(new OneOrMore(item, rep), skip);
+    }
+  }
+  // funcs.ZeroOrMore = (...args) => new ZeroOrMore(...args);
+
+  /* export */ class Group extends FakeSVG {
+    constructor(item, label) {
+      super("g");
+      this.item = wrapString(item);
+      this.label =
+        label instanceof FakeSVG ? label : label ? new Comment(label) : undefined;
+
+      this.width = Math.max(
+        this.item.width + (this.item.needsSpace ? 20 : 0),
+        this.label ? this.label.width : 0,
+        Options.AR * 2
+      );
+      this.height = this.item.height;
+      this.boxUp = this.up = Math.max(this.item.up + Options.VS, Options.AR);
+      if (this.label) {
+        this.up += this.label.up + this.label.height + this.label.down;
+      }
+      this.down = Math.max(this.item.down + Options.VS, Options.AR);
+      this.needsSpace = true;
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "group";
+      }
+    }
+    format(x, y, width) {
+      const gaps = determineGaps(width, this.width);
+      new Path$2(x, y).h(gaps[0]).addTo(this);
+      new Path$2(x + gaps[0] + this.width, y + this.height).h(gaps[1]).addTo(this);
+      x += gaps[0];
+
+      new FakeSVG("rect", {
+        x,
+        y: y - this.boxUp,
+        width: this.width,
+        height: this.boxUp + this.height + this.down,
+        rx: Options.AR,
+        ry: Options.AR,
+        class: "group-box",
+      }).addTo(this);
+
+      this.item.format(x, y, this.width).addTo(this);
+      if (this.label) {
+        this.label
+          .format(
+            x,
+            y - (this.boxUp + this.label.down + this.label.height),
+            this.label.width
+          )
+          .addTo(this);
+      }
+
+      return this;
+    }
+    walk(cb) {
+      cb(this);
+      this.item.walk(cb);
+      this.label.walk(cb);
+    }
+  }
+  // funcs.Group = (...args) => new Group(...args);
+
+  /* export */ class Start extends FakeSVG {
+    constructor({ type = "simple", label } = {}) {
+      super("g");
+      this.width = 20;
+      this.height = 0;
+      this.up = 10;
+      this.down = 10;
+      this.type = type;
+      if (label) {
+        this.label = `${label}`;
+        this.width = Math.max(20, this.label.length * Options.CHAR_WIDTH + 10);
+      }
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "start";
+      }
+    }
+    format(x, y) {
+      const path = new Path$2(x, y - 10);
+      if (this.type === "complex") {
+        path.down(20).m(0, -10).right(this.width).addTo(this);
+      } else {
+        path
+          .down(20)
+          .m(10, -20)
+          .down(20)
+          .m(-10, -10)
+          .right(this.width)
+          .addTo(this);
+      }
+      if (this.label) {
+        new FakeSVG(
+          "text",
+          { x, y: y - 15, style: "text-anchor:start" },
+          this.label
+        ).addTo(this);
+      }
+      return this;
+    }
+  }
+  // funcs.Start = (...args) => new Start(...args);
+
+  /* export */ class End extends FakeSVG {
+    constructor({ type = "simple" } = {}) {
+      super("path");
+      this.width = 20;
+      this.height = 0;
+      this.up = 10;
+      this.down = 10;
+      this.type = type;
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "end";
+      }
+    }
+    format(x, y) {
+      if (this.type === "complex") {
+        this.attrs.d = `M ${x} ${y} h 20 m 0 -10 v 20`;
+      } else {
+        this.attrs.d = `M ${x} ${y} h 20 m -10 -10 v 20 m 10 -20 v 20`;
+      }
+      return this;
+    }
+  }
+  // funcs.End = (...args) => new End(...args);
+
+  /* export */ class Terminal extends FakeSVG {
+    constructor(text, { href, title, cls } = {}) {
+      super("g", { class: ["terminal", cls].join(" ") });
+      this.text = `${text}`;
+      this.href = href;
+      this.title = title;
+      this.cls = cls;
+      this.width =
+        this.text.length * Options.CHAR_WIDTH +
+        20; /* Assume that each char is .5em, and that the em is 16px */
+      this.height = 0;
+      this.up = 11;
+      this.down = 11;
+      this.needsSpace = true;
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "terminal";
+      }
+    }
+    format(x, y, width) {
+      // in SVG 1.1, title must be first
+      if (this.title) new FakeSVG("title", {}, this.title).addTo(this);
+      // Hook up the two sides if this is narrower than its stated width.
+      const gaps = determineGaps(width, this.width);
+      new Path$2(x, y).h(gaps[0]).addTo(this);
+      new Path$2(x + gaps[0] + this.width, y).h(gaps[1]).addTo(this);
+      x += gaps[0];
+
+      new FakeSVG("rect", {
+        x,
+        y: y - 11,
+        width: this.width,
+        height: this.up + this.down,
+        rx: 10,
+        ry: 10,
+      }).addTo(this);
+      const text = new FakeSVG(
+        "text",
+        { x: x + this.width / 2, y: y + 4 },
+        this.text
+      );
+      if (this.href)
+        new FakeSVG("a", { "xlink:href": this.href }, [text]).addTo(this);
+      else text.addTo(this);
+      // if (this.title) console.log(`returning terminal title ${this.toString()}`);
+      return this;
+    }
+  }
+  // funcs.Terminal = (...args) => new Terminal(...args);
+
+  /* export */ class NonTerminal extends FakeSVG {
+    constructor(text, { href, title, cls = "" } = {}) {
+      super("g", { class: ["non-terminal", cls].join(" ") });
+      this.text = `${text}`;
+      this.href = href;
+      this.title = title;
+      this.cls = cls;
+      this.width = this.text.length * Options.CHAR_WIDTH + 20;
+      this.height = 0;
+      this.up = 11;
+      this.down = 11;
+      this.needsSpace = true;
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "nonterminal";
+      }
+    }
+    format(x, y, width) {
+      // in SVG 1.1, title must be first
+      if (this.title) new FakeSVG("title", {}, this.title).addTo(this);
+      // Hook up the two sides if this is narrower than its stated width.
+      const gaps = determineGaps(width, this.width);
+      new Path$2(x, y).h(gaps[0]).addTo(this);
+      new Path$2(x + gaps[0] + this.width, y).h(gaps[1]).addTo(this);
+      x += gaps[0];
+
+      new FakeSVG("rect", {
+        x,
+        y: y - 11,
+        width: this.width,
+        height: this.up + this.down,
+      }).addTo(this);
+      const text = new FakeSVG(
+        "text",
+        { x: x + this.width / 2, y: y + 4 },
+        this.text
+      );
+      if (this.href)
+        new FakeSVG("a", { "xlink:href": this.href }, [text]).addTo(this);
+      else text.addTo(this);
+      // if (this.title) console.log(`returning nonterminal title ${this.toString()}`);
+      return this;
+    }
+  }
+  // funcs.NonTerminal = (...args) => new NonTerminal(...args);
+
+  /* export */ class Comment extends FakeSVG {
+    constructor(text, { href, title, cls = "" } = {}) {
+      super("g", { class: ["comment", cls].join(" ") });
+      this.text = `${text}`;
+      this.href = href;
+      this.title = title;
+      this.cls = cls;
+      this.width = this.text.length * Options.COMMENT_CHAR_WIDTH + 10;
+      this.height = 0;
+      this.up = 8;
+      this.down = 8;
+      this.needsSpace = true;
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "comment";
+      }
+    }
+    format(x, y, width) {
+      // in SVG 1.1, <title> must come first
+      if (this.title) new FakeSVG("title", {}, this.title).addTo(this);
+      // Hook up the two sides if this is narrower than its stated width.
+      const gaps = determineGaps(width, this.width);
+      new Path$2(x, y).h(gaps[0]).addTo(this);
+      new Path$2(x + gaps[0] + this.width, y + this.height).h(gaps[1]).addTo(this);
+      x += gaps[0];
+
+      const text = new FakeSVG(
+        "text",
+        { x: x + this.width / 2, y: y + 5, class: "comment" },
+        this.text
+      );
+      if (this.href)
+        new FakeSVG("a", { "xlink:href": this.href }, [text]).addTo(this);
+      else text.addTo(this);
+      return this;
+    }
+  }
+  // funcs.Comment = (...args) => new Comment(...args);
+
+  /* export */ class Skip extends FakeSVG {
+    constructor() {
+      super("g");
+      this.width = 0;
+      this.height = 0;
+      this.up = 0;
+      this.down = 0;
+      this.needsSpace = false;
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "skip";
+      }
+    }
+    format(x, y, width) {
+      new Path$2(x, y).right(width).addTo(this);
+      return this;
+    }
+  }
+  // funcs.Skip = (...args) => new Skip(...args);
+
+  /* export */ class Block extends FakeSVG {
+    constructor({
+      width = 50,
+      up = 15,
+      height = 25,
+      down = 15,
+      // needsSpace = true,
+    } = {}) {
+      super("g");
+      this.width = width;
+      this.height = height;
+      this.up = up;
+      this.down = down;
+      this.needsSpace = true;
+      if (Options.DEBUG) {
+        this.attrs["data-updown"] = `${this.up} ${this.height} ${this.down}`;
+        this.attrs["data-type"] = "block";
+      }
+    }
+    format(x, y, width) {
+      // Hook up the two sides if this is narrower than its stated width.
+      const gaps = determineGaps(width, this.width);
+      new Path$2(x, y).h(gaps[0]).addTo(this);
+      new Path$2(x + gaps[0] + this.width, y).h(gaps[1]).addTo(this);
+      x += gaps[0];
+
+      new FakeSVG("rect", {
+        x,
+        y: y - this.up,
+        width: this.width,
+        height: this.up + this.height + this.down,
+      }).addTo(this);
+      return this;
+    }
+  }
+  // funcs.Block = (...args) => new Block(...args);
+
+  function unnull(...args) {
+    // Return the first value that isn't undefined.
+    // More correct than `v1 || v2 || v3` because falsey values will be returned.
+    return args.reduce((sofar, x) => {
+      return sofar !== undefined ? sofar : x;
+    });
+  }
+
+  function determineGaps(outer, inner) {
+    const diff = outer - inner;
+    switch (Options.INTERNAL_ALIGNMENT) {
+      case "left":
+        return [0, diff];
+      case "right":
+        return [diff, 0];
+      default:
+        return [diff / 2, diff / 2];
+    }
+  }
+
+  function wrapString(value) {
+    return value instanceof FakeSVG ? value : new Terminal(`${value}`);
+  }
+
+  function sum(iter, func) {
+    if (!func)
+      func = function (x) {
+        return x;
+      };
+    return iter.map(func).reduce((a, b) => {
+      return a + b;
+    }, 0);
+  }
+
+  function max$4(iter, func) {
+    if (!func)
+      func = function (x) {
+        return x;
+      };
+    return Math.max.apply(null, iter.map(func));
+  }
+
+  function SVG$1(name, attrs, text) {
+    attrs = attrs || {};
+    text = text || "";
+    const el = document.createElementNS("http://www.w3.org/2000/svg", name);
+    for (const attr in attrs) {
+      if (attrs.hasOwnProperty(attr)) {
+        if (attr === "xlink:href")
+          el.setAttributeNS("http://www.w3.org/1999/xlink", "href", attrs[attr]);
+        else el.setAttribute(attr, attrs[attr]);
+      }
+    }
+    el.textContent = text;
+    return el;
+  }
+
+  function escapeString(string) {
+    // Escape markdown and HTML special characters
+    return string.replace(/[*_`[\]<&]/g, charString => {
+      return `&#${charString.charCodeAt(0)};`;
+    });
+  }
+
+  function* enumerate(iter) {
+    let count = 0;
+    for (const x of iter) {
+      yield [count, x];
+      count++;
+    }
+  }
+
+  function jsonToSVG(item, level = 0) {
+    let retval = "";
+    if (typeof item == "string") {
+      retval = /\d+/.test(item) ? parseInt(item) : item;
+    } else if (typeof item == "number") retval = item;
+    else if (Array.isArray(item)) {
+      if (item.length > 0 && typeof item[0] == "string") {
+        const first = item.shift();
+        let attrs = {};
+        const itemMap = item.reduce((accum, x, _idx) => {
+          if (typeof x != "object" || Array.isArray(x))
+            accum.push(jsonToSVG(x, level + 1));
+          else attrs = { ...attrs, ...x };
+          return accum;
+        }, []);
+        switch (first) {
+          case "Path":
+            retval = new Path$2(...itemMap);
+            break;
+          case "Diagram":
+            retval = new Diagram(...itemMap);
+            break;
+          case "ComplexDiagram":
+            retval = new ComplexDiagram(...itemMap);
+            break;
+          case "Sequence":
+            retval = new Sequence(...itemMap);
+            break;
+          case "Stack":
+            retval = new Stack(...itemMap);
+            break;
+          case "OptionalSequence":
+            retval = new OptionalSequence(...itemMap);
+            break;
+          case "AlternatingSequence":
+            retval = new AlternatingSequence(...itemMap);
+            break;
+          case "Choice":
+            retval = new Choice(...itemMap);
+            break;
+          case "HorizontalChoice":
+            retval = new HorizontalChoice(...itemMap);
+            break;
+          case "MultipleChoice":
+            retval = new MultipleChoice(...itemMap);
+            break;
+          case "Optional":
+            retval = new Optional(...itemMap);
+            break;
+          case "OneOrMore":
+            retval = new OneOrMore(...itemMap, attrs);
+            break;
+          case "ZeroOrMore":
+            retval = new ZeroOrMore(...itemMap);
+            break;
+          case "Group":
+            retval = new Group(...itemMap);
+            break;
+          case "Start":
+            retval = new Start(attrs);
+            break;
+          case "End":
+            retval = new End(attrs);
+            break;
+          case "Terminal":
+            retval = new Terminal(...itemMap, attrs);
+            break;
+          case "NonTerminal":
+            retval = new NonTerminal(...itemMap, attrs);
+            break;
+          case "Comment":
+            retval = new Comment(...itemMap, attrs);
+            break;
+          case "Skip":
+            retval = new Skip(...itemMap);
+            break;
+          case "Block":
+            retval = new Block(attrs);
+            break;
+          default:
+            retval = new Comment(
+              `UNKNOWN: first="${first}" "${item.toString()}"`
+            );
+        }
+      }
+    } else retval = item.toString();
+    return retval;
+  }
+
+  async function run$N(conf) {
+    if (!("noRailroad" in conf)) {
+      if ("railroad" in conf) {
+        for (const opt in Options) {
+          if (opt in conf.railroad) {
+            Options[opt] = conf.railroad[opt];
+          }
+        }
+      }
+
+      let css = await cssPromise$4;
+      css = css.replace(/\bsvg\b/g, `svg.${Options.DIAGRAM_CLASS}`);
+      css = `<style id="respec-railroad-style">${css}</style>`;
+      // console.log(`railroad.css = ${css}`);
+      if (document.head.querySelector("link")) {
+        document.head
+          // insert CSS before the first <link>
+          .querySelector("link")
+          .insertAdjacentHTML("beforebegin", css);
+      } else {
+        // No <link> found in <head>, insert CSS at beginning of <head>
+        // so defaults can be overridden
+        document.head.insertAdjacentHTML("afterbegin", css);
+      }
+
+      document.querySelectorAll("figure.railroad pre").forEach(pre => {
+        let error = null;
+        try {
+          const json = JSON.parse(pre.textContent);
+          try {
+            const svg = jsonToSVG(json);
+            try {
+              pre.insertAdjacentElement("afterend", svg.toSVG());
+            } catch {
+              error = `<p class="respec-error">Error in svg.toSVG: ${escapeString(
+              pre.textContent
+            )}</p>`;
+            }
+          } catch {
+            error = `<p class="respec-error">Error in jsonToSVG: ${escapeString(
+            JSON.stringify(json)
+          )}</p>`;
+          }
+        } catch {
+          error = `<p class="respec-error">Invalid JSON: ${escapeString(
+          pre.textContent
+        )}</p>`;
+        }
+        if (error) {
+          pre.insertAdjacentHTML("beforebegin", error);
+        }
+      });
+    }
+  }
+
+  var railroad = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    name: name$10,
     run: run$N
   });
 
-  var ui$2 = ".respec-modal .close-button {\n  position: absolute;\n  z-index: inherit;\n  padding: .2em;\n  font-weight: bold;\n  cursor: pointer;\n  margin-left: 5px;\n  border: none;\n  background: transparent;\n}\n\n#respec-ui {\n  position: fixed;\n  display: flex;\n  flex-direction: row-reverse;\n  top: 20px;\n  right: 20px;\n  width: 202px;\n  text-align: right;\n  z-index: 9000;\n}\n\n#respec-pill,\n.respec-info-button {\n  background: #fff;\n  height: 2.5em;\n  color: rgb(120, 120, 120);\n  border: 1px solid #ccc;\n  box-shadow: 1px 1px 8px 0 rgba(100, 100, 100, 0.5);\n}\n\n.respec-info-button {\n  border: none;\n  opacity: 0.75;\n  border-radius: 2em;\n  margin-right: 1em;\n  min-width: 3.5em;\n}\n\n.respec-info-button:focus,\n.respec-info-button:hover {\n  opacity: 1;\n  transition: opacity 0.2s;\n}\n\n#respec-pill:disabled {\n  font-size: 2.8px;\n  text-indent: -9999em;\n  border-top: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-right: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-bottom: 1.1em solid rgba(40, 40, 40, 0.2);\n  border-left: 1.1em solid #ffffff;\n  transform: translateZ(0);\n  animation: respec-spin 0.5s infinite linear;\n  box-shadow: none;\n}\n\n#respec-pill:disabled,\n#respec-pill:disabled:after {\n  border-radius: 50%;\n  width: 10em;\n  height: 10em;\n}\n\n@keyframes respec-spin {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n\n.respec-hidden {\n  visibility: hidden;\n  opacity: 0;\n  transition: visibility 0s 0.2s, opacity 0.2s linear;\n}\n\n.respec-visible {\n  visibility: visible;\n  opacity: 1;\n  transition: opacity 0.2s linear;\n}\n\n#respec-pill:hover,\n#respec-pill:focus {\n  color: rgb(0, 0, 0);\n  background-color: rgb(245, 245, 245);\n  transition: color 0.2s;\n}\n\n#respec-menu {\n  position: absolute;\n  margin: 0;\n  padding: 0;\n  font-family: sans-serif;\n  background: #fff;\n  box-shadow: 1px 1px 8px 0 rgba(100, 100, 100, 0.5);\n  width: 200px;\n  display: none;\n  text-align: left;\n  margin-top: 32px;\n  font-size: 0.8em;\n}\n\n#respec-menu:not([hidden]) {\n  display: block;\n}\n\n#respec-menu li {\n  list-style-type: none;\n  margin: 0;\n  padding: 0;\n}\n\n.respec-save-buttons {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(47%, 2fr));\n  grid-gap: 0.5cm;\n  padding: 0.5cm;\n}\n\n.respec-save-button:link {\n  padding-top: 16px;\n  color: rgb(240, 240, 240);\n  background: rgb(42, 90, 168);\n  justify-self: stretch;\n  height: 1cm;\n  text-decoration: none;\n  text-align: center;\n  font-size: inherit;\n  border: none;\n  border-radius: 0.2cm;\n}\n\n.respec-save-button:link:hover {\n  color: white;\n  background: rgb(42, 90, 168);\n  padding: 0;\n  margin: 0;\n  border: 0;\n  padding-top: 16px;\n}\n\n.respec-save-button:link:focus {\n  background: #193766;\n}\n\n#respec-ui button:focus,\n#respec-pill:focus,\n.respec-option:focus {\n  outline: 0;\n  outline-style: none;\n}\n\n#respec-pill-error {\n  background-color: red;\n  color: white;\n}\n\n#respec-pill-warning {\n  background-color: orange;\n  color: white;\n}\n\n.respec-warning-list,\n.respec-error-list {\n  margin: 0;\n  padding: 0;\n  list-style: none;\n  font-family: sans-serif;\n  background-color: rgb(255, 251, 230);\n  font-size: 0.85em;\n}\n\n.respec-warning-list > li,\n.respec-error-list > li {\n  padding: 0.4em 0.7em;\n}\n\n.respec-warning-list > li::before {\n  content: \"⚠️\";\n  padding-right: 0.5em;\n}\n.respec-warning-list p,\n.respec-error-list p {\n  padding: 0;\n  margin: 0;\n}\n\n.respec-warning-list li {\n  color: rgb(92, 59, 0);\n  border-bottom: thin solid rgb(255, 245, 194);\n}\n\n.respec-error-list,\n.respec-error-list li {\n  background-color: rgb(255, 240, 240);\n}\n\n.respec-error-list li::before {\n  content: \"💥\";\n  padding-right: 0.5em;\n}\n\n.respec-error-list li {\n  padding: 0.4em 0.7em;\n  color: rgb(92, 59, 0);\n  border-bottom: thin solid rgb(255, 215, 215);\n}\n\n.respec-error-list li > p {\n  margin: 0;\n  padding: 0;\n  display: inline-block;\n}\n\n#respec-overlay {\n  display: block;\n  position: fixed;\n  z-index: 10000;\n  top: 0px;\n  left: 0px;\n  height: 100%;\n  width: 100%;\n  background: #000;\n}\n\n.respec-show-overlay {\n  transition: opacity 0.2s linear;\n  opacity: 0.5;\n}\n\n.respec-hide-overlay {\n  transition: opacity 0.2s linear;\n  opacity: 0;\n}\n\n.respec-modal {\n  display: block;\n  position: fixed;\n  z-index: 11000;\n  margin: auto;\n  top: 10%;\n  background: #fff;\n  border: 5px solid #666;\n  min-width: 20%;\n  width: 79%;\n  padding: 0;\n  max-height: 80%;\n  overflow-y: auto;\n  margin: 0 -0.5cm;\n}\n\n@media screen and (min-width: 78em) {\n  .respec-modal {\n    width: 62%;\n  }\n}\n\n.respec-modal h3 {\n  margin: 0;\n  padding: 0.2em;\n  text-align: center;\n  color: black;\n  background: linear-gradient(\n    to bottom,\n    rgba(238, 238, 238, 1) 0%,\n    rgba(238, 238, 238, 1) 50%,\n    rgba(204, 204, 204, 1) 100%\n  );\n  font-size: 1em;\n}\n\n.respec-modal .inside div p {\n  padding-left: 1cm;\n}\n\n#respec-menu button.respec-option {\n  background: white;\n  padding: 0 0.2cm;\n  border: none;\n  width: 100%;\n  text-align: left;\n  font-size: inherit;\n  padding: 1.2em 1.2em;\n}\n\n#respec-menu button.respec-option:hover,\n#respec-menu button:focus {\n  background-color: #eeeeee;\n}\n\n.respec-cmd-icon {\n  padding-right: 0.5em;\n}\n\n#respec-ui button.respec-option:last-child {\n  border: none;\n  border-radius: inherit;\n}\n\n.respec-button-copy-paste {\n  position: absolute;\n  height: 28px;\n  width: 40px;\n  cursor: pointer;\n  background-image: linear-gradient(#fcfcfc, #eee);\n  border: 1px solid rgb(144, 184, 222);\n  border-left: 0;\n  border-radius: 0px 0px 3px 0;\n  -webkit-user-select: none;\n  user-select: none;\n  -webkit-appearance: none;\n  top: 0;\n  left: 127px;\n}\n\n#specref-ui {\n  margin: 0 2%;\n  margin-bottom: 0.5cm;\n}\n\n#specref-ui header {\n  font-size: 0.7em;\n  background-color: #eee;\n  text-align: center;\n  padding: 0.2cm;\n  margin-bottom: 0.5cm;\n  border-radius: 0 0 0.2cm 0.2cm;\n}\n\n#specref-ui header h1 {\n  padding: 0;\n  margin: 0;\n  color: black;\n}\n\n#specref-ui p {\n  padding: 0;\n  margin: 0;\n  font-size: 0.8em;\n  text-align: center;\n}\n\n#specref-ui p.state {\n  margin: 1cm;\n}\n\n#specref-ui .searchcomponent {\n  font-size: 16px;\n  display: grid;\n  grid-template-columns: auto 2cm;\n}\n#specref-ui .searchcomponent:focus {\n}\n\n#specref-ui input,\n#specref-ui button {\n  border: 0;\n  padding: 6px 12px;\n}\n\n#specref-ui label {\n  font-size: 0.6em;\n  grid-column-end: 3;\n  text-align: right;\n  grid-column-start: 1;\n}\n\n#specref-ui input[type=\"search\"] {\n  -webkit-appearance: none;\n  font-size: 16px;\n  border-radius: 0.1cm 0 0 0.1cm;\n  border: 1px solid rgb(204, 204, 204);\n}\n\n#specref-ui button[type=\"submit\"] {\n  color: white;\n  border-radius: 0 0.1cm 0.1cm 0;\n  background-color: rgb(51, 122, 183);\n}\n\n#specref-ui button[type=\"submit\"]:hover {\n  background-color: #286090;\n  border-color: #204d74;\n}\n\n#specref-ui .result-stats {\n  margin: 0;\n  padding: 0;\n  color: rgb(128, 128, 128);\n  font-size: 0.7em;\n  font-weight: bold;\n}\n\n#specref-ui .specref-results {\n  font-size: 0.8em;\n}\n\n#specref-ui .specref-results dd + dt {\n  margin-top: 0.51cm;\n}\n\n#specref-ui .specref-results a {\n  text-transform: capitalize;\n}\n#specref-ui .specref-results .authors {\n  display: block;\n  color: #006621;\n}\n\n@media print {\n  #respec-ui {\n    display: none;\n  }\n}\n\n#xref-ui {\n  width: 100%;\n  min-height: 550px;\n  height: 100%;\n  overflow: hidden;\n  padding: 0;\n  margin: 0;\n  border: 0;\n}\n\n#xref-ui:not(.ready) {\n  background: url(\"https://respec.org/xref/loader.gif\") no-repeat center;\n}\n\n.respec-dfn-list .dfn-status {\n  margin-left: 0.5em;\n  padding: 0.1em;\n  text-align: center;\n  white-space: nowrap;\n  font-size: 90%;\n  border-radius: 0.2em;\n}\n\n.respec-dfn-list .exported {\n  background: #d1edfd;\n\tcolor: #040b1c;\n\tbox-shadow: 0 0 0 0.125em #1ca5f940;\n}\n\n.respec-dfn-list .unused {\n  background: #fde0e6;\n  color: #9d0c29;\n  box-shadow: 0 0 0 0.125em #f1466840;\n}\n\n#xref-ui + a[href] {\n  font-size: 0.9rem;\n  float: right;\n  margin: 0 0.5em 0.5em;\n  border-bottom-width: 1px;\n}\n";
+  var ui$2 = ".respec-modal .close-button{position:absolute;z-index:inherit;padding:.2em;font-weight:700;cursor:pointer;margin-left:5px;border:none;background:0 0}#respec-ui{position:fixed;display:flex;flex-direction:row-reverse;top:20px;right:20px;width:202px;text-align:right;z-index:9000}#respec-pill,.respec-info-button{background:#fff;height:2.5em;color:#787878;border:1px solid #ccc;box-shadow:1px 1px 8px 0 rgba(100,100,100,.5)}.respec-info-button{border:none;opacity:.75;border-radius:2em;margin-right:1em;min-width:3.5em}.respec-info-button:focus,.respec-info-button:hover{opacity:1;transition:opacity .2s}#respec-pill:disabled{font-size:2.8px;text-indent:-9999em;border-top:1.1em solid rgba(40,40,40,.2);border-right:1.1em solid rgba(40,40,40,.2);border-bottom:1.1em solid rgba(40,40,40,.2);border-left:1.1em solid #fff;transform:translateZ(0);animation:respec-spin .5s infinite linear;box-shadow:none}#respec-pill:disabled,#respec-pill:disabled:after{border-radius:50%;width:10em;height:10em}@keyframes respec-spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}.respec-hidden{visibility:hidden;opacity:0;transition:visibility 0s .2s,opacity .2s linear}.respec-visible{visibility:visible;opacity:1;transition:opacity .2s linear}#respec-pill:focus,#respec-pill:hover{color:#000;background-color:#f5f5f5;transition:color .2s}#respec-menu{position:absolute;margin:0;padding:0;font-family:sans-serif;background:#fff;box-shadow:1px 1px 8px 0 rgba(100,100,100,.5);width:200px;display:none;text-align:left;margin-top:32px;font-size:.8em}#respec-menu:not([hidden]){display:block}#respec-menu li{list-style-type:none;margin:0;padding:0}.respec-save-buttons{display:grid;grid-template-columns:repeat(auto-fill,minmax(47%,2fr));grid-gap:.5cm;padding:.5cm}.respec-save-button:link{padding-top:16px;color:#f0f0f0;background:#2a5aa8;justify-self:stretch;height:1cm;text-decoration:none;text-align:center;font-size:inherit;border:none;border-radius:.2cm}.respec-save-button:link:hover{color:#fff;background:#2a5aa8;padding:0;margin:0;border:0;padding-top:16px}.respec-save-button:link:focus{background:#193766}#respec-pill:focus,#respec-ui button:focus,.respec-option:focus{outline:0;outline-style:none}#respec-pill-error{background-color:red;color:#fff}#respec-pill-warning{background-color:orange;color:#fff}.respec-error-list,.respec-warning-list{margin:0;padding:0;list-style:none;font-family:sans-serif;background-color:#fffbe6;font-size:.85em}.respec-error-list>li,.respec-warning-list>li{padding:.4em .7em}.respec-warning-list>li::before{content:\"⚠️\";padding-right:.5em}.respec-error-list p,.respec-warning-list p{padding:0;margin:0}.respec-warning-list li{color:#5c3b00;border-bottom:thin solid #fff5c2}.respec-error-list,.respec-error-list li{background-color:#fff0f0}.respec-error-list li::before{content:\"💥\";padding-right:.5em}.respec-error-list li{padding:.4em .7em;color:#5c3b00;border-bottom:thin solid #ffd7d7}.respec-error-list li>p{margin:0;padding:0;display:inline-block}.respec-error-list li>p:first-child,.respec-warning-list li>p:first-child{display:inline}.respec-error-list>li li,.respec-warning-list>li li{margin:0;list-style:disc}#respec-overlay{display:block;position:fixed;z-index:10000;top:0;left:0;height:100%;width:100%;background:#000}.respec-show-overlay{transition:opacity .2s linear;opacity:.5}.respec-hide-overlay{transition:opacity .2s linear;opacity:0}.respec-modal{display:block;position:fixed;z-index:11000;margin:auto;top:10%;background:#fff;border:5px solid #666;min-width:20%;width:79%;padding:0;max-height:80%;overflow-y:auto;margin:0 -.5cm}@media screen and (min-width:78em){.respec-modal{width:62%}}.respec-modal h3{margin:0;padding:.2em;text-align:center;color:#000;background:linear-gradient(to bottom,#eee 0,#eee 50%,#ccc 100%);font-size:1em}.respec-modal .inside div p{padding-left:1cm}#respec-menu button.respec-option{background:#fff;padding:0 .2cm;border:none;width:100%;text-align:left;font-size:inherit;padding:1.2em 1.2em}#respec-menu button.respec-option:hover,#respec-menu button:focus{background-color:#eee}.respec-cmd-icon{padding-right:.5em}#respec-ui button.respec-option:last-child{border:none;border-radius:inherit}.respec-button-copy-paste{position:absolute;height:28px;width:40px;cursor:pointer;background-image:linear-gradient(#fcfcfc,#eee);border:1px solid #90b8de;border-left:0;border-radius:0 0 3px 0;-webkit-user-select:none;user-select:none;-webkit-appearance:none;top:0;left:127px}#specref-ui{margin:0 2%;margin-bottom:.5cm}#specref-ui header{font-size:.7em;background-color:#eee;text-align:center;padding:.2cm;margin-bottom:.5cm;border-radius:0 0 .2cm .2cm}#specref-ui header h1{padding:0;margin:0;color:#000}#specref-ui p{padding:0;margin:0;font-size:.8em;text-align:center}#specref-ui p.state{margin:1cm}#specref-ui .searchcomponent{font-size:16px;display:grid;grid-template-columns:auto 2cm}#specref-ui button,#specref-ui input{border:0;padding:6px 12px}#specref-ui label{font-size:.6em;grid-column-end:3;text-align:right;grid-column-start:1}#specref-ui input[type=search]{-webkit-appearance:none;font-size:16px;border-radius:.1cm 0 0 .1cm;border:1px solid #ccc}#specref-ui button[type=submit]{color:#fff;border-radius:0 .1cm .1cm 0;background-color:#337ab7}#specref-ui button[type=submit]:hover{background-color:#286090;border-color:#204d74}#specref-ui .result-stats{margin:0;padding:0;color:grey;font-size:.7em;font-weight:700}#specref-ui .specref-results{font-size:.8em}#specref-ui .specref-results dd+dt{margin-top:.51cm}#specref-ui .specref-results a{text-transform:capitalize}#specref-ui .specref-results .authors{display:block;color:#006621}@media print{#respec-ui{display:none}}#xref-ui{width:100%;min-height:550px;height:100%;overflow:hidden;padding:0;margin:0;border:0}#xref-ui:not(.ready){background:url(https://respec.org/xref/loader.gif) no-repeat center}.respec-dfn-list .dfn-status{margin-left:.5em;padding:.1em;text-align:center;white-space:nowrap;font-size:90%;border-radius:.2em}.respec-dfn-list .exported{background:#d1edfd;color:#040b1c;box-shadow:0 0 0 .125em #1ca5f940}.respec-dfn-list .unused{background:#fde0e6;color:#9d0c29;box-shadow:0 0 0 .125em #f1466840}#xref-ui+a[href]{font-size:.9rem;float:right;margin:0 .5em .5em;border-bottom-width:1px}";
 
   var ui$3 = /*#__PURE__*/Object.freeze({
     __proto__: null,
     'default': ui$2
   });
 
-  var respec = "/*****************************************************************\n * ReSpec specific CSS\n *****************************************************************/\n@keyframes pop {\n  0% {\n    transform: scale(1, 1);\n  }\n  25% {\n    transform: scale(1.25, 1.25);\n    opacity: 0.75;\n  }\n  100% {\n    transform: scale(1, 1);\n  }\n}\n\n/* Override code highlighter background */\n.hljs {\n  background: transparent !important;\n}\n\n/* --- INLINES --- */\nh1 abbr,\nh2 abbr,\nh3 abbr,\nh4 abbr,\nh5 abbr,\nh6 abbr,\na abbr {\n  border: none;\n}\n\ndfn {\n  font-weight: bold;\n}\n\na.internalDFN {\n  color: inherit;\n  border-bottom: 1px solid #99c;\n  text-decoration: none;\n}\n\na.externalDFN {\n  color: inherit;\n  border-bottom: 1px dotted #ccc;\n  text-decoration: none;\n}\n\na.bibref {\n  text-decoration: none;\n}\n\n.respec-offending-element:target {\n  animation: pop 0.25s ease-in-out 0s 1;\n}\n\n.respec-offending-element,\na[href].respec-offending-element {\n  text-decoration: red wavy underline;\n}\n@supports not (text-decoration: red wavy underline) {\n  .respec-offending-element:not(pre) {\n    display: inline-block;\n  }\n  .respec-offending-element {\n    /* Red squiggly line */\n    background: url(data:image/gif;base64,R0lGODdhBAADAPEAANv///8AAP///wAAACwAAAAABAADAEACBZQjmIAFADs=)\n      bottom repeat-x;\n  }\n}\n\n#references :target {\n  background: #eaf3ff;\n  animation: pop 0.4s ease-in-out 0s 1;\n}\n\ncite .bibref {\n  font-style: normal;\n}\n\ncode {\n  color: #c83500;\n}\n\nth code {\n  color: inherit;\n}\n\na[href].orcid {\n    padding-left: 4px;\n    padding-right: 4px;\n}\n\na[href].orcid > svg {\n    margin-bottom: -2px;\n}\n\n/* --- TOC --- */\n\n.toc a,\n.tof a {\n  text-decoration: none;\n}\n\na .secno,\na .figno {\n  color: #000;\n}\n\nul.tof,\nol.tof {\n  list-style: none outside none;\n}\n\n.caption {\n  margin-top: 0.5em;\n  font-style: italic;\n}\n\n/* --- TABLE --- */\n\ntable.simple {\n  border-spacing: 0;\n  border-collapse: collapse;\n  border-bottom: 3px solid #005a9c;\n}\n\n.simple th {\n  background: #005a9c;\n  color: #fff;\n  padding: 3px 5px;\n  text-align: left;\n}\n\n.simple th a {\n  color: #fff;\n  padding: 3px 5px;\n  text-align: left;\n}\n\n.simple th[scope=\"row\"] {\n  background: inherit;\n  color: inherit;\n  border-top: 1px solid #ddd;\n}\n\n.simple td {\n  padding: 3px 10px;\n  border-top: 1px solid #ddd;\n}\n\n.simple tr:nth-child(even) {\n  background: #f0f6ff;\n}\n\n/* --- DL --- */\n\n.section dd > p:first-child {\n  margin-top: 0;\n}\n\n.section dd > p:last-child {\n  margin-bottom: 0;\n}\n\n.section dd {\n  margin-bottom: 1em;\n}\n\n.section dl.attrs dd,\n.section dl.eldef dd {\n  margin-bottom: 0;\n}\n\n#issue-summary > ul,\n.respec-dfn-list {\n  column-count: 2;\n}\n\n#issue-summary li,\n.respec-dfn-list li {\n  list-style: none;\n}\n\ndetails.respec-tests-details {\n  margin-left: 1em;\n  display: inline-block;\n  vertical-align: top;\n}\n\ndetails.respec-tests-details > * {\n  padding-right: 2em;\n}\n\ndetails.respec-tests-details[open] {\n  z-index: 999999;\n  position: absolute;\n  border: thin solid #cad3e2;\n  border-radius: 0.3em;\n  background-color: white;\n  padding-bottom: 0.5em;\n}\n\ndetails.respec-tests-details[open] > summary {\n  border-bottom: thin solid #cad3e2;\n  padding-left: 1em;\n  margin-bottom: 1em;\n  line-height: 2em;\n}\n\ndetails.respec-tests-details > ul {\n  width: 100%;\n  margin-top: -0.3em;\n}\n\ndetails.respec-tests-details > li {\n  padding-left: 1em;\n}\n\na[href].self-link:hover {\n  opacity: 1;\n  text-decoration: none;\n  background-color: transparent;\n}\n\nh2,\nh3,\nh4,\nh5,\nh6 {\n  position: relative;\n}\n\naside.example .marker > a.self-link {\n  color: inherit;\n}\n\nh2 > a.self-link,\nh3 > a.self-link,\nh4 > a.self-link,\nh5 > a.self-link,\nh6 > a.self-link,\ndiv.marker > a.self-link,\nfigcaption > a.self-link,\ncaption > a.self-link {\n  border: none;\n  color: inherit;\n  font-size: 83%;\n  height: 2em;\n  left: -1.6em;\n  opacity: 0.5;\n  position: absolute;\n  text-align: center;\n  text-decoration: none;\n  top: 0;\n  transition: opacity 0.2s;\n  width: 2em;\n}\n\nh2 > a.self-link::before,\nh3 > a.self-link::before,\nh4 > a.self-link::before,\nh5 > a.self-link::before,\nh6 > a.self-link::before,\ndiv.marker > a.self-link::before,\nfigcaption > a.self-link::before,\ncaption > a.self-link::before {\n  content: \"§\";\n  display: block;\n}\n\n@media (max-width: 767px) {\n  dd {\n    margin-left: 0;\n  }\n\n  /* Don't position self-link in headings off-screen */\n  h2 > a.self-link,\n  h3 > a.self-link,\n  h4 > a.self-link,\n  h5 > a.self-link,\n  h6 > a.self-link,\n  div.marker > a.self-link,\n  figcaption > a.self-link,\n  caption > a.self-link {\n    left: auto;\n    top: auto;\n  }\n}\n\n@media print {\n  .removeOnSave {\n    display: none;\n  }\n}\n";
+  var respec = "@keyframes pop{0%{transform:scale(1,1)}25%{transform:scale(1.25,1.25);opacity:.75}100%{transform:scale(1,1)}}.hljs{background:0 0!important}a abbr,h1 abbr,h2 abbr,h3 abbr,h4 abbr,h5 abbr,h6 abbr{border:none}dfn{font-weight:700}a.internalDFN{color:inherit;border-bottom:1px solid #99c;text-decoration:none}a.externalDFN{color:inherit;border-bottom:1px dotted #ccc;text-decoration:none}a.bibref{text-decoration:none}.respec-offending-element:target{animation:pop .25s ease-in-out 0s 1}.respec-offending-element,a[href].respec-offending-element{text-decoration:red wavy underline}@supports not (text-decoration:red wavy underline){.respec-offending-element:not(pre){display:inline-block}.respec-offending-element{background:url(data:image/gif;base64,R0lGODdhBAADAPEAANv///8AAP///wAAACwAAAAABAADAEACBZQjmIAFADs=) bottom repeat-x}}#references :target{background:#eaf3ff;animation:pop .4s ease-in-out 0s 1}cite .bibref{font-style:normal}code{color:#c63501}th code{color:inherit}a[href].orcid{padding-left:4px;padding-right:4px}a[href].orcid>svg{margin-bottom:-2px}.toc a,.tof a{text-decoration:none}a .figno,a .secno{color:#000}ol.tof,ul.tof{list-style:none outside none}.caption{margin-top:.5em;font-style:italic}table.simple{border-spacing:0;border-collapse:collapse;border-bottom:3px solid #005a9c}.simple th{background:#005a9c;color:#fff;padding:3px 5px;text-align:left}.simple th a{color:#fff;padding:3px 5px;text-align:left}.simple th[scope=row]{background:inherit;color:inherit;border-top:1px solid #ddd}.simple td{padding:3px 10px;border-top:1px solid #ddd}.simple tr:nth-child(even){background:#f0f6ff}.section dd>p:first-child{margin-top:0}.section dd>p:last-child{margin-bottom:0}.section dd{margin-bottom:1em}.section dl.attrs dd,.section dl.eldef dd{margin-bottom:0}#issue-summary>ul,.respec-dfn-list{column-count:2}#issue-summary li,.respec-dfn-list li{list-style:none}details.respec-tests-details{margin-left:1em;display:inline-block;vertical-align:top}details.respec-tests-details>*{padding-right:2em}details.respec-tests-details[open]{z-index:999999;position:absolute;border:thin solid #cad3e2;border-radius:.3em;background-color:#fff;padding-bottom:.5em}details.respec-tests-details[open]>summary{border-bottom:thin solid #cad3e2;padding-left:1em;margin-bottom:1em;line-height:2em}details.respec-tests-details>ul{width:100%;margin-top:-.3em}details.respec-tests-details>li{padding-left:1em}a[href].self-link:hover{opacity:1;text-decoration:none;background-color:transparent}h2,h3,h4,h5,h6{position:relative}aside.example .marker>a.self-link{color:inherit}caption>a.self-link,div.marker>a.self-link,figcaption>a.self-link,h2>a.self-link,h3>a.self-link,h4>a.self-link,h5>a.self-link,h6>a.self-link{border:none;color:inherit;font-size:83%;height:2em;left:-1.6em;opacity:.5;position:absolute;text-align:center;text-decoration:none;top:0;transition:opacity .2s;width:2em}caption>a.self-link::before,div.marker>a.self-link::before,figcaption>a.self-link::before,h2>a.self-link::before,h3>a.self-link::before,h4>a.self-link::before,h5>a.self-link::before,h6>a.self-link::before{content:\"§\";display:block}@media (max-width:767px){dd{margin-left:0}caption>a.self-link,div.marker>a.self-link,figcaption>a.self-link,h2>a.self-link,h3>a.self-link,h4>a.self-link,h5>a.self-link,h6>a.self-link{left:auto;top:auto}}@media print{.removeOnSave{display:none}}";
 
   var respec$1 = /*#__PURE__*/Object.freeze({
     __proto__: null,
     'default': respec
   });
 
-  var examples$1 = "/* --- EXAMPLES --- */\nspan.example-title {\n    text-transform: none;\n}\naside.example, div.example, div.illegal-example {\n    padding: 0.5em;\n    margin: 1em 0;\n    position: relative;\n    clear: both;\n}\ndiv.illegal-example { color: red }\ndiv.illegal-example p { color: black }\naside.example, div.example {\n    padding: .5em;\n    border-left-width: .5em;\n    border-left-style: solid;\n    border-color: #e0cb52;\n    background: #fcfaee;\n}\n\naside.example div.example {\n    border-left-width: .1em;\n    border-color: #999;\n    background: #fff;\n}\naside.example div.example span.example-title {\n    color: #999;\n}\n";
+  var examples$1 = "span.example-title{text-transform:none}aside.example,div.example,div.illegal-example{padding:.5em;margin:1em 0;position:relative;clear:both}div.illegal-example{color:red}div.illegal-example p{color:#000}aside.example,div.example{padding:.5em;border-left-width:.5em;border-left-style:solid;border-color:#e0cb52;background:#fcfaee}aside.example div.example{border-left-width:.1em;border-color:#999;background:#fff}aside.example div.example span.example-title{color:#999}";
 
   var examples$2 = /*#__PURE__*/Object.freeze({
     __proto__: null,
     'default': examples$1
   });
 
-  var issuesNotes$1 = "/* --- ISSUES/NOTES --- */\n.issue-label {\n    text-transform: initial;\n}\n\n.warning > p:first-child { margin-top: 0 }\n.warning {\n    padding: .5em;\n    border-left-width: .5em;\n    border-left-style: solid;\n}\nspan.warning { padding: .1em .5em .15em; }\n\n.issue.closed span.issue-number {\n    text-decoration: line-through;\n}\n\n.warning {\n    border-color: #f11;\n    border-width: .2em;\n    border-style: solid;\n    background: #fbe9e9;\n}\n\n.warning-title:before{\n    content: \"⚠\"; /*U+26A0 WARNING SIGN*/\n    font-size: 1.3em;\n    float: left;\n    padding-right: .3em;\n    margin-top: -0.3em;\n}\n\nli.task-list-item {\n    list-style: none;\n}\n\ninput.task-list-item-checkbox {\n    margin: 0 0.35em 0.25em -1.6em;\n    vertical-align: middle;\n}\n\n.issue a.respec-gh-label {\n  padding: 5px;\n  margin: 0 2px 0 2px;\n  font-size: 10px;\n  text-transform: none;\n  text-decoration: none;\n  font-weight: bold;\n  border-radius: 4px;\n  position: relative;\n  bottom: 2px;\n  border: none;\n  display: inline-block;\n}\n\n.issue a.respec-label-dark {\n  color: #fff;\n  background-color: #000;\n}\n\n.issue a.respec-label-light {\n  color: #000;\n  background-color: #fff;\n}\n";
+  var issuesNotes$1 = ".issue-label{text-transform:initial}.warning>p:first-child{margin-top:0}.warning{padding:.5em;border-left-width:.5em;border-left-style:solid}span.warning{padding:.1em .5em .15em}.issue.closed span.issue-number{text-decoration:line-through}.warning{border-color:#f11;border-width:.2em;border-style:solid;background:#fbe9e9}.warning-title:before{content:\"⚠\";font-size:1.3em;float:left;padding-right:.3em;margin-top:-.3em}li.task-list-item{list-style:none}input.task-list-item-checkbox{margin:0 .35em .25em -1.6em;vertical-align:middle}.issue a.respec-gh-label{padding:5px;margin:0 2px 0 2px;font-size:10px;text-transform:none;text-decoration:none;font-weight:700;border-radius:4px;position:relative;bottom:2px;border:none;display:inline-block}div.impnote-title{padding-right:1em;min-width:7.5em;color:#0060a9}div.impnote-title span{text-transform:uppercase}div.impnote{margin-top:1em;margin-bottom:1em}.impnote>p:first-child{margin-top:0}.impnote{padding:.5em;border-left-width:.5em;border-left-style:solid}div.impnote{padding:1em 1.2em .5em;margin:1em 0;position:relative;clear:both}span.impnote{padding:.1em .5em .15em}.impnote{border-color:#0060a9;background:#e5f4ff}";
 
   var issuesNotes$2 = /*#__PURE__*/Object.freeze({
     __proto__: null,
     'default': issuesNotes$1
   });
 
-  var caniuse$1 = "/* container for stats */\n.caniuse-stats {\n  display: flex;\n  flex-wrap: wrap;\n  justify-content: flex-start;\n  align-items: baseline;\n  cursor: pointer;\n}\n\nbutton.caniuse-cell {\n  margin: 1px 1px 0 0;\n  border: none;\n}\n\n.caniuse-browser {\n  position: relative;\n}\n\n/* handle case when printing */\n@media print {\n  .caniuse-cell.y::before {\n    content: \"✔️\";\n    padding: 0.5em;\n  }\n\n  .caniuse-cell.n::before{\n    content: \"❌\";\n    padding: 0.5em;\n  }\n\n  .caniuse-cell.d::before,\n  .caniuse-cell.a::before,\n  .caniuse-cell.x::before,\n  .caniuse-cell.p::before {\n    content: \"⚠️\";\n    padding: 0.5em;\n  }\n}\n\n/* reset styles, hide old versions by default */\n.caniuse-browser ul {\n  display: none;\n  margin: 0;\n  padding: 0;\n  list-style: none;\n  position: absolute;\n  left: 0;\n  z-index: 2;\n  background: #fff;\n  margin-top: 1px;\n}\n\n.caniuse-stats a {\n  white-space: nowrap;\n  align-self: center;\n  margin-left: .5em;\n}\n\n/* a browser version */\n.caniuse-cell {\n  display: flex;\n  color: rgba(0, 0, 0, 0.8);\n  font-size: 90%;\n  height: 0.8cm;\n  margin-right: 1px;\n  margin-top: 0;\n  min-width: 3cm;\n  overflow: visible;\n  justify-content: center;\n  align-items: center;\n}\n\nli.caniuse-cell {\n  margin-bottom: 1px;\n}\n\n.caniuse-cell:focus {\n  outline: none;\n}\n\n.caniuse-cell:hover {\n  color: rgba(0, 0, 0, 1);\n}\n\n/* supports */\n.caniuse-cell.y {\n  background: #8bc34a;\n}\n\n/* no support */\n.caniuse-cell.n {\n  background: #e53935;\n}\n\n/* not supported by default / partial support etc\nsee https://github.com/Fyrd/caniuse/blob/master/CONTRIBUTING.md for stats */\n.caniuse-cell.d,\n.caniuse-cell.a,\n.caniuse-cell.x,\n.caniuse-cell.p {\n  background: #ffc107;\n}\n\n/* show rest of the browser versions */\n.caniuse-stats button:focus + ul,\n.caniuse-stats .caniuse-browser:hover > ul {\n  display: block;\n}\n";
+  var regpict$1 = "text.regBitNumMiddle{text-anchor:middle;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:8pt}text.regBitNumEnd{text-anchor:end;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:8pt}text.regBitNumStart{text-anchor:start;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:8pt}text.regBitWidth{text-anchor:middle;fill:none;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-weight:700;font-size:11pt}text.regByteNumMiddle{text-anchor:middle;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:11pt}text.regRowTagLeft{text-anchor:end;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:11pt}text.regRowTagRight{text-anchor:start;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:11pt}g line.regBitNumLine{stroke:grey;stroke-width:1px}g line.regBitNumLine_Hide{stroke:none;stroke-width:1px}g path.regFieldBox,g rect.regFieldBox{fill:#fff;stroke:#000;stroke-width:1.5px}g.regAttr_reserved path.regFieldBox,g.regAttr_reserved rect.regFieldBox,g.regAttr_rsvd path.regFieldBox,g.regAttr_rsvd rect.regFieldBox,g.regAttr_rsvdp path.regFieldBox,g.regAttr_rsvdp rect.regFieldBox,g.regAttr_rsvdz path.regFieldBox,g.regAttr_rsvdz rect.regFieldBox,g.regAttr_unused path.regFieldBox,g.regAttr_unused rect.regFieldBox,g.regFieldUnused path.regFieldBox,g.regFieldUnused rect.regFieldBox{fill:#e8e8e8}g.regFieldExternal line.regFieldBox,g.regFieldInternal line.regFieldBox{stroke:#000}g.regFieldUnused line.regFieldBox,g.regFieldUnused path.regFieldBox,g.regFieldUnused rect.regFieldBox{stroke:grey}g.regFieldUnused text.regFieldName,g.regFieldUnused text.regFieldValue{fill:grey}g.regFieldHidden line.regBitNumLine,g.regFieldHidden line.regBitNumLine_Hide,g.regFieldHidden line.regFieldBox,g.regFieldHidden path.regBitBracket,g.regFieldHidden path.regBitLine,g.regFieldHidden path.regFieldBox,g.regFieldHidden rect.regFieldBox,g.regFieldHidden text.regBitNumEnd,g.regFieldHidden text.regBitNumMiddle,g.regFieldHidden text.regBitNumStart,g.regFieldHidden text.regFieldExtendsLeft,g.regFieldHidden text.regFieldExtendsRight,g.regFieldHidden text.regFieldName,g.regFieldHidden text.regFieldValue{fill:none;stroke:none}g text.regFieldValue,g.regFieldInternal text.regFieldName{text-anchor:middle}g text.regFieldExtendsRight,g.regFieldOverflowLSB text.regBitNumEnd{text-anchor:start}g text.regFieldExtendsLeft,g.regFieldOverflowMSB text.regBitNumStart{text-anchor:end}g text.regFieldName,g text.regFieldValue{font-size:11pt;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif}g.regFieldExternal1 path.regBitBracket,g.regFieldExternal1 path.regBitLine{stroke:#000;stroke-width:1px}g.regFieldExternal0 path.regBitLine{stroke:green;stroke-dasharray:4,2;stroke-width:1px}g.regFieldExternal0 path.regBitBracket{stroke:green;stroke-width:1px}svg text.regFieldValue{fill:#0060a9;font-family:monospace}svg.regpict{color:green}svg .svg_error text:not(.regBitWidth):not(.regBitNumMiddle):not(.regBitNumEnd):not(.regBitNumStart){fill:red;font-size:12pt;font-weight:700;font-style:normal;font-family:monospace}figure div.json,figure pre.json{color:#005a9c;display:inherit}@media screen{g.regLink:focus path.regFieldBox,g.regLink:focus rect.regFieldBox,g.regLink:hover path.regFieldBox,g.regLink:hover rect.regFieldBox{fill:#ffa;stroke:#00f;stroke-width:2.5px}g.regLink.regFieldExternal:focus path.regBitBracket,g.regLink.regFieldExternal:hover path.regBitBracket,g.regLink:focus line.regBitNumLine,g.regLink:focus line.regBitNumLine_Hide,g.regLink:focus line.regFieldBox,g.regLink:focus path.regBitLine,g.regLink:focus path.regFieldBox,g.regLink:hover line.regBitNumLine,g.regLink:hover line.regBitNumLine_Hide,g.regLink:hover line.regFieldBox,g.regLink:hover path.regBitLine,g.regLink:hover path.regFieldBox{stroke:#00f}g.regLink.regFieldExternal:focus text.regFieldValue,g.regLink.regFieldExternal:hover text.regFieldValue,g.regLink:focus text.regFieldName,g.regLink:hover text.regFieldName{fill:#00f;font-weight:700}g.regLink:focus text.regBitNumEnd,g.regLink:focus text.regBitNumMiddle,g.regLink:focus text.regBitNumStart,g.regLink:hover text.regBitNumEnd,g.regLink:hover text.regBitNumMiddle,g.regLink:hover text.regBitNumStart{fill:#00f;font-weight:700;font-size:9pt}g.regLink:focus text.regBitWidth,g.regLink:hover text.regBitWidth{fill:#00f}}";
+
+  var regpict$2 = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    'default': regpict$1
+  });
+
+  var caniuse$1 = ".caniuse-stats{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:baseline;cursor:pointer}button.caniuse-cell{margin:1px 1px 0 0;border:none}.caniuse-browser{position:relative}@media print{.caniuse-cell.y::before{content:\"✔️\";padding:.5em}.caniuse-cell.n::before{content:\"❌\";padding:.5em}.caniuse-cell.a::before,.caniuse-cell.d::before,.caniuse-cell.p::before,.caniuse-cell.x::before{content:\"⚠️\";padding:.5em}}.caniuse-browser ul{display:none;margin:0;padding:0;list-style:none;position:absolute;left:0;z-index:2;background:#fff;margin-top:1px}.caniuse-stats a{white-space:nowrap;align-self:center;margin-left:.5em}.caniuse-cell{display:flex;color:rgba(0,0,0,.8);font-size:90%;height:.8cm;margin-right:1px;margin-top:0;min-width:3cm;overflow:visible;justify-content:center;align-items:center}li.caniuse-cell{margin-bottom:1px}.caniuse-cell:focus{outline:0}.caniuse-cell:hover{color:#000}.caniuse-cell.y{background:#8bc34a}.caniuse-cell.n{background:#e53935}.caniuse-cell.a,.caniuse-cell.d,.caniuse-cell.p,.caniuse-cell.x{background:#ffc107}.caniuse-stats .caniuse-browser:hover>ul,.caniuse-stats button:focus+ul{display:block}";
 
   var caniuse$2 = /*#__PURE__*/Object.freeze({
     __proto__: null,
     'default': caniuse$1
   });
 
-  var mdnAnnotation$1 = ".mdn {\n  display: block;\n  font: 12px sans-serif;\n  position: absolute;\n  z-index: 9;\n  right: 0.3em;\n  background-color: #eee;\n  margin: -26px 0 0 0;\n  padding: 7px 5px 5px 6px;\n  min-width: 140px;\n  box-shadow: 0 0 3px #999;\n}\n\n.mdn button {\n  cursor: pointer;\n  border: none;\n  color: #000;\n  background: transparent;\n  margin: -8px;\n  outline: none;\n}\n\n.mdn b {\n  color: #fff;\n  background-color: #000;\n  font-weight: normal;\n  font-family: zillaslab, Palatino, \"Palatino Linotype\", serif;\n  padding: 2px 3px 0px 3px;\n  line-height: 1.3em;\n  vertical-align: top;\n}\n\n.mdn > div > div {\n  display: inline-block;\n  margin-left: 5px;\n}\n\n\n.nosupportdata {\n  font-style: italic;\n  margin-top: 4px;\n  margin-left: 8px;\n  padding-bottom: 8px;\n}\n\n.mdnsupport {\n  display: table;\n  margin-top: 4px;\n}\n\n.mdnsupport > span {\n  display: table-row;\n  padding: 0.2em 0;\n  padding-top: 0.2em;\n  font-size: 9.6px;\n}\n\n.mdnsupport > span > span {\n  display: table-cell;\n  padding: 0 0.5em;\n  vertical-align: top;\n  line-height: 1.5em;\n}\n\n.mdnsupport > span > span:last-child {\n  text-align: right;\n  padding: 0;\n}\n\n.mdnsupport > span.no {\n  color: #cccccc;\n  filter: grayscale(100%);\n}\n\n.mdnsupport > span.unknown {\n  color: #cccccc;\n  filter: grayscale(100%);\n}\n\n.mdnsupport > span.no::before {\n  opacity: 0.5;\n}\n\n.mdnsupport > span.unknown::before {\n  opacity: 0.5;\n}\n\n.mdnsupport > span::before {\n  content: \"\";\n  display: table-cell;\n  min-width: 1.5em;\n  height: 1.5em;\n  background: no-repeat center center / contain;\n  text-align: right;\n  font-size: 0.75em;\n  font-weight: bold;\n}\n\n.mdnsupport > .chrome::before,\n.mdnsupport > .chrome_android::before {\n  background-image: url(https://resources.whatwg.org/browser-logos/chrome.svg);\n}\n\n.mdnsupport > .edge::before,\n.mdnsupport > .edge_mobile::before {\n  background-image: url(https://resources.whatwg.org/browser-logos/edge.svg);\n}\n\n.mdnsupport > .firefox::before,\n.mdnsupport > .firefox_android::before {\n  background-image: url(https://resources.whatwg.org/browser-logos/firefox.png);\n}\n\n.mdnsupport > .ie::before {\n  background-image: url(https://resources.whatwg.org/browser-logos/ie.png);\n}\n\n.mdnsupport > .opera::before,\n.mdnsupport > .opera_android::before {\n  background-image: url(https://resources.whatwg.org/browser-logos/opera.svg);\n}\n\n.mdnsupport > .safari::before {\n  background-image: url(https://resources.whatwg.org/browser-logos/safari.png);\n}\n\n.mdnsupport > .safari_ios::before {\n  background-image: url(https://resources.whatwg.org/browser-logos/safari-ios.svg);\n}\n\n.mdnsupport > .samsunginternet_android::before {\n  background-image: url(https://resources.whatwg.org/browser-logos/samsung.svg);\n}\n\n.mdnsupport > .webview_android::before {\n  background-image: url(https://cdnjs.loli.net/ajax/libs/browser-logos/41.0.0/android-webview-beta/android-webview-beta_32x32.png);\n}\n\n.mdn.wrapped div:nth-child(n + 3) {\n  display: none;\n}\n\n.mdn div:nth-child(n + 3) > b {\n  color: #eee;\n  background-color: #eee;\n}\n\np + .mdn {\n  margin-top: -45px;\n}\n\n.mdn.before {\n  margin-top: 3em;\n}\n\nh2 + .mdn {\n  margin: -48px 0 0 0;\n}\n\nh3 + .mdn {\n  margin: -46px 0 0 0;\n}\n\nh4 + .mdn {\n  margin: -42px 0 0 0;\n}\n\nh5 + .mdn {\n  margin: -40px 0 0 0;\n}\n\nh6 + .mdn {\n  margin: -40px 0 0 0;\n}\n\n.mdn div {\n  margin: 0;\n}\n\n.mdn :link {\n  color: #0000ee;\n}\n\n.mdn :visited {\n  color: #551a8b;\n}\n\n.mdn :link:active,\n:visited:active {\n  color: #ff0000;\n}\n\n.mdn :link,\n:visited {\n  text-decoration: underline;\n  cursor: pointer;\n}\n\n.mdn.wrapped {\n  min-width: 0px;\n}\n\n.mdn.wrapped > div > div {\n  display: none;\n}\n\n.mdn:hover {\n  z-index: 11;\n}\n\n.mdn:focus-within {\n  z-index: 11;\n}\n";
+  var mdnAnnotation$1 = ".mdn{display:block;font:12px sans-serif;position:absolute;z-index:9;right:.3em;background-color:#eee;margin:-26px 0 0 0;padding:7px 5px 5px 6px;min-width:140px;box-shadow:0 0 3px #999}.mdn button{cursor:pointer;border:none;color:#000;background:0 0;margin:-8px;outline:0}.mdn b{color:#fff;background-color:#000;font-weight:400;font-family:zillaslab,Palatino,\"Palatino Linotype\",serif;padding:2px 3px 0 3px;line-height:1.3em;vertical-align:top}.mdn>div>div{display:inline-block;margin-left:5px}.nosupportdata{font-style:italic;margin-top:4px;margin-left:8px;padding-bottom:8px}.mdnsupport{display:table;margin-top:4px}.mdnsupport>span{display:table-row;padding:.2em 0;padding-top:.2em;font-size:9.6px}.mdnsupport>span>span{display:table-cell;padding:0 .5em;vertical-align:top;line-height:1.5em}.mdnsupport>span>span:last-child{text-align:right;padding:0}.mdnsupport>span.no{color:#ccc;filter:grayscale(100%)}.mdnsupport>span.unknown{color:#ccc;filter:grayscale(100%)}.mdnsupport>span.no::before{opacity:.5}.mdnsupport>span.unknown::before{opacity:.5}.mdnsupport>span::before{content:\"\";display:table-cell;min-width:1.5em;height:1.5em;background:no-repeat center center/contain;text-align:right;font-size:.75em;font-weight:700}.mdnsupport>.chrome::before,.mdnsupport>.chrome_android::before{background-image:url(https://resources.whatwg.org/browser-logos/chrome.svg)}.mdnsupport>.edge::before,.mdnsupport>.edge_mobile::before{background-image:url(https://resources.whatwg.org/browser-logos/edge.svg)}.mdnsupport>.firefox::before,.mdnsupport>.firefox_android::before{background-image:url(https://resources.whatwg.org/browser-logos/firefox.png)}.mdnsupport>.ie::before{background-image:url(https://resources.whatwg.org/browser-logos/ie.png)}.mdnsupport>.opera::before,.mdnsupport>.opera_android::before{background-image:url(https://resources.whatwg.org/browser-logos/opera.svg)}.mdnsupport>.safari::before{background-image:url(https://resources.whatwg.org/browser-logos/safari.png)}.mdnsupport>.safari_ios::before{background-image:url(https://resources.whatwg.org/browser-logos/safari-ios.svg)}.mdnsupport>.samsunginternet_android::before{background-image:url(https://resources.whatwg.org/browser-logos/samsung.svg)}.mdnsupport>.webview_android::before{background-image:url(https://cdnjs.loli.net/ajax/libs/browser-logos/41.0.0/android-webview-beta/android-webview-beta_32x32.png)}.mdn.wrapped div:nth-child(n+3){display:none}.mdn div:nth-child(n+3)>b{color:#eee;background-color:#eee}p+.mdn{margin-top:-45px}.mdn.before{margin-top:3em}h2+.mdn{margin:-48px 0 0 0}h3+.mdn{margin:-46px 0 0 0}h4+.mdn{margin:-42px 0 0 0}h5+.mdn{margin:-40px 0 0 0}h6+.mdn{margin:-40px 0 0 0}.mdn div{margin:0}.mdn :link{color:#00e}.mdn :visited{color:#551a8b}.mdn :link:active,:visited:active{color:red}.mdn :link,:visited{text-decoration:underline;cursor:pointer}.mdn.wrapped{min-width:0}.mdn.wrapped>div>div{display:none}.mdn:hover{z-index:11}.mdn:focus-within{z-index:11}";
 
   var mdnAnnotation$2 = /*#__PURE__*/Object.freeze({
     __proto__: null,
     'default': mdnAnnotation$1
   });
 
-  var dfnPanel$1 = "/* dfn popup panel that list all local references to a dfn */\ndfn {\n  cursor: pointer;\n}\n\n.dfn-panel {\n  position: absolute;\n  left: var(--left); /* set via JS */\n  top: var(--top); /* set via JS */\n  z-index: 35;\n  height: auto;\n  width: max-content;\n  max-width: 300px;\n  max-height: 500px;\n  overflow: auto;\n  padding: 0.5em 0.75em;\n  font: small Helvetica Neue, sans-serif, Droid Sans Fallback;\n  background: #dddddd;\n  color: black;\n  border: outset 0.2em;\n}\n\n.dfn-panel * {\n  margin: 0;\n}\n\n.dfn-panel > b {\n  display: block;\n}\n\n.dfn-panel ul a[href] {\n  color: black;\n}\n\n.dfn-panel a:not(:hover) {\n  text-decoration: none !important;\n  border-bottom: none !important;\n}\n\n.dfn-panel a[href]:hover {\n  border-bottom-width: 1px;\n}\n\n.dfn-panel > b + b {\n  margin-top: 0.25em;\n}\n\n.dfn-panel ul {\n  padding: 0;\n}\n\n.dfn-panel li {\n  list-style: inside;\n}\n\n.dfn-panel.docked {\n  display: inline-block;\n  position: fixed;\n  left: 0.5em;\n  top: unset;\n  bottom: 2em;\n  margin: 0 auto;\n  /* 0.75em from padding (x2), 0.5em from left position, 0.2em border (x2) */\n  max-width: calc(100vw - 0.75em * 2 - 0.5em - 0.2em * 2);\n  max-height: 30vh;\n}\n";
+  var dfnPanel$1 = "dfn{cursor:pointer}.dfn-panel{--fill:#fff;position:absolute;left:var(--left);top:var(--top);z-index:35;min-width:300px;max-width:500px;padding:.5em .75em;margin-top:.6em;font:small Helvetica Neue,sans-serif,Droid Sans Fallback;background:var(--fill);color:#000;box-shadow:0 1em 3em -.4em rgba(0,0,0,.3),0 0 1px 1px rgba(0,0,0,.05);border-radius:2px}.dfn-panel:not(.docked)::after,.dfn-panel:not(.docked)::before{content:\"\";position:absolute;border:10px solid transparent;border-top:0;border-bottom:9px solid #a2a9b1;top:-9px;left:calc(var(--caret-offset,0px) + .75em)}.dfn-panel:not(.docked)::after{border-bottom:10px solid var(--fill)}.dfn-panel *{margin:0}.dfn-panel>b{display:block}.dfn-panel ul a[href]{color:#333}.dfn-panel a:not(:hover){text-decoration:none!important;border-bottom:none!important}.dfn-panel a[href]:hover{border-bottom-width:1px}.dfn-panel>b+b{margin-top:.25em}.dfn-panel ul{padding:0}.dfn-panel li{margin-left:1em}.dfn-panel.docked{display:inline-block;position:fixed;left:.5em;top:unset;bottom:2em;margin:0 auto;max-width:calc(100vw - .75em * 2 - .5em - .2em * 2);max-height:30vh;overflow:auto}";
 
   var dfnPanel$2 = /*#__PURE__*/Object.freeze({
     __proto__: null,
     'default': dfnPanel$1
   });
 
-  var datatype = "var {\n  position: relative;\n  cursor: pointer;\n}\n\nvar[data-type]::before,\nvar[data-type]::after {\n  position: absolute;\n  left: 50%;\n  top: -6px;\n  opacity: 0;\n  transition: opacity 0.4s;\n  pointer-events: none;\n}\n\n/* the triangle or arrow or caret or whatever */\nvar[data-type]::before {\n  content: \"\";\n  transform: translateX(-50%);\n  border-width: 4px 6px 0 6px;\n  border-style: solid;\n  border-color: transparent;\n  border-top-color: #000;\n}\n\n/* actual text */\nvar[data-type]::after {\n  content: attr(data-type);\n  transform: translateX(-50%) translateY(-100%);\n  background: #000;\n  text-align: center;\n  /* additional styling */\n  font-family: \"Dank Mono\", \"Fira Code\", monospace;\n  font-style: normal;\n  padding: 6px;\n  border-radius: 3px;\n  color: #daca88;\n  text-indent: 0;\n  font-weight: normal;\n}\n\nvar[data-type]:hover::after,\nvar[data-type]:hover::before {\n  opacity: 1;\n}\n";
+  var datatype = "var{position:relative;cursor:pointer}var[data-type]::after,var[data-type]::before{position:absolute;left:50%;top:-6px;opacity:0;transition:opacity .4s;pointer-events:none}var[data-type]::before{content:\"\";transform:translateX(-50%);border-width:4px 6px 0 6px;border-style:solid;border-color:transparent;border-top-color:#000}var[data-type]::after{content:attr(data-type);transform:translateX(-50%) translateY(-100%);background:#000;text-align:center;font-family:\"Dank Mono\",\"Fira Code\",monospace;font-style:normal;padding:6px;border-radius:3px;color:#daca88;text-indent:0;font-weight:400}var[data-type]:hover::after,var[data-type]:hover::before{opacity:1}";
 
   var datatype$1 = /*#__PURE__*/Object.freeze({
     __proto__: null,
     'default': datatype
   });
 
-  var algorithms$1 = "/* For assertions in lists containing algorithms */\n\n.assert {\n    background: #EEE;\n    border-left: 0.5em solid #AAA;\n    padding: 0.3em;\n}\n";
+  var algorithms$1 = ".assert{background:#eee;border-left:.5em solid #aaa;padding:.3em}";
 
   var algorithms$2 = /*#__PURE__*/Object.freeze({
     __proto__: null,
     'default': algorithms$1
+  });
+
+  var railroad$1 = "svg{background-color:#f4f2ef}svg path{stroke-width:3;stroke:#000;fill:transparent}svg text{text-anchor:middle;white-space:pre}svg text.diagram-text{font-size:12px}svg text.diagram-arrow{font-size:16px}svg text.label{text-anchor:start}svg text.comment{font:italic 12px monospace}svg rect{stroke-width:3;stroke:#000;fill:#ccfecc}svg rect.group-box{stroke:gray;stroke-dasharray:10,5;fill:none}svg path.diagram-text{stroke-width:3;stroke:#000;fill:#fff;cursor:help}svg g.diagram-text:hover path.diagram-text{fill:#eee}figure.railroad pre{display:none}figure.railroad pre.debug,figure.railroad.debug pre{display:inherit}";
+
+  var railroad$2 = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    'default': railroad$1
   });
 
 }());
