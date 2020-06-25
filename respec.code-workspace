@@ -20,6 +20,9 @@
 		},
 		{
 		   	"path": "Spec"
+		},
+		{
+			"path": "profiles"
 		}
 	],
 	"settings": {
