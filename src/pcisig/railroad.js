@@ -357,6 +357,14 @@ const Options = {
 }
 // funcs.Sequence = (...args) => new Sequence(...args);
 
+/* export */ class Element extends Sequence {
+  constructor(tag, ...items) {
+    super(items);
+    this.items.unshift(new Terminal(`&lt;${tag}&gt;`));
+    this.items.push(new Terminal(`&lt;/${tag.split(" ")[0]}&gt;`));
+  }
+}
+
 /* export */ class Stack extends DiagramMultiContainer {
   constructor(...items) {
     super("g", items);
@@ -1663,6 +1671,9 @@ function jsonToSVG(item, level = 0) {
           break;
         case "Sequence":
           retval = new Sequence(...itemMap);
+          break;
+        case "Element":
+          retval = new Element(...itemMap);
           break;
         case "Stack":
           retval = new Stack(...itemMap);
