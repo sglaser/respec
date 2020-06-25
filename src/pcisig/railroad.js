@@ -359,9 +359,7 @@ const Options = {
 
 /* export */ class Element extends Sequence {
   constructor(tag, ...items) {
-    super(items);
-    this.items.unshift(new Terminal(`&lt;${tag}&gt;`));
-    this.items.push(new Terminal(`&lt;/${tag.split(" ")[0]}&gt;`));
+    super(`<${tag}>`, items, `</${tag.split(" ")[0]}>`);
   }
 }
 
@@ -1647,7 +1645,7 @@ function* enumerate(iter) {
 function jsonToSVG(item, level = 0) {
   let retval = "";
   if (typeof item == "string") {
-    retval = /\d+/.test(item) ? parseInt(item) : item;
+    retval = /^\s*\d+\s*$/.test(item) ? parseInt(item) : item;
   } else if (typeof item == "number") retval = item;
   else if (Array.isArray(item)) {
     if (item.length > 0 && typeof item[0] == "string") {
