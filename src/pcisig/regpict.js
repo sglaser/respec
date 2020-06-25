@@ -7,7 +7,7 @@
 import { addId, showInlineError } from "../core/utils.js";
 import { SVG } from "../../js/deps/svg.esm.js";
 import { fetchAsset } from "../core/text-loader.js";
-import { hyperHTML } from "../core/import-maps.js";
+import { html } from "../core/import-maps.js";
 // import { parse_table } from "./draw-csrs.js";
 import { pub } from "../core/pubsubhub.js";
 // import css from "text!../../src/pcisig/css/regpict.css";
@@ -99,9 +99,9 @@ class Path {
 
 async function loadStyle() {
   try {
-    return (await import("text!../../assets/examples.css")).default;
+    return (await import("text!../../assets/regpict.css")).default;
   } catch {
-    return fetchAsset("examples.css");
+    return fetchAsset("regpict.css");
   }
 }
 
@@ -1276,9 +1276,11 @@ export async function run(conf) {
   if (!conf.noRegpictCSS) {
     const css = await cssPromise;
     document.head.insertBefore(
-      hyperHTML`<style>
-${css}
-</style>`,
+      html`
+        <style>
+          ${css}
+        </style>
+      `,
       document.querySelector("link")
     );
   }
@@ -1334,6 +1336,7 @@ ${css}
           mergeJSON(json, fig.getAttribute("data-json"));
         } catch (e) {
           console.log(`error: ${e.toString()}`);
+          // @ts-ignore
           showInlineError(fig, "Invalid data-json attribute", "");
         }
       }
@@ -1360,6 +1363,7 @@ ${css}
           pre.classList.add("hide");
         } catch (e) {
           showInlineError(
+            // @ts-ignore
             pre,
             `Invalid JSON in pre.json, div.json, or span.json ${e.toString()}`,
             ""
@@ -1397,9 +1401,11 @@ ${css}
         render.forEach(node => {
           const temp = mergeElementJSON(mergeJSON({}, json), node);
           const divsvg = create_divsvg();
+          // @ts-ignore
           draw_regpict(divsvg, temp);
         });
       } else {
+        // @ts-ignore
         draw_regpict(create_divsvg(), json);
       }
       if (debug) {

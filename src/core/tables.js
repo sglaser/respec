@@ -8,10 +8,10 @@ import {
   addId,
   getIntlData,
   renameElement,
-  showInlineWarning,
+  // showInlineWarning,
   wrapInner,
 } from "./utils.js";
-import { hyperHTML } from "./import-maps.js";
+import { html } from "./import-maps.js";
 
 export const name = "core/tables";
 
@@ -32,8 +32,14 @@ export function run() {
   if (tot.length && totElement) {
     decorateTableOfTables(totElement);
     totElement.append(
-      hyperHTML`<h2>${l10n.list_of_tables}</h2>`,
-      hyperHTML`<ul class='tot'>${tot}</ul>`
+      html`
+        <h2>${l10n.list_of_tables}</h2>
+      `,
+      html`
+        <ul class="tot">
+          ${tot}
+        </ul>
+      `
     );
   }
 }
@@ -66,10 +72,19 @@ function decorateTable(table, caption, i) {
   const title = caption.textContent;
   addId(table, "tbl", title);
   // set proper caption title
-  wrapInner(caption, hyperHTML`<span class='tbl-title'>`);
+  wrapInner(
+    caption,
+    html`
+      <span class="tbl-title"></span>
+    `
+  );
   caption.prepend(
-    hyperHTML`<span class='tblhdr'>${l10n.tbl}</span>`,
-    hyperHTML`<bdi class='tblno'>${i + 1}</bdi>`,
+    html`
+      <span class="tblhdr">${l10n.tbl}</span>
+    `,
+    html`
+      <bdi class="tblno">${i + 1}</bdi>
+    `,
     " "
   );
 }
@@ -98,9 +113,11 @@ function getTableOfTablesListItem(tableId, caption) {
       // footnotes, issues, errors, and text explicitly marked noToC are not in a ToC
       anchor.remove();
     });
-  return hyperHTML`<li class='totline'>
-    <a class='tocxref' href='${`#${tableId}`}'>${totCaption.childNodes}</a>
-  </li>`;
+  return html`
+    <li class="totline">
+      <a class="tocxref" href="${`#${tableId}`}">${totCaption.childNodes}</a>
+    </li>
+  `;
 }
 
 /**

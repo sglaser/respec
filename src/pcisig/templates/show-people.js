@@ -5,7 +5,7 @@ import {
   toShortIsoDate,
 } from "../../core/utils.js";
 import { lang as defaultLang } from "../../core/l10n.js";
-import { hyperHTML as html } from "../../core/import-maps.js";
+import { html } from "../../core/import-maps.js";
 
 const localizationStrings = {
   en: {
@@ -23,7 +23,7 @@ export default (items = []) => {
   return items.map(getItem);
 
   function getItem(p) {
-    const personName = [p.name]; // treated as opt-in HTML by hyperHTML
+    const personName = [p.name]; // treated as opt-in HTML by html
     const company = [p.company];
     const editorid = p.w3cid ? parseInt(p.w3cid, 10) : null;
     /** @type {HTMLElement} */
@@ -127,7 +127,7 @@ export default (items = []) => {
       );
     }
 
-    // @ts-ignore: hyperhtml types only support Element but we use a DocumentFragment here
+    // @ts-ignore: html types only support Element but we use a DocumentFragment here
     html.bind(span)`${contents}`;
     dd.appendChild(span);
     return dd;

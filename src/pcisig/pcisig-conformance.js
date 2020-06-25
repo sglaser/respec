@@ -1,7 +1,7 @@
 // @ts-check
 // Module pcisig/conformance
 // Handle the conformance section properly.
-import { hyperHTML } from "../core/import-maps.js";
+import { html } from "../core/import-maps.js";
 import { joinAnd } from "../core/utils.js";
 import { rfc2119Usage } from "../core/inlines.js";
 export const name = "pcisig/pcisig-conformance";
@@ -18,24 +18,23 @@ function processConformance(conformance) {
     item => `<em class="rfc2119">${item}</em>`
   );
   const plural = terms.length > 1;
-  const content = hyperHTML`
+  const content = html`
     <h2>Conformance</h2>
     <p>
       As well as sections marked as non-normative, all examples, implementation
       notes, and notes in this specification are non-normative. Everything else
       in this specification is normative.
     </p>
-    ${
-      terms.length
-        ? hyperHTML`
+    ${terms.length
+      ? html`
           <p>
             The key word${plural ? "s" : ""} ${[keywords]} in this document
             ${plural ? "are" : "is"} to be interpreted as described when, and
             only when, they appear in all capitals, as shown here.
           </p>
         `
-        : null
-    }`;
+      : null}
+  `;
   conformance.prepend(...content.childNodes);
 }
 

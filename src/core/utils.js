@@ -546,7 +546,7 @@ export function addHashId(elem, prefix = "") {
 /**
  * Creates and sets an ID to an element (elem)
  * using a specific prefix if provided, and a specific text if given.
- * @param {HTMLElement} elem element
+ * @param {Element} elem element
  * @param {String} pfx prefix
  * @param {String} txt text
  * @param {Boolean} noLC do not convert to lowercase

@@ -8,7 +8,13 @@
 //  - lang: can change the generated text (supported: en, fr)
 //  - maxTocLevel: only generate a TOC so many levels deep
 
-import { addId, getIntlData, parents, renameElement, wrapInner } from "./utils.js";
+import {
+  addId,
+  getIntlData,
+  parents,
+  renameElement,
+  wrapInner,
+} from "./utils.js";
 import { html } from "./import-maps.js";
 import { pub } from "./pubsubhub.js";
 
@@ -91,12 +97,12 @@ function scanSections(sections, maxTocLevel, { prefix = "" } = {}) {
           ? l10n.appendix
           : l10n.chapter
         : l10n.section;
-    wrapInner(section.header, hyperHTML`<span class='sect-title'>`);
+    wrapInner(section.header, html`<span class="sect-title"></span>`);
     if (!section.isIntro) {
       index += 1;
       section.header.prepend(
-        html`<span class='secthdr' hidden>${secthdr}</span>`,
-        html`<bdi class='secno'>${secno} </bdi>`
+        html`<span class="secthdr" hidden>${secthdr}</span>`,
+        html`<bdi class="secno">${secno} </bdi>`
       );
     }
 

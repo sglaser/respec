@@ -11,7 +11,7 @@ import {
   showInlineWarning,
   wrapInner,
 } from "./utils.js";
-import { hyperHTML } from "./import-maps.js";
+import { html } from "./import-maps.js";
 
 export const name = "core/equations";
 
@@ -34,8 +34,14 @@ export function run() {
   if (toe.length && toeElement) {
     decorateTableOfEquations(toeElement);
     toeElement.append(
-      hyperHTML`<h2>${l10n.list_of_equations}</h2>`,
-      hyperHTML`<ul class='toe'>${toe}</ul>`
+      html`
+        <h2>${l10n.list_of_equations}</h2>
+      `,
+      html`
+        <ul class="toe">
+          ${toe}
+        </ul>
+      `
     );
   }
 }
@@ -53,6 +59,7 @@ function collectEquations() {
       decorateEquation(eqn, caption, i);
       toe.push(getTableOfEquationsListItem(eqn.id, caption));
     } else {
+      // @ts-ignore
       showInlineWarning(eqn, "Found a `<figure>` without a `<figcaption>`");
     }
   });
@@ -60,7 +67,7 @@ function collectEquations() {
 }
 
 /**
- * @param {HTMLElement} equation
+ * @param {Element} equation
  * @param {HTMLElement} caption
  * @param {number} i
  */
@@ -68,10 +75,19 @@ function decorateEquation(equation, caption, i) {
   const title = caption.textContent;
   addId(equation, "eqn", title);
   // set proper caption title
-  wrapInner(caption, hyperHTML`<span class='eqn-title'>`);
+  wrapInner(
+    caption,
+    html`
+      <span class="eqn-title"></span>
+    `
+  );
   caption.prepend(
-    hyperHTML`<span class='eqnhdr'>${l10n.eqn}</span>`,
-    hyperHTML`<bdi class='eqnno'>${i + 1}</bdi>`,
+    html`
+      <span class="eqnhdr">${l10n.eqn}</span>
+    `,
+    html`
+      <bdi class="eqnno">${i + 1}</bdi>
+    `,
     " "
   );
 }
@@ -100,9 +116,11 @@ function getTableOfEquationsListItem(equationId, caption) {
       // footnotes, issues, errors, and text explicitly marked noToC are not in a ToC
       anchor.remove();
     });
-  return hyperHTML`<li class='toeline'>
-    <a class='tocxref' href='${`#${equationId}`}'>${toeCaption.childNodes}</a>
-  </li>`;
+  return html`
+    <li class="toeline">
+      <a class="tocxref" href="${`#${equationId}`}">${toeCaption.childNodes}</a>
+    </li>
+  `;
 }
 
 function normalizeImages(doc) {

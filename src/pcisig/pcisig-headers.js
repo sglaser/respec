@@ -69,7 +69,7 @@
 //            outside of PCISIG.
 import { ISODate, concatDate, joinAnd } from "../core/utils.js";
 import headersTmpl from "./templates/headers.js";
-import { hyperHTML } from "../core/import-maps.js";
+import { html } from "../core/import-maps.js";
 import { pub } from "../core/pubsubhub.js";
 import sotdTmpl from "./templates/sotd.js";
 
@@ -571,9 +571,9 @@ export function run(conf) {
 
   // invent toc if not already present
   if (!document.body.querySelector("#toc")) {
-    document("body").prepend(
-      '<nav id="toc"><section class="introductory"></section></nav>'
-    );
+    document
+      .querySelector("body")
+      .prepend('<nav id="toc"><section class="introductory"></section></nav>');
   }
 
   // handle Revision History
@@ -607,7 +607,7 @@ export function run(conf) {
   conf.memReviewEnd = validateDateAndRecover(conf, "memReviewEnd");
   conf.humanMemReviewEnd = PCISIGDate.format(conf.memReviewEnd);
 
-  hyperHTML.bind(sotd)`${populateSoTD(conf, sotd)}`;
+  html.bind(sotd)`${populateSoTD(conf, sotd)}`;
 
   // Requested by https://github.com/w3c/respec/issues/504
   // Makes a record of a few auto-generated things.

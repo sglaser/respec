@@ -4,7 +4,7 @@
 
 import { addId, makeSafeCopy, showInlineError } from "../core/utils.js";
 import { decorateDfn } from "../core/dfn-finder.js";
-import { hyperHTML } from "../core/import-maps.js";
+import { html } from "../core/import-maps.js";
 
 export const name = "pcisig/draw-csrs";
 
@@ -40,7 +40,13 @@ export function insert_unused_table_rows(tbl, json) {
                 last_lsb - 1 === msb
                   ? `${msb + 1}`
                   : `${last_lsb - 1}:${msb + 1}`;
-              const new_row = hyperHTML`<tr><td>${bit_location}</td><td>${json.defaultUnused}</td><td>${json.defaultUnused}</td></tr>`;
+              const new_row = html`
+                <tr>
+                  <td>${bit_location}</td>
+                  <td>${json.defaultUnused}</td>
+                  <td>${json.defaultUnused}</td>
+                </tr>
+              `;
               tbody.appendChild(new_row);
               // console.log(`rows[${item.index}].after(${new_row})`);
             }
@@ -50,14 +56,26 @@ export function insert_unused_table_rows(tbl, json) {
       }
       if (last_lsb > 0) {
         const bit_location = last_lsb - 1 === 1 ? "0" : `${last_lsb - 1}:0`;
-        const new_row = hyperHTML`<tr><td>${bit_location}</td><td>${json.defaultUnused}</td><td>${json.defaultUnused}</td></tr>`;
+        const new_row = html`
+          <tr>
+            <td>${bit_location}</td>
+            <td>${json.defaultUnused}</td>
+            <td>${json.defaultUnused}</td>
+          </tr>
+        `;
         tbody.appendChild(new_row);
         // console.log(`tbody.appendChild(${new_row}`);
         // console.log(`tbody=${tbody.innerHTML}`);
       }
     } else {
       const bit_location = last_lsb - 1 === 1 ? "0" : `${last_lsb - 1}:0`;
-      const new_row = hyperHTML`<tr><td>${bit_location}</td><td>${json.defaultUnused}</td><td>${json.defaultUnused}</td></tr>`;
+      const new_row = html`
+        <tr>
+          <td>${bit_location}</td>
+          <td>${json.defaultUnused}</td>
+          <td>${json.defaultUnused}</td>
+        </tr>
+      `;
       tbody.appendChild(new_row);
       // console.log(`tbody.appendChild(${new_row})`);
     }
@@ -163,6 +181,7 @@ export function parse_table(tbl) {
         dfn.setAttribute("data-dfn-type", "field");
         addId(dfn, "field", `${tblName}-${fieldName.toLowerCase()}`);
         decorateDfn(
+          // @ts-ignore
           dfn,
           { type: "field", generic: "field" },
           tblName,
@@ -176,6 +195,7 @@ export function parse_table(tbl) {
             value = JSON.parse(val.textContent.trim());
           } catch (e) {
             showInlineError(
+              // @ts-ignore
               val,
               `Invalid json in next span.value ${e.toString()}`,
               ""
@@ -235,6 +255,7 @@ export async function run() {
     .querySelectorAll("figure.regipct-generated")
     .forEach(item => item.remove());
   document.querySelectorAll("table.register").forEach(tbl => {
+    // @ts-ignore
     const json = parse_table(tbl);
     // console.log(
     //   `draw-csrs.table.register json = ${JSON.stringify(json, null, 2)}`
