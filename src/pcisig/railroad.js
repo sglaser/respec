@@ -14,9 +14,9 @@ I would appreciate attribution, but that is not required by the license.
 */
 
 import { fetchAsset } from "../core/text-loader.js";
-import { html } from "../core/import-maps.js";
+// import { html } from "../core/import-maps.js";
 
-export const name = "pcisig/structure";
+export const name = "pcisig/railroad";
 // const funcs = {};
 // export default funcs;
 
