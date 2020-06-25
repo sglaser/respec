@@ -7,12 +7,12 @@
     </title>
     <link href="../Spec/StyleSheets/2019/base.css"
           rel="stylesheet">
-    <!--<script async="async"
+    <script async="async"
           class="remove"
-          src="../builds/respec-pcisig.js"></script>-->
-    <script async
+          src="../builds/respec-pcisig.js"></script>
+    <!-- <script async
             class="remove"
-            src='../profiles/pcisig.js'></script>
+            src='../profiles/pcisig.js'></script> -->
     <script class="remove">
     const respecConfig = {
       specStatus: "WD",
@@ -271,6 +271,29 @@
         <figcaption>
           Equation Three
         </figcaption>
+      </figure>
+    </section>
+    <section id="sect-railroad">
+      <h2>Railroad Diagrams</h2>
+      <figure id="fig-railroad1" class="railroad debug">
+        <style>
+          svg.railroad-diagram g.plugh rect { fill: lightblue}
+          svg.railroad-diagram g.xyzzy rect { fill: lightcoral}
+        </style>
+        <pre>
+          [ "ComplexDiagram",
+            [ "Choice", 0, ["Skip"], "-"],
+            [ "Choice", 0, ["NonTerminal", "name-start char"],
+                           ["NonTerminal", "escape"]],
+            [ "ZeroOrMore", [
+              "Choice", 0, ["NonTerminal", "name char", { "cls": "xyzzy" } ],
+                           ["NonTerminal", "escape"] ]],
+            [ "Terminal", "terminal", { "cls": "plugh",
+                                        "title": "This is the Title for this 'terminal'",
+                                         "href": "#other-inner-introductory-section"} ]
+          ]
+        </pre>
+        <figcaption>Railroad Diagram 1</figcaption>
       </figure>
     </section>
     <section id="sect-example-figures-equations-and-tables-2">

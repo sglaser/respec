@@ -71,6 +71,7 @@ const modules = [
   import("../src/core/anchor-expander.js"),
   import("../src/pcisig/include-final-config.js"),
   import("../src/core/custom-elements/index.js"),
+  import("../src/pcisig/railroad.js"),
   /* Linter must be the last thing to run */
   import("../src/core/linter.js"),
 ];
