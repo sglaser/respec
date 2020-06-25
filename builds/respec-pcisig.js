@@ -25739,7 +25739,9 @@ window.respecVersion = "25.6.2";
     run: run$M
   });
 
-  const name$10 = "pcisig/structure";
+  // import { html } from "../core/import-maps.js";
+
+  const name$10 = "pcisig/railroad";
   // const funcs = {};
   // export default funcs;
 
@@ -26079,6 +26081,14 @@ window.respecVersion = "25.6.2";
     }
   }
   // funcs.Sequence = (...args) => new Sequence(...args);
+
+  /* export */ class Element$1 extends Sequence {
+    constructor(tag, ...items) {
+      super(items);
+      this.items.unshift(new Terminal(`&lt;${tag}&gt;`));
+      this.items.push(new Terminal(`&lt;/${tag.split(" ")[0]}&gt;`));
+    }
+  }
 
   /* export */ class Stack extends DiagramMultiContainer {
     constructor(...items) {
@@ -27386,6 +27396,9 @@ window.respecVersion = "25.6.2";
             break;
           case "Sequence":
             retval = new Sequence(...itemMap);
+            break;
+          case "Element":
+            retval = new Element$1(...itemMap);
             break;
           case "Stack":
             retval = new Stack(...itemMap);
