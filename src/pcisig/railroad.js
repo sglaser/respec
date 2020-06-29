@@ -359,7 +359,7 @@ const Options = {
 
 /* export */ class Element extends Sequence {
   constructor(tag, ...items) {
-    super(`<${tag}>`, items, `</${tag.split(" ")[0]}>`);
+    super(`<${tag}>`, ...items, `</${tag.split(" ")[0]}>`);
   }
 }
 
@@ -1644,17 +1644,24 @@ function* enumerate(iter) {
 
 function jsonToSVG(item, level = 0) {
   let retval = "";
-  if (typeof item == "string") {
+  if (item instanceof FakeSVG) {
+    retval = item;
+  } else if (typeof item == "string") {
     retval = /^\s*\d+\s*$/.test(item) ? parseInt(item) : item;
-  } else if (typeof item == "number") retval = item;
-  else if (Array.isArray(item)) {
+  } else if (typeof item == "number") {
+    retval = item;
+  } else if (Array.isArray(item)) {
     if (item.length > 0 && typeof item[0] == "string") {
       const first = item.shift();
       let attrs = {};
-      const itemMap = item.reduce((accum, x, _idx) => {
-        if (typeof x != "object" || Array.isArray(x))
+      const itemMap = item.reduce((accum, x) => {
+        if (x instanceof FakeSVG) {
+          accum.push(x);
+        } else if (typeof x == "object" && !Array.isArray(x)) {
+          attrs = { ...attrs, ...x };
+        } else {
           accum.push(jsonToSVG(x, level + 1));
-        else attrs = { ...attrs, ...x };
+        }
         return accum;
       }, []);
       switch (first) {
@@ -1730,7 +1737,9 @@ function jsonToSVG(item, level = 0) {
           );
       }
     }
-  } else retval = item.toString();
+  } else {
+    retval = item.toString();
+  }
   return retval;
 }
 
