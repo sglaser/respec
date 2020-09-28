@@ -325,12 +325,3 @@ function createTableOfContents(ol) {
   </p>`;
   document.body.append(link);
 }
-
-function appendixNumber(index) {
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const lastChar = alphabet.charAt(index % alphabet.length);
-  if (index < alphabet.length) {
-    return lastChar;
-  }
-  return appendixNumber(Math.floor(index / alphabet.length)) + lastChar;
-}
