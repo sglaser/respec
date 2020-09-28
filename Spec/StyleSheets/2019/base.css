@@ -1148,7 +1148,7 @@ svg *.svg_error text:not(.regBitWidth):not(.regBitNumMiddle):not(.regBitNumEnd):
 figure div.json,
 figure pre.json {
   color: rgb(0, 90, 156);
-  display: inherit;
+  display: none;
 }
 
 @media screen {
@@ -1364,6 +1364,14 @@ table.data.longcol9 td:first-child + td + td + td + td + td + td + td + td,
 table.data.longcol10 td:first-child + td + td + td + td + td + td + td + td + td,
 table.data.longcol11 td:first-child + td + td + td + td + td + td + td + td + td + td,
 table.data.longcol12 td:first-child + td + td + td + td + td + td + td + td + td + td + td,
+table.data.longcol13 td:first-child + td + td + td + td + td + td + td + td + td + td + td + td,
+table.data.longcol14 td:first-child + td + td + td + td + td + td + td + td + td + td + td + td + td,
+table.data.longcol15 td:first-child + td + td + td + td + td + td + td + td + td + td + td + td + td + td,
+table.data.longcol16 td:first-child + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td,
+table.data.longcol17 td:first-child + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td,
+table.data.longcol18 td:first-child + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td,
+table.data.longcol19 td:first-child + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td,
+table.data.longcol20 td:first-child + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td + td,
 table.data tbody.notes td,
 table.data td.long,
 table.pcisig_reg tbody.notes td,
@@ -1677,6 +1685,90 @@ table.index.index th:first-child {
 table.index th:first-child a {
   font-weight: bold;
 }
+
+/******************************************************************************/
+/*                          PCISIG / Base Spec Specials                       */
+/******************************************************************************/
+table#tbl-proposed-packet-type-field-encodings-with-new-tlps thead {
+    padding: 2px;
+    font-size: 65%
+}
+table#tbl-proposed-packet-type-field-encodings-with-new-tlps tbody.pkt-first8 {
+    padding: 2px;
+    background: lightyellow;
+    font-size: 65%
+}
+table#tbl-proposed-packet-type-field-encodings-with-new-tlps tr.pkt-null dfn.packet,table#tbl-proposed-packet-type-field-encodings-with-new-tlps tbody.pkt-second8 {
+    padding: 2px;
+    background: aliceblue;
+    font-size: 65%
+}
+table#tbl-proposed-packet-type-field-encodings-with-new-tlps tr.pkt-new6 {
+    padding: 2px;
+    color: red
+}
+
+/* not applicable table entry */
+td.na {
+  color: grey;
+  font-style: italic;
+}
+
+
+.ERROR {
+  color: red;
+  font-family: monospace
+}
+
+table.data td.interleave-a {
+  padding: 2px;
+  font-variant-caps: all-small-caps;
+  background: blue;
+  color: white;
+}
+
+table.data td.interleave-b {
+   padding: 2px;
+  font-variant-caps: all-small-caps;
+  background: orange;
+  color: white
+}
+
+table.data td.interleave-c {
+  padding: 2px;
+  font-variant-caps: all-small-caps;
+  background: green;
+  color: white
+}
+
+table.data td.ecc,
+table.data td.crc,
+table.data td.dlp {
+  font-variant-caps: all-small-caps ;
+  font-style:normal;
+  font-weight:bold;
+  font-family:'Courier New', Courier, monospace;
+}
+
+.red {
+  color: red;
+}
+
+table.data td.tlp {
+  padding-top: 0em;
+  font-size: xx-small;
+  font-weight: bold;
+  color:red;
+}
+
+table.data td.nop {
+  padding-top: 0em;
+  font-size: xx-small;
+  font-weight: bold;
+  color:blue;
+  background-color:  lightgrey;
+}
+
 
 /******************************************************************************/
 /*                                    PCISIG / Respec                         */
@@ -2525,7 +2617,7 @@ figure pre.json.hide {
 figure div.json,
 figure pre.json {
     color: rgb(0,90,156);
-    display: inherit;
+    display: none;
 }
 
 @media screen {
