@@ -12,8 +12,10 @@ export function run() {
     const titles = getDfnTitles(dfn);
     registerDefinition(dfn, titles);
 
-    // Default to `dfn` as the type... other modules may override
-    if (!dfn.dataset.dfnType) dfn.dataset.dfnType = "dfn";
+    // Treat Internal Slots as IDL.
+    if (!dfn.dataset.dfnType && /^\[\[\w+\]\]$/.test(titles[0])) {
+      dfn.dataset.dfnType = "idl";
+    }
 
     // Only add `lt`s that are different from the text content
     if (titles.length === 1 && titles[0] === norm(dfn.textContent)) {

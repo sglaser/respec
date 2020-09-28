@@ -14,4 +14,6 @@ js/deps/builds
 !js/profile-w3c.js
 !js/profile-pcisig.js
 !js/shortcut.js
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json

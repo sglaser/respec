@@ -48,6 +48,15 @@ const localizationStrings = {
     duplicateTitle:
       "Das Dokument enthält mehrere Definitionen dieses Eintrags.",
   },
+  zh: {
+    /**
+     * @param {string} title
+     */
+    duplicateMsg(title) {
+      return `'${title}' 的重复定义`;
+    },
+    duplicateTitle: "在文档中有重复的定义。",
+  },
 };
 const l10n = getIntlData(localizationStrings);
 
@@ -61,14 +70,9 @@ export async function run(conf) {
     "a[data-cite=''], a:not([href]):not([data-cite]):not(.logo):not(.externalDFN)"
   );
   for (const anchor of localAnchors) {
-    const linkTargets = getLinkTargets(anchor);
-    const linkTarget = linkTargets.find(
-      target =>
-        titleToDfns.has(target.title) &&
-        titleToDfns.get(target.title).has(target.for)
-    );
-    if (linkTarget) {
-      const foundLocalMatch = processAnchor(anchor, linkTarget, titleToDfns);
+    const dfn = findMatchingDfn(anchor, titleToDfns);
+    if (dfn) {
+      const foundLocalMatch = processAnchor(anchor, dfn, titleToDfns);
       if (!foundLocalMatch) {
         possibleExternalLinks.push(anchor);
       }
@@ -93,7 +97,7 @@ export async function run(conf) {
 }
 
 function mapTitleToDfns() {
-  /** @type {CaseInsensitiveMap<Map<string, HTMLElement>>} */
+  /** @type {CaseInsensitiveMap<Map<string, Map<string, HTMLElement>>>} */
   const titleToDfns = new CaseInsensitiveMap();
   for (const key of definitionMap.keys()) {
     const { result, duplicates } = collectDfns(key);
@@ -109,26 +113,31 @@ function mapTitleToDfns() {
  * @param {string} title
  */
 function collectDfns(title) {
-  /** @type {Map<string, HTMLElement>} */
+  /** @type {Map<string, Map<string, HTMLElement>>} */
   const result = new Map();
   const duplicates = [];
   for (const dfn of definitionMap.get(title)) {
-    const { dfnFor = "" } = dfn.dataset;
-    if (result.has(dfnFor)) {
+    const { dfnFor = "", dfnType = "dfn" } = dfn.dataset;
+    // check for potential duplicate definition
+    if (result.has(dfnFor) && result.get(dfnFor).has(dfnType)) {
+      const oldDfn = result.get(dfnFor).get(dfnType);
       // We want <dfn> definitions to take precedence over
       // definitions from WebIDL. WebIDL definitions wind
       // up as <span>s instead of <dfn>.
-      const oldIsDfn = result.get(dfnFor).localName === "dfn";
+      const oldIsDfn = oldDfn.localName === "dfn";
       const newIsDfn = dfn.localName === "dfn";
-      if (oldIsDfn) {
-        if (!newIsDfn) {
-          // Don't overwrite <dfn> definitions.
-          continue;
-        }
+      const isSameDfnType = dfnType === (oldDfn.dataset.dfnType || "dfn");
+      const isSameDfnFor = dfnFor === (oldDfn.dataset.dfnFor || "");
+      if (oldIsDfn && newIsDfn && isSameDfnType && isSameDfnFor) {
         duplicates.push(dfn);
+        continue;
       }
     }
-    result.set(dfnFor, dfn);
+    const type = "idl" in dfn.dataset || dfnType !== "dfn" ? "idl" : "dfn";
+    if (!result.has(dfnFor)) {
+      result.set(dfnFor, new Map());
+    }
+    result.get(dfnFor).set(type, dfn);
     addId(dfn, "dfn", title);
   }
 
@@ -136,17 +145,43 @@ function collectDfns(title) {
 }
 
 /**
+ * Find a potentially matching <dfn> for given anchor.
  * @param {HTMLAnchorElement} anchor
- * @param {import("./utils.js").LinkTarget} target
  * @param {ReturnType<typeof mapTitleToDfns>} titleToDfns
  */
-function processAnchor(anchor, target, titleToDfns) {
+function findMatchingDfn(anchor, titleToDfns) {
+  const linkTargets = getLinkTargets(anchor);
+  const target = linkTargets.find(
+    target =>
+      titleToDfns.has(target.title) &&
+      titleToDfns.get(target.title).has(target.for)
+  );
+  if (!target) return;
+
+  const dfnsByType = titleToDfns.get(target.title).get(target.for);
+  const { linkType } = anchor.dataset;
+  if (linkType) {
+    const type = linkType === "dfn" ? "dfn" : "idl";
+    return dfnsByType.get(type) || dfnsByType.get("dfn");
+  } else {
+    // Assumption: if it's for something, it's more likely IDL.
+    const type = target.for ? "idl" : "dfn";
+    return dfnsByType.get(type) || dfnsByType.get("idl");
+  }
+}
+
+/**
+ * @param {HTMLAnchorElement} anchor
+ * @param {HTMLElement} dfn
+ * @param {ReturnType<typeof mapTitleToDfns>} titleToDfns
+ */
+function processAnchor(anchor, dfn, titleToDfns) {
   let noLocalMatch = false;
   const { linkFor } = anchor.dataset;
-  const dfn = titleToDfns.get(target.title).get(target.for);
+  const { dfnFor } = dfn.dataset;
   if (dfn.dataset.cite) {
     anchor.dataset.cite = dfn.dataset.cite;
-  } else if (linkFor && !titleToDfns.get(linkFor)) {
+  } else if (linkFor && !titleToDfns.get(linkFor) && linkFor !== dfnFor) {
     noLocalMatch = true;
   } else if (dfn.classList.contains("externalDFN")) {
     // data-lt[0] serves as unique id for the dfn which this element references
@@ -252,7 +287,7 @@ function showLinkingError(elems) {
  */
 function updateReferences(conf) {
   const shortName = new RegExp(
-    String.raw`\b${(conf.shortName || "").toLowerCase()}\b`,
+    String.raw`\b${(conf.shortName || "").toLowerCase()}([^-])\b`,
     "i"
   );
 
@@ -261,7 +296,7 @@ function updateReferences(conf) {
     "dfn[data-cite]:not([data-cite='']), a[data-cite]:not([data-cite=''])"
   );
   for (const elem of elems) {
-    elem.dataset.cite = elem.dataset.cite.replace(shortName, THIS_SPEC);
+    elem.dataset.cite = elem.dataset.cite.replace(shortName, `${THIS_SPEC}$1`);
     const { key, isNormative } = toCiteDetails(elem);
     if (key === THIS_SPEC) continue;
 
