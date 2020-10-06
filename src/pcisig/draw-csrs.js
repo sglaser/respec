@@ -193,13 +193,8 @@ export function parse_table(tbl) {
         if (val) {
           try {
             value = JSON.parse(val.textContent.trim());
-          } catch (e) {
-            showInlineError(
-              // @ts-ignore
-              val,
-              `Invalid json in next span.value ${e.toString()}`,
-              ""
-            );
+          } catch {
+            value = val.textContent.trim();
           }
         }
         const validAttr = /^(rw|rws|ro|ros|rw1c|rw1cs|rw1s|rw1ss|wo|wos|hardwired|fixed|hwinit|rsvd|rsvdp|rsvdz|reserved|ignored|ign|unused|other)$/i;
