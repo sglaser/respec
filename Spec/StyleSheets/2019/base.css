@@ -629,6 +629,7 @@ pre {
   overflow: auto;
 }
 
+a code:not(.code-dfn),
 dfn code {
   color: inherit;
   font-family: inherit;

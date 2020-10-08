@@ -180,7 +180,7 @@ function findNormalDfn(defn, parent, ...names) {
  */
 export function decorateDfn(dfnElem, idlAst, parent, name) {
   if (!dfnElem.id) {
-    const lCaseParent = parent.toLowerCase();
+    const lCaseParent = parent.toLowerCase().replace(/\s/g, "-");
     const middle = lCaseParent ? `${lCaseParent}-` : "";
     let last = name.toLowerCase().replace(/[()]/g, "").replace(/\s/g, "-");
     if (last === "") last = "the-empty-string";

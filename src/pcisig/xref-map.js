@@ -23,7 +23,7 @@ export function run(conf, doc) {
         .appendTo($mapsec)
         .children("tbody");
 
-      $refs.each(function() {
+      $refs.each(function () {
         const number = $(".secno, .figno, .tblno, .eqnno", this)
           .text()
           .replace(/ /g, "&nbsp;")

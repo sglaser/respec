@@ -381,6 +381,16 @@ async function loadStyle() {
   }
 }
 
+let _hasWebIdl = undefined; // unknown
+
+export function hasWebIdl() {
+  if (_hasWebIdl == undefined) {
+    const idls = document.querySelectorAll("pre.idl, pre.webidl");
+    _hasWebIdl = idls.length;
+  }
+  return _hasWebIdl;
+}
+
 export async function run() {
   const idls = document.querySelectorAll("pre.idl, pre.webidl");
   if (!idls.length) {

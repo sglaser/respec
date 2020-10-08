@@ -613,14 +613,14 @@ export function draw_regpict(divsvg, inputJSON) {
     const ret = figLeft + cellWidth * (adj_bit - 0.5);
     if (debug) {
       console.log(
-        `${`${i} leftOf   left_to_right=${left_to_right}` +
+        `${
+          `${i} leftOf   left_to_right=${left_to_right}` +
           ` figLeft=${figLeft}` +
           ` cellWidth=${cellWidth}` +
           ` visibleLSB=${visibleLSB}` +
           ` visibleMSB=${visibleMSB}` +
-          ` adj_bit= ${adj_bit}`}${
-          isMultiRow ? ` wordWidth=${wordWidth}` : ""
-        }\t--> ret= ${ret}`
+          ` adj_bit= ${adj_bit}`
+        }${isMultiRow ? ` wordWidth=${wordWidth}` : ""}\t--> ret= ${ret}`
       );
     }
     return ret;
@@ -656,14 +656,14 @@ export function draw_regpict(divsvg, inputJSON) {
     const ret = figLeft + cellWidth * (adj_bit + 0.5);
     if (debug) {
       console.log(
-        `${`${i} rightOf  left_to_right= ${left_to_right} ` +
+        `${
+          `${i} rightOf  left_to_right= ${left_to_right} ` +
           ` figLeft=${figLeft}` +
           ` cellWidth=${cellWidth}` +
           ` visibleLSB=${visibleLSB}` +
           ` visibleMSB=${visibleMSB}` +
-          ` adj_bit=${adj_bit}`}${
-          isMultiRow ? ` wordWidth=${wordWidth}` : ""
-        }\t--> ret=${ret}`
+          ` adj_bit=${adj_bit}`
+        }${isMultiRow ? ` wordWidth=${wordWidth}` : ""}\t--> ret=${ret}`
       );
     }
     return ret;
@@ -699,14 +699,14 @@ export function draw_regpict(divsvg, inputJSON) {
     const ret = figLeft + cellWidth * adj_bit;
     if (debug) {
       console.log(
-        `${`${i} middleOf left_to_right=${left_to_right}` +
+        `${
+          `${i} middleOf left_to_right=${left_to_right}` +
           ` figLeft=${figLeft}` +
           ` cellWidth=${cellWidth}` +
           ` visibleLSB=${visibleLSB}` +
           ` visibleMSB=${visibleMSB}` +
-          ` adj_bit=${adj_bit}`}${
-          isMultiRow ? ` wordWidth=${wordWidth}` : ""
-        }\t--> ret=${ret}`
+          ` adj_bit=${adj_bit}`
+        }${isMultiRow ? ` wordWidth=${wordWidth}` : ""}\t--> ret=${ret}`
       );
     }
     return ret;
@@ -736,9 +736,7 @@ export function draw_regpict(divsvg, inputJSON) {
   let bitLineCount = 0;
   let max_text_width = 12 * 8; // allow for 12 characters at 8px each
 
-  const svg = SVG()
-    .addTo(divsvg)
-    .attr({ width: 800, height: 500 }); // will be overridden
+  const svg = SVG().addTo(divsvg).attr({ width: 800, height: 500 }); // will be overridden
 
   if (isMemoryBlock) {
     // create header for memory block (31..0)
@@ -781,9 +779,9 @@ export function draw_regpict(divsvg, inputJSON) {
           .addClass("regBitNumMiddle");
         if (debug) {
           console.log(
-            `bitnum-middle +${byte}/${bit} at x=${middleOf(
-              bit + byte
-            )} y=${cellTop - 20}`
+            `bitnum-middle +${byte}/${bit} at x=${middleOf(bit + byte)} y=${
+              cellTop - 20
+            }`
           );
         }
         pos = left_to_right ? leftOf(byte + bit) : rightOf(byte + bit);
@@ -802,8 +800,9 @@ export function draw_regpict(divsvg, inputJSON) {
         .addClass("regByteNumMiddle");
       if (debug) {
         console.log(
-          `bitnum-middle +${byte} at x=${leftOf(byte) +
-            cellWidth * 4} y= ${byteHeight}`
+          `bitnum-middle +${byte} at x=${
+            leftOf(byte) + cellWidth * 4
+          } y= ${byteHeight}`
         );
       }
     }
@@ -831,8 +830,9 @@ export function draw_regpict(divsvg, inputJSON) {
               .addClass("regBitNumMiddle");
             if (debug) {
               console.log(
-                `bitnum-middle ${f.lsb} at x=${middleOf(f.lsb)} y=${cellTop -
-                  20}`
+                `bitnum-middle ${f.lsb} at x=${middleOf(f.lsb)} y=${
+                  cellTop - 20
+                }`
               );
             }
           } else {
@@ -867,8 +867,9 @@ export function draw_regpict(divsvg, inputJSON) {
               .addClass(cls);
             if (debug) {
               console.log(
-                `bitnum-lsb ${f.lsb} at x=${pos} y=${cellTop -
-                  20} left_to_right=${left_to_right}`
+                `bitnum-lsb ${f.lsb} at x=${pos} y=${
+                  cellTop - 20
+                } left_to_right=${left_to_right}`
               );
             }
 
@@ -900,8 +901,9 @@ export function draw_regpict(divsvg, inputJSON) {
               .addClass(cls);
             if (debug) {
               console.log(
-                `bitnum-msb ${f.msb} at x=${pos} y=${cellTop -
-                  20} left_to_right=${left_to_right}`
+                `bitnum-msb ${f.msb} at x=${pos} y=${
+                  cellTop - 20
+                } left_to_right=${left_to_right}`
               );
             }
           }
@@ -1128,13 +1130,13 @@ export function draw_regpict(divsvg, inputJSON) {
         const boxTop = cellTop + cellHeight * startRow;
         if (debug) {
           console.log(
-            `${`field ${f.name}` +
+            `${
+              `field ${f.name}` +
               ` msb=${f.msb}` +
               ` lsb=${f.lsb}` +
               ` attr=${f.attr}` +
-              ` isUnused=${f.isUnused}`}${"id" in f ? f.id : ""}${
-              hasValue ? " hasValue" : ""
-            }`
+              ` isUnused=${f.isUnused}`
+            }${"id" in f ? f.id : ""}${hasValue ? " hasValue" : ""}`
           );
           console.log(
             // ` text.clientWidth=${text.clientWidth}` +

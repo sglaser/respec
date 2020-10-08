@@ -13,6 +13,7 @@ import {
 } from "./utils.js";
 import { THIS_SPEC, toCiteDetails } from "./data-cite.js";
 import { definitionMap } from "./dfn-map.js";
+import { hasWebIdl } from "./webidl.js";
 
 export const name = "core/link-to-dfn";
 
@@ -96,11 +97,29 @@ export async function run(conf) {
   }
 }
 
+// function resultToString(result) {
+//   let retval = `resultToString(result.size=${result.size}) =`;
+//   for (const dFor of result.keys()) {
+//     retval += `\n  result(${dFor}).size=${result.get(dFor).size}`;
+//     for (const dType of result.get(dFor).keys()) {
+//       retval += `\n    ${dFor}, ${dType}) = ${
+//         result.get(dFor).get(dType).outerHTML
+//       }`;
+//     }
+//   }
+//   return retval;
+// }
+
 function mapTitleToDfns() {
   /** @type {CaseInsensitiveMap<Map<string, Map<string, HTMLElement>>>} */
   const titleToDfns = new CaseInsensitiveMap();
   for (const key of definitionMap.keys()) {
     const { result, duplicates } = collectDfns(key);
+    // console.log(
+    //   `mapTitleToDfns: ${key} = result: ${resultToString(
+    //     result
+    //   )} duplicates:${duplicates}`
+    // );
     titleToDfns.set(key, result);
     if (duplicates.length > 0) {
       showInlineError(duplicates, l10n.duplicateMsg(key), l10n.duplicateTitle);
@@ -140,7 +159,29 @@ function collectDfns(title) {
     result.get(dfnFor).set(type, dfn);
     addId(dfn, "dfn", title);
   }
-
+  if (result.size === 1 && !result.has("")) {
+    for (const value of result.values()) {
+      if (value.size === 1) {
+        result.set("", value);
+      }
+    }
+  }
+  // eslint-disable-next-line no-constant-condition
+  // if (true) {
+  //   console.log(`collectDfns(${title}) result.size=${result.size}`);
+  //   for (const dFor of result.keys()) {
+  //     console.log(
+  //       `collectDfns(${title}) result(${dFor}).size=${result.get(dFor).size}`
+  //     );
+  //     for (const dType of result.get(dFor).keys()) {
+  //       console.log(
+  //         `collectDfns(${dFor}, ${dType}) = ${
+  //           result.get(dFor).get(dType).outerHTML
+  //         }`
+  //       );
+  //     }
+  //   }
+  // }
   return { result, duplicates };
 }
 
@@ -151,14 +192,32 @@ function collectDfns(title) {
  */
 function findMatchingDfn(anchor, titleToDfns) {
   const linkTargets = getLinkTargets(anchor);
-  const target = linkTargets.find(
-    target =>
+  // console.log(
+  //   `findMatchingDfn(${anchor.outerHTML}) linkTargets=${JSON.stringify(
+  //     linkTargets
+  //   )}`
+  // );
+  const target = linkTargets.find(target => {
+    // console.log(
+    //   `findMatchingDfn(${anchor.outerHTML}) target=${JSON.stringify(target)}`
+    // );
+    // console.log(`findMatchingDfn(${anchor.outerHTML}) titleToDfns.has(${target.title})=${titleToDfns.has(target.title)}`);
+    // console.log(`findMatchingDfn(${anchor.outerHTML}) titleToDfns.get(${target.title}).has(${target.for})=${titleToDfns.get(target.title).has(target.for)}`);
+    return (
       titleToDfns.has(target.title) &&
-      titleToDfns.get(target.title).has(target.for)
-  );
+      (titleToDfns.get(target.title).has(target.for) ||
+        titleToDfns.get(target.title).size === 1)
+    );
+  });
+  // console.log(
+  //   `findMatchingDfn(${anchor.outerHTML}) target#2=${JSON.stringify(target)}`
+  // );
   if (!target) return;
-
+  // console.log(
+  //   `findMatchingDfn(${anchor.outerHTML}) target#3=${JSON.stringify(target)}`
+  // );
   const dfnsByType = titleToDfns.get(target.title).get(target.for);
+  // console.log(`findMatchingDfn(${anchor.outerHTML}) dfnsByType = ${dfnsByType}`);
   const { linkType } = anchor.dataset;
   if (linkType) {
     const type = linkType === "dfn" ? "dfn" : "idl";
@@ -179,6 +238,9 @@ function processAnchor(anchor, dfn, titleToDfns) {
   let noLocalMatch = false;
   const { linkFor } = anchor.dataset;
   const { dfnFor } = dfn.dataset;
+  // console.log(
+  //   `processAnchor(anchor=${anchor.outerHTML}  dfn=${dfn.outerHTML}  titleToDfns=${titleToDfns})`
+  // );
   if (dfn.dataset.cite) {
     anchor.dataset.cite = dfn.dataset.cite;
   } else if (linkFor && !titleToDfns.get(linkFor) && linkFor !== dfnFor) {
@@ -232,7 +294,10 @@ function wrapAsCode(anchor, dfn) {
   const isIDL = dfn.dataset.hasOwnProperty("idl");
   const needsCode = shouldWrapByCode(anchor) || shouldWrapByCode(dfn, term);
   if (!isIDL || needsCode) {
-    wrapInner(anchor, document.createElement("code"));
+    wrapInner(
+      anchor,
+      document.createElement("code") // .setAttribute("class", "code-dfn")
+    );
   }
 }
 

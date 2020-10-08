@@ -113,7 +113,8 @@ export default conf => {
   return html`
     <div class="head">
       <div id="respec-banner">
-        <span id="respec-banner-status">${conf.maturity}</span>&nbsp;&mdash;&nbsp;
+        <span id="respec-banner-status">${conf.maturity}</span
+        >&nbsp;&mdash;&nbsp;
         <span id="respec-banner-spec-name">${conf.title}</span>
       </div>
       ${conf.logos.map(showLogo)} ${getSpecTitleElem(conf)}
@@ -208,9 +209,7 @@ export default conf => {
           : ""}
         ${conf.authors
           ? html`
-              <dt>
-                ${conf.multipleAuthors ? l10n.authors : l10n.author}
-              </dt>
+              <dt>${conf.multipleAuthors ? l10n.authors : l10n.author}</dt>
               ${showPeople(conf.authors)}
             `
           : ""}
@@ -247,17 +246,13 @@ export default conf => {
  * @param {string=} cssClass
  */
 function linkLicense(text, url, cssClass) {
-  return html`
-    <a rel="license" href="${url}" class="${cssClass}">${text}</a>
-  `;
+  return html`<a rel="license" href="${url}" class="${cssClass}">${text}</a>`;
 }
 
 function renderCopyright(conf) {
   return conf.isUnofficial
     ? conf.additionalCopyrightHolders
-      ? html`
-          <p class="copyright">${[conf.additionalCopyrightHolders]}</p>
-        `
+      ? html`<p class="copyright">${[conf.additionalCopyrightHolders]}</p>`
       : conf.overrideCopyright
       ? [conf.overrideCopyright]
       : html`
@@ -282,9 +277,7 @@ function renderOfficialCopyright(conf) {
       ${conf.copyrightStart ? `${conf.copyrightStart}-` : ""}${conf.publishYear}
       <a href="http://www.pcisig.com">PCI-SIG</a>
       ${conf.additionalCopyrightHolders
-        ? html`
-            &amp; ${[conf.additionalCopyrightHolders]}
-          `
+        ? html`&amp; ${[conf.additionalCopyrightHolders]}`
         : ""}
     </p>
     <dl class="copyright">

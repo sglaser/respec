@@ -256,15 +256,6 @@ const licenses = {
   },
 };
 
-const baseLogo = Object.freeze({
-  id: "",
-  alt: "",
-  href: "",
-  src: "",
-  height: "48",
-  width: "72",
-});
-
 /**
  * @param {*} conf
  * @param {string} prop
@@ -305,10 +296,7 @@ export function run(conf) {
   }
   if (["cc0", "cc-by"].includes(conf.license)) {
     let msg = `You cannot use license "${conf.license}" with PCISIG Specs. `;
-    const non_cc0 = licenses.keys
-      .remove("cc0")
-      .remove("cc-by")
-      .toString();
+    const non_cc0 = licenses.keys.remove("cc0").remove("cc-by").toString();
     msg += `Please set 'respecConfig.license:' to one of ${non_cc0} instead.`;
     pub("error", msg);
   }
@@ -433,7 +421,7 @@ export function run(conf) {
       pub("error", "At least one editor is required");
   }
 
-  const peopCheck = function(it) {
+  const peopCheck = function (it) {
     if (!it.name) pub("error", "All authors and editors must have a name.");
     if (it.orcid) {
       try {
@@ -469,6 +457,7 @@ export function run(conf) {
   conf.multipleEditors = conf.editors && conf.editors.length > 1;
   conf.multipleFormerEditors = conf.formerEditors.length > 1;
   conf.multipleAuthors = conf.authors && conf.authors.length > 1;
+  // eslint-disable-next-line no-unused-vars
   (conf.alternateFormats || []).forEach((i, it) => {
     if (!it.uri || !it.label)
       pub("error", "All alternate formats must have a uri and a label.");

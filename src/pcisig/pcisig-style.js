@@ -5,25 +5,9 @@
 //  - specStatus: the short code for the specification's maturity level or type (required)
 
 import { createResourceHint, linkCSS, toKeyValuePairs } from "../core/utils.js";
-import { pub, sub } from "../core/pubsubhub.js";
+import { pub } from "../core/pubsubhub.js";
 
 export const name = "pcisig/style";
-
-function attachFixupScript(document, version) {
-  const script = document.createElement("script");
-  script.addEventListener(
-    "load",
-    () => {
-      if (window.location.hash) {
-        // eslint-disable-next-line no-self-assign
-        window.location = window.location;
-      }
-    },
-    { once: true }
-  );
-  script.src = `https://sglaser.github.io/respec/Spec/scripts/${version}/fixup.js`;
-  document.body.appendChild(script);
-}
 
 // Make a best effort to attach meta viewport at the top of the head.
 // Other plugins might subsequently push it down, but at least we start
@@ -72,11 +56,6 @@ function createResourceHints(conf) {
       href: "https://sglaser.github.io/respec/Spec",
     },
     {
-      hint: "preload", // all specs need it, and we attach it on end-all.
-      href: "https://sglaser.github.io/respec/Spec/scripts/2019/fixup.js",
-      as: "script",
-    },
-    {
       hint: "preload", // all specs include on base.css.
       href: "https://sglaser.github.io/respec/Spec/StyleSheets/2019/base.css",
       as: "style",
@@ -88,6 +67,9 @@ function createResourceHints(conf) {
       as: "image",
     },
   ]
+    .filter(item => {
+      conf.cssOverride || item.as != "style";
+    })
     .map(createResourceHint)
     .reduce((frag, link) => {
       frag.appendChild(link);
@@ -183,16 +165,6 @@ export function run(conf) {
 
   // Select between released styles and experimental style.
   const version = selectStyleVersion(conf.useExperimentalStyles || "2019");
-  // Attach PCISIG fixup script after we are done.
-  if (version && !conf.noToc) {
-    sub(
-      "end-all",
-      () => {
-        attachFixupScript(document, version);
-      },
-      { once: true }
-    );
-  }
   const finalVersionPath = version ? `${version}/` : "";
   const finalStyleURL = `https://sglaser.github.io/respec/Spec/StyleSheets/${finalVersionPath}${styleFile}.css`;
 

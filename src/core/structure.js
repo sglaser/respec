@@ -14,6 +14,7 @@ import {
   parents,
   renameElement,
   showInlineError,
+  wrapInner,
 } from "./utils.js";
 import { html } from "./import-maps.js";
 import { pub } from "./pubsubhub.js";

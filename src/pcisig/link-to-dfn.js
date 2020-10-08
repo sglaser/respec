@@ -44,7 +44,7 @@ export function run(conf, doc) {
     }
   });
 
-  $("a:not([href]):not([data-cite]):not(.logo)").each(function() {
+  $("a:not([href]):not([data-cite]):not(.logo)").each(function () {
     const $ant = $(this);
     if ($ant.hasClass("externalDFN")) return;
     console.log(`link-to-dfn:${$ant.html()}`);
@@ -109,7 +109,7 @@ export function run(conf, doc) {
   linkInlineCitations(doc, conf).then(() => {
     // done linking, so clean up
     function attrToDataAttr(name) {
-      return function(elem) {
+      return function (elem) {
         const value = elem.getAttribute(name);
         elem.removeAttribute(name);
         elem.setAttribute(`data-${name}`, value);

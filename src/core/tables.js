@@ -32,9 +32,7 @@ export function run() {
   if (tot.length && totElement) {
     decorateTableOfTables(totElement);
     totElement.append(
-      html`
-        <h2>${l10n.list_of_tables}</h2>
-      `,
+      html`<h2>${l10n.list_of_tables}</h2>`,
       html`
         <ul class="tot">
           ${tot}
@@ -72,19 +70,10 @@ function decorateTable(table, caption, i) {
   const title = caption.textContent;
   addId(table, "tbl", title);
   // set proper caption title
-  wrapInner(
-    caption,
-    html`
-      <span class="tbl-title"></span>
-    `
-  );
+  wrapInner(caption, html`<span class="tbl-title"></span>`);
   caption.prepend(
-    html`
-      <span class="tblhdr">${l10n.tbl}</span>
-    `,
-    html`
-      <bdi class="tblno">${i + 1}</bdi>
-    `,
+    html`<span class="tblhdr">${l10n.tbl}</span>`,
+    html`<bdi class="tblno">${i + 1}</bdi>`,
     " "
   );
 }

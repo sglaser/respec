@@ -34,9 +34,7 @@ export function run() {
   if (toe.length && toeElement) {
     decorateTableOfEquations(toeElement);
     toeElement.append(
-      html`
-        <h2>${l10n.list_of_equations}</h2>
-      `,
+      html`<h2>${l10n.list_of_equations}</h2>`,
       html`
         <ul class="toe">
           ${toe}
@@ -75,19 +73,10 @@ function decorateEquation(equation, caption, i) {
   const title = caption.textContent;
   addId(equation, "eqn", title);
   // set proper caption title
-  wrapInner(
-    caption,
-    html`
-      <span class="eqn-title"></span>
-    `
-  );
+  wrapInner(caption, html`<span class="eqn-title"></span>`);
   caption.prepend(
-    html`
-      <span class="eqnhdr">${l10n.eqn}</span>
-    `,
-    html`
-      <bdi class="eqnno">${i + 1}</bdi>
-    `,
+    html`<span class="eqnhdr">${l10n.eqn}</span>`,
+    html`<bdi class="eqnno">${i + 1}</bdi>`,
     " "
   );
 }

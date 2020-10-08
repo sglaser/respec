@@ -18,7 +18,7 @@ window.respecVersion = "25.16.5";
     Promise.resolve().then(function () { return style; }),
     Promise.resolve().then(function () { return pcisigStyle; }),
     Promise.resolve().then(function () { return l10n$3; }),
-    Promise.resolve().then(function () { return github$1; }),
+    // import("../src/core/github.js"),
     Promise.resolve().then(function () { return dataInclude; }),
     Promise.resolve().then(function () { return markdown; }),
     Promise.resolve().then(function () { return reindent$1; }),
@@ -32,22 +32,24 @@ window.respecVersion = "25.16.5";
     Promise.resolve().then(function () { return inlines; }),
     Promise.resolve().then(function () { return pcisigConformance; }),
     Promise.resolve().then(function () { return preDfn; }),
+    Promise.resolve().then(function () { return drawCsrs; }),
+    Promise.resolve().then(function () { return regpict; }),
     Promise.resolve().then(function () { return dfn; }),
     Promise.resolve().then(function () { return pluralize$2; }),
     Promise.resolve().then(function () { return examples; }),
     Promise.resolve().then(function () { return issuesNotes; }),
     Promise.resolve().then(function () { return bestPractices; }),
-    Promise.resolve().then(function () { return drawCsrs; }),
-    Promise.resolve().then(function () { return regpict; }),
     Promise.resolve().then(function () { return figures; }),
     Promise.resolve().then(function () { return equations; }),
     Promise.resolve().then(function () { return tables; }),
-    // import("../src/core/webidl.js"),
-    Promise.resolve().then(function () { return dataCite; }),
-    Promise.resolve().then(function () { return biblio$1; }),
-    // import("../src/core/webidl-index.js"),
+    Promise.resolve().then(function () { return webidl; }),
+    // import("../src/core/biblio.js"),
     Promise.resolve().then(function () { return linkToDfn; }),
-    Promise.resolve().then(function () { return renderBiblio; }),
+    Promise.resolve().then(function () { return xref; }),
+    Promise.resolve().then(function () { return dataCite; }),
+    Promise.resolve().then(function () { return webidlIndex; }),
+    // import("../src/core/render-biblio.js"),
+    Promise.resolve().then(function () { return dfnIndex; }),
     Promise.resolve().then(function () { return contrib; }),
     Promise.resolve().then(function () { return fixHeaders; }),
     Promise.resolve().then(function () { return structure$1; }),
@@ -60,12 +62,11 @@ window.respecVersion = "25.16.5";
     Promise.resolve().then(function () { return saveHtml; }),
     // import("../src/ui/search-specref.js"),
     // import("../src/ui/search-xref.js"),
-    // import("../src/ui/dfn-list.js"),
     Promise.resolve().then(function () { return aboutRespec; }),
     Promise.resolve().then(function () { return seo; }),
     // import("../src/w3c/seo.js"),
     // import("../src/core/highlight.js"),
-    // import("../src/core/webidl-clipboard.js"),
+    Promise.resolve().then(function () { return webidlClipboard; }),
     Promise.resolve().then(function () { return dataTests; }),
     Promise.resolve().then(function () { return listSorter; }),
     // import("../src/core/highlight-vars.js"),
@@ -76,8 +77,9 @@ window.respecVersion = "25.16.5";
     Promise.resolve().then(function () { return includeFinalConfig; }),
     Promise.resolve().then(function () { return index; }),
     Promise.resolve().then(function () { return railroad; }),
-    /* Linter must be the last thing to run */
+    /* Linters must be the last thing to run */
     Promise.resolve().then(function () { return linter$1; }),
+    Promise.resolve().then(function () { return a11y; }),
   ];
 
   async function domReady() {
@@ -677,6 +679,2656 @@ window.respecVersion = "25.16.5";
   });
 
   /**
+   * @param {string} text
+   */
+  function lastLine(text) {
+    const splitted = text.split("\n");
+    return splitted[splitted.length - 1];
+  }
+
+  function appendIfExist(base, target) {
+    let result = base;
+    if (target) {
+      result += ` ${target}`;
+    }
+    return result;
+  }
+
+  function contextAsText(node) {
+    const hierarchy = [node];
+    while (node && node.parent) {
+      const { parent } = node;
+      hierarchy.unshift(parent);
+      node = parent;
+    }
+    return hierarchy.map(n => appendIfExist(n.type, n.name)).join(" -> ");
+  }
+
+  /**
+   * @typedef {object} WebIDL2ErrorOptions
+   * @property {"error" | "warning"} [level]
+   * @property {Function} [autofix]
+   *
+   * @param {string} message error message
+   * @param {"Syntax" | "Validation"} kind error type
+   * @param {WebIDL2ErrorOptions} [options]
+   */
+  function error(source, position, current, message, kind, { level = "error", autofix, ruleName } = {}) {
+    /**
+     * @param {number} count
+     */
+    function sliceTokens(count) {
+      return count > 0 ?
+        source.slice(position, position + count) :
+        source.slice(Math.max(position + count, 0), position);
+    }
+
+    function tokensToText(inputs, { precedes } = {}) {
+      const text = inputs.map(t => t.trivia + t.value).join("");
+      const nextToken = source[position];
+      if (nextToken.type === "eof") {
+        return text;
+      }
+      if (precedes) {
+        return text + nextToken.trivia;
+      }
+      return text.slice(nextToken.trivia.length);
+    }
+
+    const maxTokens = 5; // arbitrary but works well enough
+    const line =
+      source[position].type !== "eof" ? source[position].line :
+      source.length > 1 ? source[position - 1].line :
+      1;
+
+    const precedingLastLine = lastLine(
+      tokensToText(sliceTokens(-maxTokens), { precedes: true })
+    );
+
+    const subsequentTokens = sliceTokens(maxTokens);
+    const subsequentText = tokensToText(subsequentTokens);
+    const subsequentFirstLine = subsequentText.split("\n")[0];
+
+    const spaced = " ".repeat(precedingLastLine.length) + "^";
+    const sourceContext = precedingLastLine + subsequentFirstLine + "\n" + spaced;
+
+    const contextType = kind === "Syntax" ? "since" : "inside";
+    const inSourceName = source.name ? ` in ${source.name}` : "";
+    const grammaticalContext = (current && current.name) ? `, ${contextType} \`${current.partial ? "partial " : ""}${contextAsText(current)}\`` : "";
+    const context = `${kind} error at line ${line}${inSourceName}${grammaticalContext}:\n${sourceContext}`;
+    return {
+      message: `${context} ${message}`,
+      bareMessage: message,
+      context,
+      line,
+      sourceName: source.name,
+      level,
+      ruleName,
+      autofix,
+      input: subsequentText,
+      tokens: subsequentTokens
+    };
+  }
+
+  /**
+   * @param {string} message error message
+   */
+  function syntaxError(source, position, current, message) {
+    return error(source, position, current, message, "Syntax");
+  }
+
+  /**
+   * @param {string} message error message
+   * @param {WebIDL2ErrorOptions} [options]
+   */
+  function validationError(token, current, ruleName, message, options = {}) {
+    options.ruleName = ruleName;
+    return error(current.source, token.index, current, message, "Validation", options);
+  }
+
+  // @ts-check
+
+  class Base {
+    /**
+     * @param {object} initializer
+     * @param {Base["source"]} initializer.source
+     * @param {Base["tokens"]} initializer.tokens
+     */
+    constructor({ source, tokens }) {
+      Object.defineProperties(this, {
+        source: { value: source },
+        tokens: { value: tokens, writable: true },
+        parent: { value: null, writable: true },
+        this: { value: this } // useful when escaping from proxy
+      });
+    }
+
+    toJSON() {
+      const json = { type: undefined, name: undefined, inheritance: undefined };
+      let proto = this;
+      while (proto !== Object.prototype) {
+        const descMap = Object.getOwnPropertyDescriptors(proto);
+        for (const [key, value] of Object.entries(descMap)) {
+          if (value.enumerable || value.get) {
+            // @ts-ignore - allow indexing here
+            json[key] = this[key];
+          }
+        }
+        proto = Object.getPrototypeOf(proto);
+      }
+      return json;
+    }
+  }
+
+  // @ts-check
+
+  /**
+   * @typedef {import("../productions/dictionary.js").Dictionary} Dictionary
+   *
+   * @param {*} idlType
+   * @param {import("../validator.js").Definitions} defs
+   * @param {object} [options]
+   * @param {boolean} [options.useNullableInner] use when the input idlType is nullable and you want to use its inner type
+   * @return {{ reference: *, dictionary: Dictionary }} the type reference that ultimately includes dictionary.
+   */
+  function idlTypeIncludesDictionary(idlType, defs, { useNullableInner } = {}) {
+    if (!idlType.union) {
+      const def = defs.unique.get(idlType.idlType);
+      if (!def) {
+        return;
+      }
+      if (def.type === "typedef") {
+        const { typedefIncludesDictionary } = defs.cache;
+        if (typedefIncludesDictionary.has(def)) {
+          // Note that this also halts when it met indeterminate state
+          // to prevent infinite recursion
+          return typedefIncludesDictionary.get(def);
+        }
+        defs.cache.typedefIncludesDictionary.set(def, undefined); // indeterminate state
+        const result = idlTypeIncludesDictionary(def.idlType, defs);
+        defs.cache.typedefIncludesDictionary.set(def, result);
+        if (result) {
+          return {
+            reference: idlType,
+            dictionary: result.dictionary
+          };
+        }
+      }
+      if (def.type === "dictionary" && (useNullableInner || !idlType.nullable)) {
+        return {
+          reference: idlType,
+          dictionary: def
+        };
+      }
+    }
+    for (const subtype of idlType.subtype) {
+      const result = idlTypeIncludesDictionary(subtype, defs);
+      if (result) {
+        if (subtype.union) {
+          return result;
+        }
+        return {
+          reference: subtype,
+          dictionary: result.dictionary
+        };
+      }
+    }
+  }
+
+  /**
+   * @param {*} dict dictionary type
+   * @param {import("../validator.js").Definitions} defs
+   * @return {boolean}
+   */
+  function dictionaryIncludesRequiredField(dict, defs) {
+    if (defs.cache.dictionaryIncludesRequiredField.has(dict)) {
+      return defs.cache.dictionaryIncludesRequiredField.get(dict);
+    }
+    defs.cache.dictionaryIncludesRequiredField.set(dict, undefined); // indeterminate
+    if (dict.inheritance) {
+      const superdict = defs.unique.get(dict.inheritance);
+      if (!superdict) {
+        return true;
+      }
+      if (dictionaryIncludesRequiredField(superdict, defs)) {
+        return true;
+      }
+    }
+    const result = dict.members.some(field => field.required);
+    defs.cache.dictionaryIncludesRequiredField.set(dict, result);
+    return result;
+  }
+
+  // @ts-check
+
+  class ArrayBase extends Array {
+    constructor({ source, tokens }) {
+      super();
+      Object.defineProperties(this, {
+        source: { value: source },
+        tokens: { value: tokens },
+        parent: { value: null, writable: true }
+      });
+    }
+  }
+
+  // @ts-check
+
+  class Token extends Base {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     * @param {string} type
+     */
+    static parser(tokeniser, type) {
+      return () => {
+        const value = tokeniser.consume(type);
+        if (value) {
+          return new Token({ source: tokeniser.source, tokens: { value } });
+        }
+      };
+    }
+
+    get value() {
+      return unescape(this.tokens.value.value);
+    }
+  }
+
+  /**
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   * @param {string} tokenName
+   */
+  function tokens(tokeniser, tokenName) {
+    return list(tokeniser, {
+      parser: Token.parser(tokeniser, tokenName),
+      listName: tokenName + " list"
+    });
+  }
+
+  const extAttrValueSyntax = ["identifier", "decimal", "integer", "string"];
+
+  const shouldBeLegacyPrefixed = [
+    "NoInterfaceObject",
+    "LenientSetter",
+    "LenientThis",
+    "TreatNonObjectAsNull",
+    "Unforgeable",
+  ];
+
+  const renamedLegacies = new Map([
+    ...shouldBeLegacyPrefixed.map(name => [name, `Legacy${name}`]),
+    ["NamedConstructor", "LegacyFactoryFunction"],
+    ["OverrideBuiltins", "LegacyOverrideBuiltIns"],
+    ["TreatNullAs", "LegacyNullToEmptyString"],
+  ]);
+
+  /**
+   * This will allow a set of extended attribute values to be parsed.
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   */
+  function extAttrListItems(tokeniser) {
+    for (const syntax of extAttrValueSyntax) {
+      const toks = tokens(tokeniser, syntax);
+      if (toks.length) {
+        return toks;
+      }
+    }
+    tokeniser.error(`Expected identifiers, strings, decimals, or integers but none found`);
+  }
+
+
+  class ExtendedAttributeParameters extends Base {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     */
+    static parse(tokeniser) {
+      const tokens = { assign: tokeniser.consume("=") };
+      const ret = autoParenter(new ExtendedAttributeParameters({ source: tokeniser.source, tokens }));
+      if (tokens.assign) {
+        tokens.secondaryName = tokeniser.consume(...extAttrValueSyntax);
+      }
+      tokens.open = tokeniser.consume("(");
+      if (tokens.open) {
+        ret.list = ret.rhsIsList ?
+          // [Exposed=(Window,Worker)]
+          extAttrListItems(tokeniser) :
+          // [LegacyFactoryFunction=Audio(DOMString src)] or [Constructor(DOMString str)]
+          argument_list(tokeniser);
+        tokens.close = tokeniser.consume(")") || tokeniser.error("Unexpected token in extended attribute argument list");
+      } else if (ret.hasRhs && !tokens.secondaryName) {
+        tokeniser.error("No right hand side to extended attribute assignment");
+      }
+      return ret.this;
+    }
+
+    get rhsIsList() {
+      return this.tokens.assign && !this.tokens.secondaryName;
+    }
+
+    get rhsType() {
+      if (this.rhsIsList) {
+        return this.list[0].tokens.value.type + "-list";
+      }
+      if (this.tokens.secondaryName) {
+        return this.tokens.secondaryName.type;
+      }
+      return null;
+    }
+  }
+
+  class SimpleExtendedAttribute extends Base {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     */
+    static parse(tokeniser) {
+      const name = tokeniser.consume("identifier");
+      if (name) {
+        return new SimpleExtendedAttribute({
+          source: tokeniser.source,
+          tokens: { name },
+          params: ExtendedAttributeParameters.parse(tokeniser)
+        });
+      }
+    }
+
+    constructor({ source, tokens, params }) {
+      super({ source, tokens });
+      params.parent = this;
+      Object.defineProperty(this, "params", { value: params });
+    }
+
+    get type() {
+      return "extended-attribute";
+    }
+    get name() {
+      return this.tokens.name.value;
+    }
+    get rhs() {
+      const { rhsType: type, tokens, list } = this.params;
+      if (!type) {
+        return null;
+      }
+      const value = this.params.rhsIsList ? list : unescape(tokens.secondaryName.value);
+      return { type, value };
+    }
+    get arguments() {
+      const { rhsIsList, list } = this.params;
+      if (!list || rhsIsList) {
+        return [];
+      }
+      return list;
+    }
+
+    *validate(defs) {
+      const { name } = this;
+      if (name === "LegacyNoInterfaceObject") {
+        const message = `\`[LegacyNoInterfaceObject]\` extended attribute is an \
+undesirable feature that may be removed from Web IDL in the future. Refer to the \
+[relevant upstream PR](https://github.com/heycam/webidl/pull/609) for more \
+information.`;
+        yield validationError(this.tokens.name, this, "no-nointerfaceobject", message, { level: "warning" });
+      } else if (renamedLegacies.has(name)) {
+        const message = `\`[${name}]\` extended attribute is a legacy feature \
+that is now renamed to \`[${renamedLegacies.get(name)}]\`. Refer to the \
+[relevant upstream PR](https://github.com/heycam/webidl/pull/870) for more \
+information.`;
+        yield validationError(this.tokens.name, this, "renamed-legacy", message, {
+          level: "warning",
+          autofix: renameLegacyExtendedAttribute(this)
+        });
+      }
+      for (const arg of this.arguments) {
+        yield* arg.validate(defs);
+      }
+    }
+  }
+
+  /**
+   * @param {SimpleExtendedAttribute} extAttr
+   */
+  function renameLegacyExtendedAttribute(extAttr) {
+    return () => {
+      const { name } = extAttr;
+      extAttr.tokens.name.value = renamedLegacies.get(name);
+      if (name === "TreatNullAs") {
+        extAttr.params.tokens = {};
+      }
+    };
+  }
+
+  // Note: we parse something simpler than the official syntax. It's all that ever
+  // seems to be used
+  class ExtendedAttributes extends ArrayBase {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     */
+    static parse(tokeniser) {
+      const tokens = {};
+      tokens.open = tokeniser.consume("[");
+      if (!tokens.open) return new ExtendedAttributes({});
+      const ret = new ExtendedAttributes({ source: tokeniser.source, tokens });
+      ret.push(...list(tokeniser, {
+        parser: SimpleExtendedAttribute.parse,
+        listName: "extended attribute"
+      }));
+      tokens.close = tokeniser.consume("]") || tokeniser.error("Unexpected closing token of extended attribute");
+      if (!ret.length) {
+        tokeniser.error("Found an empty extended attribute");
+      }
+      if (tokeniser.probe("[")) {
+        tokeniser.error("Illegal double extended attribute lists, consider merging them");
+      }
+      return ret;
+    }
+
+    *validate(defs) {
+      for (const extAttr of this) {
+        yield* extAttr.validate(defs);
+      }
+    }
+  }
+
+  /**
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   * @param {string} typeName
+   */
+  function generic_type(tokeniser, typeName) {
+    const base = tokeniser.consume("FrozenArray", "ObservableArray", "Promise", "sequence", "record");
+    if (!base) {
+      return;
+    }
+    const ret = autoParenter(new Type({ source: tokeniser.source, tokens: { base } }));
+    ret.tokens.open = tokeniser.consume("<") || tokeniser.error(`No opening bracket after ${base.type}`);
+    switch (base.type) {
+      case "Promise": {
+        if (tokeniser.probe("[")) tokeniser.error("Promise type cannot have extended attribute");
+        const subtype = return_type(tokeniser, typeName) || tokeniser.error("Missing Promise subtype");
+        ret.subtype.push(subtype);
+        break;
+      }
+      case "sequence":
+      case "FrozenArray":
+      case "ObservableArray": {
+        const subtype = type_with_extended_attributes(tokeniser, typeName) || tokeniser.error(`Missing ${base.type} subtype`);
+        ret.subtype.push(subtype);
+        break;
+      }
+      case "record": {
+        if (tokeniser.probe("[")) tokeniser.error("Record key cannot have extended attribute");
+        const keyType = tokeniser.consume(...stringTypes) || tokeniser.error(`Record key must be one of: ${stringTypes.join(", ")}`);
+        const keyIdlType = new Type({ source: tokeniser.source, tokens: { base: keyType }});
+        keyIdlType.tokens.separator = tokeniser.consume(",") || tokeniser.error("Missing comma after record key type");
+        keyIdlType.type = typeName;
+        const valueType = type_with_extended_attributes(tokeniser, typeName) || tokeniser.error("Error parsing generic type record");
+        ret.subtype.push(keyIdlType, valueType);
+        break;
+      }
+    }
+    if (!ret.idlType) tokeniser.error(`Error parsing generic type ${base.type}`);
+    ret.tokens.close = tokeniser.consume(">") || tokeniser.error(`Missing closing bracket after ${base.type}`);
+    return ret.this;
+  }
+
+  /**
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   */
+  function type_suffix(tokeniser, obj) {
+    const nullable = tokeniser.consume("?");
+    if (nullable) {
+      obj.tokens.nullable = nullable;
+    }
+    if (tokeniser.probe("?")) tokeniser.error("Can't nullable more than once");
+  }
+
+  /**
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   * @param {string} typeName
+   */
+  function single_type(tokeniser, typeName) {
+    let ret = generic_type(tokeniser, typeName) || primitive_type(tokeniser);
+    if (!ret) {
+      const base = tokeniser.consume("identifier", ...stringTypes, ...typeNameKeywords);
+      if (!base) {
+        return;
+      }
+      ret = new Type({ source: tokeniser.source, tokens: { base } });
+      if (tokeniser.probe("<")) tokeniser.error(`Unsupported generic type ${base.value}`);
+    }
+    if (ret.generic === "Promise" && tokeniser.probe("?")) {
+      tokeniser.error("Promise type cannot be nullable");
+    }
+    ret.type = typeName || null;
+    type_suffix(tokeniser, ret);
+    if (ret.nullable && ret.idlType === "any") tokeniser.error("Type `any` cannot be made nullable");
+    return ret;
+  }
+
+  /**
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   * @param {string} type
+   */
+  function union_type(tokeniser, type) {
+    const tokens = {};
+    tokens.open = tokeniser.consume("(");
+    if (!tokens.open) return;
+    const ret = autoParenter(new Type({ source: tokeniser.source, tokens }));
+    ret.type = type || null;
+    while (true) {
+      const typ = type_with_extended_attributes(tokeniser) || tokeniser.error("No type after open parenthesis or 'or' in union type");
+      if (typ.idlType === "any") tokeniser.error("Type `any` cannot be included in a union type");
+      if (typ.generic === "Promise") tokeniser.error("Type `Promise` cannot be included in a union type");
+      ret.subtype.push(typ);
+      const or = tokeniser.consume("or");
+      if (or) {
+        typ.tokens.separator = or;
+      }
+      else break;
+    }
+    if (ret.idlType.length < 2) {
+      tokeniser.error("At least two types are expected in a union type but found less");
+    }
+    tokens.close = tokeniser.consume(")") || tokeniser.error("Unterminated union type");
+    type_suffix(tokeniser, ret);
+    return ret.this;
+  }
+
+  class Type extends Base {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     * @param {string} typeName
+     */
+    static parse(tokeniser, typeName) {
+      return single_type(tokeniser, typeName) || union_type(tokeniser, typeName);
+    }
+
+    constructor({ source, tokens }) {
+      super({ source, tokens });
+      Object.defineProperty(this, "subtype", { value: [], writable: true });
+      this.extAttrs = new ExtendedAttributes({});
+    }
+
+    get generic() {
+      if (this.subtype.length && this.tokens.base) {
+        return this.tokens.base.value;
+      }
+      return "";
+    }
+    get nullable() {
+      return Boolean(this.tokens.nullable);
+    }
+    get union() {
+      return Boolean(this.subtype.length) && !this.tokens.base;
+    }
+    get idlType() {
+      if (this.subtype.length) {
+        return this.subtype;
+      }
+      // Adding prefixes/postfixes for "unrestricted float", etc.
+      const name = [
+        this.tokens.prefix,
+        this.tokens.base,
+        this.tokens.postfix
+      ].filter(t => t).map(t => t.value).join(" ");
+      return unescape(name);
+    }
+
+    *validate(defs) {
+      yield* this.extAttrs.validate(defs);
+
+      if (this.idlType === "void") {
+        const message = `\`void\` is now replaced by \`undefined\`. Refer to the \
+[relevant GitHub issue](https://github.com/heycam/webidl/issues/60) \
+for more information.`;
+        yield validationError(this.tokens.base, this, "replace-void", message, {
+          autofix: replaceVoid(this)
+        });
+      }
+
+      /*
+       * If a union is nullable, its subunions cannot include a dictionary
+       * If not, subunions may include dictionaries if each union is not nullable
+       */
+      const typedef = !this.union && defs.unique.get(this.idlType);
+      const target =
+        this.union ? this :
+        (typedef && typedef.type === "typedef") ? typedef.idlType :
+        undefined;
+      if (target && this.nullable) {
+        // do not allow any dictionary
+        const { reference } = idlTypeIncludesDictionary(target, defs) || {};
+        if (reference) {
+          const targetToken = (this.union ? reference : this).tokens.base;
+          const message = "Nullable union cannot include a dictionary type.";
+          yield validationError(targetToken, this, "no-nullable-union-dict", message);
+        }
+      } else {
+        // allow some dictionary
+        for (const subtype of this.subtype) {
+          yield* subtype.validate(defs);
+        }
+      }
+    }
+  }
+
+  /**
+   * @param {Type} type
+   */
+  function replaceVoid(type) {
+    return () => {
+      type.tokens.base.value = "undefined";
+    };
+  }
+
+  class Default extends Base {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     */
+    static parse(tokeniser) {
+      const assign = tokeniser.consume("=");
+      if (!assign) {
+        return null;
+      }
+      const def = const_value(tokeniser) || tokeniser.consume("string", "null", "[", "{") || tokeniser.error("No value for default");
+      const expression = [def];
+      if (def.type === "[") {
+        const close = tokeniser.consume("]") || tokeniser.error("Default sequence value must be empty");
+        expression.push(close);
+      } else if (def.type === "{") {
+        const close = tokeniser.consume("}") || tokeniser.error("Default dictionary value must be empty");
+        expression.push(close);
+      }
+      return new Default({ source: tokeniser.source, tokens: { assign }, expression });
+    }
+
+    constructor({ source, tokens, expression }) {
+      super({ source, tokens });
+      expression.parent = this;
+      Object.defineProperty(this, "expression", { value: expression });
+    }
+
+    get type() {
+      return const_data(this.expression[0]).type;
+    }
+    get value() {
+      return const_data(this.expression[0]).value;
+    }
+    get negative() {
+      return const_data(this.expression[0]).negative;
+    }
+  }
+
+  // @ts-check
+
+  class Argument extends Base {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     */
+    static parse(tokeniser) {
+      const start_position = tokeniser.position;
+      /** @type {Base["tokens"]} */
+      const tokens = {};
+      const ret = autoParenter(new Argument({ source: tokeniser.source, tokens }));
+      ret.extAttrs = ExtendedAttributes.parse(tokeniser);
+      tokens.optional = tokeniser.consume("optional");
+      ret.idlType = type_with_extended_attributes(tokeniser, "argument-type");
+      if (!ret.idlType) {
+        return tokeniser.unconsume(start_position);
+      }
+      if (!tokens.optional) {
+        tokens.variadic = tokeniser.consume("...");
+      }
+      tokens.name = tokeniser.consume("identifier", ...argumentNameKeywords);
+      if (!tokens.name) {
+        return tokeniser.unconsume(start_position);
+      }
+      ret.default = tokens.optional ? Default.parse(tokeniser) : null;
+      return ret.this;
+    }
+
+    get type() {
+      return "argument";
+    }
+    get optional() {
+      return !!this.tokens.optional;
+    }
+    get variadic() {
+      return !!this.tokens.variadic;
+    }
+    get name() {
+      return unescape(this.tokens.name.value);
+    }
+
+    /**
+     * @param {import("../validator.js").Definitions} defs
+     */
+    *validate(defs) {
+      yield* this.idlType.validate(defs);
+      const result = idlTypeIncludesDictionary(this.idlType, defs, { useNullableInner: true });
+      if (result) {
+        if (this.idlType.nullable) {
+          const message = `Dictionary arguments cannot be nullable.`;
+          yield validationError(this.tokens.name, this, "no-nullable-dict-arg", message);
+        } else if (!this.optional) {
+          if (this.parent && !dictionaryIncludesRequiredField(result.dictionary, defs) && isLastRequiredArgument(this)) {
+            const message = `Dictionary argument must be optional if it has no required fields`;
+            yield validationError(this.tokens.name, this, "dict-arg-optional", message, {
+              autofix: autofixDictionaryArgumentOptionality(this)
+            });
+          }
+        } else if (!this.default) {
+          const message = `Optional dictionary arguments must have a default value of \`{}\`.`;
+          yield validationError(this.tokens.name, this, "dict-arg-default", message, {
+            autofix: autofixOptionalDictionaryDefaultValue(this)
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * @param {Argument} arg
+   */
+  function isLastRequiredArgument(arg) {
+    const list = arg.parent.arguments || arg.parent.list;
+    const index = list.indexOf(arg);
+    const requiredExists = list.slice(index + 1).some(a => !a.optional);
+    return !requiredExists;
+  }
+
+  /**
+   * @param {Argument} arg
+   */
+  function autofixDictionaryArgumentOptionality(arg) {
+    return () => {
+      const firstToken = getFirstToken(arg.idlType);
+      arg.tokens.optional = { type: "optional", value: "optional", trivia: firstToken.trivia };
+      firstToken.trivia = " ";
+      autofixOptionalDictionaryDefaultValue(arg)();
+    };
+  }
+
+  /**
+   * @param {Argument} arg
+   */
+  function autofixOptionalDictionaryDefaultValue(arg) {
+    return () => {
+      arg.default = Default.parse(new Tokeniser(" = {}"));
+    };
+  }
+
+  class Operation extends Base {
+    /**
+     * @typedef {import("../tokeniser.js").Token} Token
+     *
+     * @param {import("../tokeniser.js").Tokeniser} tokeniser
+     * @param {object} [options]
+     * @param {Token} [options.special]
+     * @param {Token} [options.regular]
+     */
+    static parse(tokeniser, { special, regular } = {}) {
+      const tokens = { special };
+      const ret = autoParenter(new Operation({ source: tokeniser.source, tokens }));
+      if (special && special.value === "stringifier") {
+        tokens.termination = tokeniser.consume(";");
+        if (tokens.termination) {
+          ret.arguments = [];
+          return ret;
+        }
+      }
+      if (!special && !regular) {
+        tokens.special = tokeniser.consume("getter", "setter", "deleter");
+      }
+      ret.idlType = return_type(tokeniser) || tokeniser.error("Missing return type");
+      tokens.name = tokeniser.consume("identifier", "includes");
+      tokens.open = tokeniser.consume("(") || tokeniser.error("Invalid operation");
+      ret.arguments = argument_list(tokeniser);
+      tokens.close = tokeniser.consume(")") || tokeniser.error("Unterminated operation");
+      tokens.termination = tokeniser.consume(";") || tokeniser.error("Unterminated operation, expected `;`");
+      return ret.this;
+    }
+
+    get type() {
+      return "operation";
+    }
+    get name() {
+      const { name } = this.tokens;
+      if (!name) {
+        return "";
+      }
+      return unescape(name.value);
+    }
+    get special() {
+      if (!this.tokens.special) {
+        return "";
+      }
+      return this.tokens.special.value;
+    }
+
+    *validate(defs) {
+      if (!this.name && ["", "static"].includes(this.special)) {
+        const message = `Regular or static operations must have both a return type and an identifier.`;
+        yield validationError(this.tokens.open, this, "incomplete-op", message);
+      }
+      if (this.idlType) {
+        yield* this.idlType.validate(defs);
+      }
+      for (const argument of this.arguments) {
+        yield* argument.validate(defs);
+      }
+    }
+  }
+
+  class Attribute extends Base {
+    /**
+     * @param {import("../tokeniser.js").Tokeniser} tokeniser
+     */
+    static parse(tokeniser, { special, noInherit = false, readonly = false } = {}) {
+      const start_position = tokeniser.position;
+      const tokens = { special };
+      const ret = autoParenter(new Attribute({ source: tokeniser.source, tokens }));
+      if (!special && !noInherit) {
+        tokens.special = tokeniser.consume("inherit");
+      }
+      if (ret.special === "inherit" && tokeniser.probe("readonly")) {
+        tokeniser.error("Inherited attributes cannot be read-only");
+      }
+      tokens.readonly = tokeniser.consume("readonly");
+      if (readonly && !tokens.readonly && tokeniser.probe("attribute")) {
+        tokeniser.error("Attributes must be readonly in this context");
+      }
+      tokens.base = tokeniser.consume("attribute");
+      if (!tokens.base) {
+        tokeniser.unconsume(start_position);
+        return;
+      }
+      ret.idlType = type_with_extended_attributes(tokeniser, "attribute-type") || tokeniser.error("Attribute lacks a type");
+      switch (ret.idlType.generic) {
+        case "sequence":
+        case "record": tokeniser.error(`Attributes cannot accept ${ret.idlType.generic} types`);
+      }
+      tokens.name = tokeniser.consume("identifier", "async", "required") || tokeniser.error("Attribute lacks a name");
+      tokens.termination = tokeniser.consume(";") || tokeniser.error("Unterminated attribute, expected `;`");
+      return ret.this;
+    }
+
+    get type() {
+      return "attribute";
+    }
+    get special() {
+      if (!this.tokens.special) {
+        return "";
+      }
+      return this.tokens.special.value;
+    }
+    get readonly() {
+      return !!this.tokens.readonly;
+    }
+    get name() {
+      return unescape(this.tokens.name.value);
+    }
+
+    *validate(defs) {
+      yield* this.extAttrs.validate(defs);
+      yield* this.idlType.validate(defs);
+    }
+  }
+
+  /**
+   * @param {string} identifier
+   */
+  function unescape(identifier) {
+    return identifier.startsWith('_') ? identifier.slice(1) : identifier;
+  }
+
+  /**
+   * Parses comma-separated list
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   * @param {object} args
+   * @param {Function} args.parser parser function for each item
+   * @param {boolean} [args.allowDangler] whether to allow dangling comma
+   * @param {string} [args.listName] the name to be shown on error messages
+   */
+  function list(tokeniser, { parser, allowDangler, listName = "list" }) {
+    const first = parser(tokeniser);
+    if (!first) {
+      return [];
+    }
+    first.tokens.separator = tokeniser.consume(",");
+    const items = [first];
+    while (first.tokens.separator) {
+      const item = parser(tokeniser);
+      if (!item) {
+        if (!allowDangler) {
+          tokeniser.error(`Trailing comma in ${listName}`);
+        }
+        break;
+      }
+      item.tokens.separator = tokeniser.consume(",");
+      items.push(item);
+      if (!item.tokens.separator) break;
+    }
+    return items;
+  }
+
+  /**
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   */
+  function const_value(tokeniser) {
+    return tokeniser.consume("true", "false", "Infinity", "-Infinity", "NaN", "decimal", "integer");
+  }
+
+  /**
+   * @param {object} token
+   * @param {string} token.type
+   * @param {string} token.value
+   */
+  function const_data({ type, value }) {
+    switch (type) {
+      case "true":
+      case "false":
+        return { type: "boolean", value: type === "true" };
+      case "Infinity":
+      case "-Infinity":
+        return { type: "Infinity", negative: type.startsWith("-") };
+      case "[":
+        return { type: "sequence", value: [] };
+      case "{":
+        return { type: "dictionary" };
+      case "decimal":
+      case "integer":
+        return { type: "number", value };
+      case "string":
+        return { type: "string", value: value.slice(1, -1) };
+      default:
+        return { type };
+    }
+  }
+
+  /**
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   */
+  function primitive_type(tokeniser) {
+    function integer_type() {
+      const prefix = tokeniser.consume("unsigned");
+      const base = tokeniser.consume("short", "long");
+      if (base) {
+        const postfix = tokeniser.consume("long");
+        return new Type({ source, tokens: { prefix, base, postfix } });
+      }
+      if (prefix) tokeniser.error("Failed to parse integer type");
+    }
+
+    function decimal_type() {
+      const prefix = tokeniser.consume("unrestricted");
+      const base = tokeniser.consume("float", "double");
+      if (base) {
+        return new Type({ source, tokens: { prefix, base } });
+      }
+      if (prefix) tokeniser.error("Failed to parse float type");
+    }
+
+    const { source } = tokeniser;
+    const num_type = integer_type() || decimal_type();
+    if (num_type) return num_type;
+    const base = tokeniser.consume("boolean", "byte", "octet", "undefined");
+    if (base) {
+      return new Type({ source, tokens: { base } });
+    }
+  }
+
+  /**
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   */
+  function argument_list(tokeniser) {
+    return list(tokeniser, { parser: Argument.parse, listName: "arguments list" });
+  }
+
+  /**
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   * @param {string} typeName
+   */
+  function type_with_extended_attributes(tokeniser, typeName) {
+    const extAttrs = ExtendedAttributes.parse(tokeniser);
+    const ret = Type.parse(tokeniser, typeName);
+    if (ret) autoParenter(ret).extAttrs = extAttrs;
+    return ret;
+  }
+
+  /**
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   * @param {string} typeName
+   */
+  function return_type(tokeniser, typeName) {
+    const typ = Type.parse(tokeniser, typeName || "return-type");
+    if (typ) {
+      return typ;
+    }
+    const voidToken = tokeniser.consume("void");
+    if (voidToken) {
+      const ret = new Type({ source: tokeniser.source, tokens: { base: voidToken } });
+      ret.type = "return-type";
+      return ret;
+    }
+  }
+
+  /**
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   */
+  function stringifier(tokeniser) {
+    const special = tokeniser.consume("stringifier");
+    if (!special) return;
+    const member = Attribute.parse(tokeniser, { special }) ||
+      Operation.parse(tokeniser, { special }) ||
+      tokeniser.error("Unterminated stringifier");
+    return member;
+  }
+
+  /**
+   * @param {string} str
+   */
+  function getLastIndentation(str) {
+    const lines = str.split("\n");
+    // the first line visually binds to the preceding token
+    if (lines.length) {
+      const match = lines[lines.length - 1].match(/^\s+/);
+      if (match) {
+        return match[0];
+      }
+    }
+    return "";
+  }
+
+  /**
+   * @param {string} parentTrivia
+   */
+  function getMemberIndentation(parentTrivia) {
+    const indentation = getLastIndentation(parentTrivia);
+    const indentCh = indentation.includes("\t") ? "\t" : "  ";
+    return indentation + indentCh;
+  }
+
+  /**
+   * @param {object} def
+   * @param {import("./extended-attributes.js").ExtendedAttributes} def.extAttrs
+   */
+  function autofixAddExposedWindow(def) {
+    return () => {
+      if (def.extAttrs.length){
+        const tokeniser = new Tokeniser("Exposed=Window,");
+        const exposed = SimpleExtendedAttribute.parse(tokeniser);
+        exposed.tokens.separator = tokeniser.consume(",");
+        const existing = def.extAttrs[0];
+        if (!/^\s/.test(existing.tokens.name.trivia)) {
+          existing.tokens.name.trivia = ` ${existing.tokens.name.trivia}`;
+        }
+        def.extAttrs.unshift(exposed);
+      } else {
+        autoParenter(def).extAttrs = ExtendedAttributes.parse(new Tokeniser("[Exposed=Window]"));
+        const trivia = def.tokens.base.trivia;
+        def.extAttrs.tokens.open.trivia = trivia;
+        def.tokens.base.trivia = `\n${getLastIndentation(trivia)}`;
+      }
+    };
+  }
+
+  /**
+   * Get the first syntax token for the given IDL object.
+   * @param {*} data
+   */
+  function getFirstToken(data) {
+    if (data.extAttrs.length) {
+      return data.extAttrs.tokens.open;
+    }
+    if (data.type === "operation" && !data.special) {
+      return getFirstToken(data.idlType);
+    }
+    const tokens = Object.values(data.tokens).sort((x, y) => x.index - y.index);
+    return tokens[0];
+  }
+
+  /**
+   * @template T
+   * @param {T[]} array
+   * @param {(item: T) => boolean} predicate
+   */
+  function findLastIndex(array, predicate) {
+    const index = array.slice().reverse().findIndex(predicate);
+    if (index === -1) {
+      return index;
+    }
+    return array.length - index - 1;
+  }
+
+  /**
+   * Returns a proxy that auto-assign `parent` field.
+   * @template T
+   * @param {T} data
+   * @param {*} [parent] The object that will be assigned to `parent`.
+   *                     If absent, it will be `data` by default.
+   * @return {T}
+   */
+  function autoParenter(data, parent) {
+    if (!parent) {
+      // Defaults to `data` unless specified otherwise.
+      parent = data;
+    }
+    if (!data) {
+      // This allows `autoParenter(undefined)` which again allows
+      // `autoParenter(parse())` where the function may return nothing.
+      return data;
+    }
+    return new Proxy(data, {
+      get(target, p) {
+        const value = target[p];
+        if (Array.isArray(value)) {
+          // Wraps the array so that any added items will also automatically
+          // get their `parent` values.
+          return autoParenter(value, target);
+        }
+        return value;
+      },
+      set(target, p, value) {
+        target[p] = value;
+        if (!value) {
+          return true;
+        } else if (Array.isArray(value)) {
+          // Assigning an array will add `parent` to its items.
+          for (const item of value) {
+            if (typeof item.parent !== "undefined") {
+              item.parent = parent;
+            }
+          }
+        } else if (typeof value.parent !== "undefined") {
+          value.parent = parent;
+        }
+        return true;
+      }
+    });
+  }
+
+  // These regular expressions use the sticky flag so they will only match at
+  // the current location (ie. the offset of lastIndex).
+  const tokenRe = {
+    // This expression uses a lookahead assertion to catch false matches
+    // against integers early.
+    "decimal": /-?(?=[0-9]*\.|[0-9]+[eE])(([0-9]+\.[0-9]*|[0-9]*\.[0-9]+)([Ee][-+]?[0-9]+)?|[0-9]+[Ee][-+]?[0-9]+)/y,
+    "integer": /-?(0([Xx][0-9A-Fa-f]+|[0-7]*)|[1-9][0-9]*)/y,
+    "identifier": /[_-]?[A-Za-z][0-9A-Z_a-z-]*/y,
+    "string": /"[^"]*"/y,
+    "whitespace": /[\t\n\r ]+/y,
+    "comment": /((\/(\/.*|\*([^*]|\*[^/])*\*\/)[\t\n\r ]*)+)/y,
+    "other": /[^\t\n\r 0-9A-Za-z]/y
+  };
+
+  const typeNameKeywords = [
+    "ArrayBuffer",
+    "DataView",
+    "Int8Array",
+    "Int16Array",
+    "Int32Array",
+    "Uint8Array",
+    "Uint16Array",
+    "Uint32Array",
+    "Uint8ClampedArray",
+    "Float32Array",
+    "Float64Array",
+    "any",
+    "object",
+    "symbol"
+  ];
+
+  const stringTypes = [
+    "ByteString",
+    "DOMString",
+    "USVString"
+  ];
+
+  const argumentNameKeywords = [
+    "async",
+    "attribute",
+    "callback",
+    "const",
+    "constructor",
+    "deleter",
+    "dictionary",
+    "enum",
+    "getter",
+    "includes",
+    "inherit",
+    "interface",
+    "iterable",
+    "maplike",
+    "namespace",
+    "partial",
+    "required",
+    "setlike",
+    "setter",
+    "static",
+    "stringifier",
+    "typedef",
+    "unrestricted"
+  ];
+
+  const nonRegexTerminals = [
+    "-Infinity",
+    "FrozenArray",
+    "Infinity",
+    "NaN",
+    "ObservableArray",
+    "Promise",
+    "boolean",
+    "byte",
+    "double",
+    "false",
+    "float",
+    "long",
+    "mixin",
+    "null",
+    "octet",
+    "optional",
+    "or",
+    "readonly",
+    "record",
+    "sequence",
+    "short",
+    "true",
+    "undefined",
+    "unsigned",
+    "void"
+  ].concat(argumentNameKeywords, stringTypes, typeNameKeywords);
+
+  const punctuations = [
+    "(",
+    ")",
+    ",",
+    "...",
+    ":",
+    ";",
+    "<",
+    "=",
+    ">",
+    "?",
+    "[",
+    "]",
+    "{",
+    "}"
+  ];
+
+  const reserved = [
+    // "constructor" is now a keyword
+    "_constructor",
+    "toString",
+    "_toString",
+  ];
+
+  /**
+   * @typedef {ArrayItemType<ReturnType<typeof tokenise>>} Token
+   * @param {string} str
+   */
+  function tokenise(str) {
+    const tokens = [];
+    let lastCharIndex = 0;
+    let trivia = "";
+    let line = 1;
+    let index = 0;
+    while (lastCharIndex < str.length) {
+      const nextChar = str.charAt(lastCharIndex);
+      let result = -1;
+
+      if (/[\t\n\r ]/.test(nextChar)) {
+        result = attemptTokenMatch("whitespace", { noFlushTrivia: true });
+      } else if (nextChar === '/') {
+        result = attemptTokenMatch("comment", { noFlushTrivia: true });
+      }
+
+      if (result !== -1) {
+        const currentTrivia = tokens.pop().value;
+        line += (currentTrivia.match(/\n/g) || []).length;
+        trivia += currentTrivia;
+        index -= 1;
+      } else if (/[-0-9.A-Z_a-z]/.test(nextChar)) {
+        result = attemptTokenMatch("decimal");
+        if (result === -1) {
+          result = attemptTokenMatch("integer");
+        }
+        if (result === -1) {
+          result = attemptTokenMatch("identifier");
+          const lastIndex = tokens.length - 1;
+          const token = tokens[lastIndex];
+          if (result !== -1) {
+            if (reserved.includes(token.value)) {
+              const message = `${unescape(token.value)} is a reserved identifier and must not be used.`;
+              throw new WebIDLParseError(syntaxError(tokens, lastIndex, null, message));
+            } else if (nonRegexTerminals.includes(token.value)) {
+              token.type = token.value;
+            }
+          }
+        }
+      } else if (nextChar === '"') {
+        result = attemptTokenMatch("string");
+      }
+
+      for (const punctuation of punctuations) {
+        if (str.startsWith(punctuation, lastCharIndex)) {
+          tokens.push({ type: punctuation, value: punctuation, trivia, line, index });
+          trivia = "";
+          lastCharIndex += punctuation.length;
+          result = lastCharIndex;
+          break;
+        }
+      }
+
+      // other as the last try
+      if (result === -1) {
+        result = attemptTokenMatch("other");
+      }
+      if (result === -1) {
+        throw new Error("Token stream not progressing");
+      }
+      lastCharIndex = result;
+      index += 1;
+    }
+
+    // remaining trivia as eof
+    tokens.push({
+      type: "eof",
+      value: "",
+      trivia
+    });
+
+    return tokens;
+
+    /**
+     * @param {keyof typeof tokenRe} type
+     * @param {object} options
+     * @param {boolean} [options.noFlushTrivia]
+     */
+    function attemptTokenMatch(type, { noFlushTrivia } = {}) {
+      const re = tokenRe[type];
+      re.lastIndex = lastCharIndex;
+      const result = re.exec(str);
+      if (result) {
+        tokens.push({ type, value: result[0], trivia, line, index });
+        if (!noFlushTrivia) {
+          trivia = "";
+        }
+        return re.lastIndex;
+      }
+      return -1;
+    }
+  }
+
+  class Tokeniser {
+    /**
+     * @param {string} idl
+     */
+    constructor(idl) {
+      this.source = tokenise(idl);
+      this.position = 0;
+    }
+
+    /**
+     * @param {string} message
+     * @return {never}
+     */
+    error(message) {
+      throw new WebIDLParseError(syntaxError(this.source, this.position, this.current, message));
+    }
+
+    /**
+     * @param {string} type
+     */
+    probe(type) {
+      return this.source.length > this.position && this.source[this.position].type === type;
+    }
+
+    /**
+     * @param  {...string} candidates
+     */
+    consume(...candidates) {
+      for (const type of candidates) {
+        if (!this.probe(type)) continue;
+        const token = this.source[this.position];
+        this.position++;
+        return token;
+      }
+    }
+
+    /**
+     * @param {number} position
+     */
+    unconsume(position) {
+      this.position = position;
+    }
+  }
+
+  class WebIDLParseError extends Error {
+    /**
+     * @param {object} options
+     * @param {string} options.message
+     * @param {string} options.bareMessage
+     * @param {string} options.context
+     * @param {number} options.line
+     * @param {*} options.sourceName
+     * @param {string} options.input
+     * @param {*[]} options.tokens
+     */
+    constructor({ message, bareMessage, context, line, sourceName, input, tokens }) {
+      super(message);
+
+      this.name = "WebIDLParseError"; // not to be mangled
+      this.bareMessage = bareMessage;
+      this.context = context;
+      this.line = line;
+      this.sourceName = sourceName;
+      this.input = input;
+      this.tokens = tokens;
+    }
+  }
+
+  class EnumValue extends Token {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     */
+    static parse(tokeniser) {
+      const value = tokeniser.consume("string");
+      if (value) {
+        return new EnumValue({ source: tokeniser.source, tokens: { value } });
+      }
+    }
+
+    get type() {
+      return "enum-value";
+    }
+    get value() {
+      return super.value.slice(1, -1);
+    }
+  }
+
+  class Enum extends Base {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     */
+    static parse(tokeniser) {
+      /** @type {Base["tokens"]} */
+      const tokens = {};
+      tokens.base = tokeniser.consume("enum");
+      if (!tokens.base) {
+        return;
+      }
+      tokens.name = tokeniser.consume("identifier") || tokeniser.error("No name for enum");
+      const ret = autoParenter(new Enum({ source: tokeniser.source, tokens }));
+      tokeniser.current = ret.this;
+      tokens.open = tokeniser.consume("{") || tokeniser.error("Bodyless enum");
+      ret.values = list(tokeniser, {
+        parser: EnumValue.parse,
+        allowDangler: true,
+        listName: "enumeration"
+      });
+      if (tokeniser.probe("string")) {
+        tokeniser.error("No comma between enum values");
+      }
+      tokens.close = tokeniser.consume("}") || tokeniser.error("Unexpected value in enum");
+      if (!ret.values.length) {
+        tokeniser.error("No value in enum");
+      }
+      tokens.termination = tokeniser.consume(";") || tokeniser.error("No semicolon after enum");
+      return ret.this;
+    }
+
+    get type() {
+      return "enum";
+    }
+    get name() {
+      return unescape(this.tokens.name.value);
+    }
+  }
+
+  // @ts-check
+
+  class Includes extends Base {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     */
+    static parse(tokeniser) {
+      const target = tokeniser.consume("identifier");
+      if (!target) {
+        return;
+      }
+      const tokens = { target };
+      tokens.includes = tokeniser.consume("includes");
+      if (!tokens.includes) {
+        tokeniser.unconsume(target.index);
+        return;
+      }
+      tokens.mixin = tokeniser.consume("identifier") || tokeniser.error("Incomplete includes statement");
+      tokens.termination = tokeniser.consume(";") || tokeniser.error("No terminating ; for includes statement");
+      return new Includes({ source: tokeniser.source, tokens });
+    }
+
+    get type() {
+      return "includes";
+    }
+    get target() {
+      return unescape(this.tokens.target.value);
+    }
+    get includes() {
+      return unescape(this.tokens.mixin.value);
+    }
+  }
+
+  class Typedef extends Base {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     */
+    static parse(tokeniser) {
+      /** @type {Base["tokens"]} */
+      const tokens = {};
+      const ret = autoParenter(new Typedef({ source: tokeniser.source, tokens }));
+      tokens.base = tokeniser.consume("typedef");
+      if (!tokens.base) {
+        return;
+      }
+      ret.idlType = type_with_extended_attributes(tokeniser, "typedef-type") || tokeniser.error("Typedef lacks a type");
+      tokens.name = tokeniser.consume("identifier") || tokeniser.error("Typedef lacks a name");
+      tokeniser.current = ret.this;
+      tokens.termination = tokeniser.consume(";") || tokeniser.error("Unterminated typedef, expected `;`");
+      return ret.this;
+    }
+
+    get type() {
+      return "typedef";
+    }
+    get name() {
+      return unescape(this.tokens.name.value);
+    }
+
+    *validate(defs) {
+      yield* this.idlType.validate(defs);
+    }
+  }
+
+  class CallbackFunction extends Base {
+    /**
+     * @param {import("../tokeniser.js").Tokeniser} tokeniser
+     */
+    static parse(tokeniser, base) {
+      const tokens = { base };
+      const ret = autoParenter(new CallbackFunction({ source: tokeniser.source, tokens }));
+      tokens.name = tokeniser.consume("identifier") || tokeniser.error("Callback lacks a name");
+      tokeniser.current = ret.this;
+      tokens.assign = tokeniser.consume("=") || tokeniser.error("Callback lacks an assignment");
+      ret.idlType = return_type(tokeniser) || tokeniser.error("Callback lacks a return type");
+      tokens.open = tokeniser.consume("(") || tokeniser.error("Callback lacks parentheses for arguments");
+      ret.arguments = argument_list(tokeniser);
+      tokens.close = tokeniser.consume(")") || tokeniser.error("Unterminated callback");
+      tokens.termination = tokeniser.consume(";") || tokeniser.error("Unterminated callback, expected `;`");
+      return ret.this;
+    }
+
+    get type() {
+      return "callback";
+    }
+    get name() {
+      return unescape(this.tokens.name.value);
+    }
+
+    *validate(defs) {
+      yield* this.extAttrs.validate(defs);
+      yield* this.idlType.validate(defs);
+    }
+  }
+
+  /**
+   * @param {import("../tokeniser.js").Tokeniser} tokeniser
+   */
+  function inheritance(tokeniser) {
+    const colon = tokeniser.consume(":");
+    if (!colon) {
+      return {};
+    }
+    const inheritance = tokeniser.consume("identifier") || tokeniser.error("Inheritance lacks a type");
+    return { colon, inheritance };
+  }
+
+  class Container extends Base {
+      /**
+       * @template T
+       * @param {import("../tokeniser.js").Tokeniser} tokeniser
+       * @param {T} instance
+       * @param {*} args
+       */
+      static parse(tokeniser, instance, { type, inheritable, allowedMembers }) {
+        const { tokens } = instance;
+        tokens.name = tokeniser.consume("identifier") || tokeniser.error(`Missing name in ${instance.type}`);
+        tokeniser.current = instance;
+        instance = autoParenter(instance);
+        if (inheritable) {
+          Object.assign(tokens, inheritance(tokeniser));
+        }
+        tokens.open = tokeniser.consume("{") || tokeniser.error(`Bodyless ${type}`);
+        instance.members = [];
+        while (true) {
+          tokens.close = tokeniser.consume("}");
+          if (tokens.close) {
+            tokens.termination = tokeniser.consume(";") || tokeniser.error(`Missing semicolon after ${type}`);
+            return instance.this;
+          }
+          const ea = ExtendedAttributes.parse(tokeniser);
+          let mem;
+          for (const [parser, ...args] of allowedMembers) {
+            mem = autoParenter(parser(tokeniser, ...args));
+            if (mem) {
+              break;
+            }
+          }
+          if (!mem) {
+            tokeniser.error("Unknown member");
+          }
+          mem.extAttrs = ea;
+          instance.members.push(mem.this);
+        }
+      }
+
+      get partial() {
+        return !!this.tokens.partial;
+      }
+      get name() {
+        return unescape(this.tokens.name.value);
+      }
+      get inheritance() {
+        if (!this.tokens.inheritance) {
+          return null;
+        }
+        return unescape(this.tokens.inheritance.value);
+      }
+
+      *validate(defs) {
+        for (const member of this.members) {
+          if (member.validate) {
+            yield* member.validate(defs);
+          }
+        }
+      }
+    }
+
+  class Constant extends Base {
+    /**
+     * @param {import("../tokeniser.js").Tokeniser} tokeniser
+     */
+    static parse(tokeniser) {
+      /** @type {Base["tokens"]} */
+      const tokens = {};
+      tokens.base = tokeniser.consume("const");
+      if (!tokens.base) {
+        return;
+      }
+      let idlType = primitive_type(tokeniser);
+      if (!idlType) {
+        const base = tokeniser.consume("identifier") || tokeniser.error("Const lacks a type");
+        idlType = new Type({ source: tokeniser.source, tokens: { base } });
+      }
+      if (tokeniser.probe("?")) {
+        tokeniser.error("Unexpected nullable constant type");
+      }
+      idlType.type = "const-type";
+      tokens.name = tokeniser.consume("identifier") || tokeniser.error("Const lacks a name");
+      tokens.assign = tokeniser.consume("=") || tokeniser.error("Const lacks value assignment");
+      tokens.value = const_value(tokeniser) || tokeniser.error("Const lacks a value");
+      tokens.termination = tokeniser.consume(";") || tokeniser.error("Unterminated const, expected `;`");
+      const ret = new Constant({ source: tokeniser.source, tokens });
+      autoParenter(ret).idlType = idlType;
+      return ret;
+    }
+
+    get type() {
+      return "const";
+    }
+    get name() {
+      return unescape(this.tokens.name.value);
+    }
+    get value() {
+      return const_data(this.tokens.value);
+    }
+  }
+
+  class IterableLike extends Base {
+    /**
+     * @param {import("../tokeniser.js").Tokeniser} tokeniser
+     */
+    static parse(tokeniser) {
+      const start_position = tokeniser.position;
+      const tokens = {};
+      const ret = autoParenter(new IterableLike({ source: tokeniser.source, tokens }));
+      tokens.readonly = tokeniser.consume("readonly");
+      if (!tokens.readonly) {
+        tokens.async = tokeniser.consume("async");
+      }
+      tokens.base =
+        tokens.readonly ? tokeniser.consume("maplike", "setlike") :
+        tokens.async ? tokeniser.consume("iterable") :
+        tokeniser.consume("iterable", "maplike", "setlike");
+      if (!tokens.base) {
+        tokeniser.unconsume(start_position);
+        return;
+      }
+
+      const { type } = ret;
+      const secondTypeRequired = type === "maplike";
+      const secondTypeAllowed = secondTypeRequired || type === "iterable";
+      const argumentAllowed = ret.async && type === "iterable";
+
+      tokens.open = tokeniser.consume("<") || tokeniser.error(`Missing less-than sign \`<\` in ${type} declaration`);
+      const first = type_with_extended_attributes(tokeniser) || tokeniser.error(`Missing a type argument in ${type} declaration`);
+      ret.idlType = [first];
+      ret.arguments = [];
+
+      if (secondTypeAllowed) {
+        first.tokens.separator = tokeniser.consume(",");
+        if (first.tokens.separator) {
+          ret.idlType.push(type_with_extended_attributes(tokeniser));
+        }
+        else if (secondTypeRequired) {
+          tokeniser.error(`Missing second type argument in ${type} declaration`);
+        }
+      }
+
+      tokens.close = tokeniser.consume(">") || tokeniser.error(`Missing greater-than sign \`>\` in ${type} declaration`);
+
+      if (tokeniser.probe("(")) {
+        if (argumentAllowed) {
+          tokens.argsOpen = tokeniser.consume("(");
+          ret.arguments.push(...argument_list(tokeniser));
+          tokens.argsClose = tokeniser.consume(")") || tokeniser.error("Unterminated async iterable argument list");
+        } else {
+          tokeniser.error(`Arguments are only allowed for \`async iterable\``);
+        }
+      }
+
+      tokens.termination = tokeniser.consume(";") || tokeniser.error(`Missing semicolon after ${type} declaration`);
+
+      return ret.this;
+    }
+
+    get type() {
+      return this.tokens.base.value;
+    }
+    get readonly() {
+      return !!this.tokens.readonly;
+    }
+    get async() {
+      return !!this.tokens.async;
+    }
+
+    *validate(defs) {
+      for (const type of this.idlType) {
+        yield* type.validate(defs);
+      }
+      for (const argument of this.arguments) {
+        yield* argument.validate(defs);
+      }
+    }
+  }
+
+  // @ts-check
+
+  function* checkInterfaceMemberDuplication(defs, i) {
+    const opNames = new Set(getOperations(i).map(op => op.name));
+    const partials = defs.partials.get(i.name) || [];
+    const mixins = defs.mixinMap.get(i.name) || [];
+    for (const ext of [...partials, ...mixins]) {
+      const additions = getOperations(ext);
+      yield* forEachExtension(additions, opNames, ext, i);
+      for (const addition of additions) {
+        opNames.add(addition.name);
+      }
+    }
+
+    function* forEachExtension(additions, existings, ext, base) {
+      for (const addition of additions) {
+        const { name } = addition;
+        if (name && existings.has(name)) {
+          const message = `The operation "${name}" has already been defined for the base interface "${base.name}" either in itself or in a mixin`;
+          yield validationError(addition.tokens.name, ext, "no-cross-overload", message);
+        }
+      }
+    }
+
+    function getOperations(i) {
+      return i.members
+        .filter(({type}) => type === "operation");
+    }
+  }
+
+  class Constructor extends Base {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     */
+    static parse(tokeniser) {
+      const base = tokeniser.consume("constructor");
+      if (!base) {
+        return;
+      }
+      /** @type {Base["tokens"]} */
+      const tokens = { base };
+      tokens.open = tokeniser.consume("(") || tokeniser.error("No argument list in constructor");
+      const args = argument_list(tokeniser);
+      tokens.close = tokeniser.consume(")") || tokeniser.error("Unterminated constructor");
+      tokens.termination = tokeniser.consume(";") || tokeniser.error("No semicolon after constructor");
+      const ret = new Constructor({ source: tokeniser.source, tokens });
+      autoParenter(ret).arguments = args;
+      return ret;
+    }
+
+    get type() {
+      return "constructor";
+    }
+
+    *validate(defs) {
+      if (this.idlType) {
+        yield* this.idlType.validate(defs);
+      }
+      for (const argument of this.arguments) {
+        yield* argument.validate(defs);
+      }
+    }
+  }
+
+  /**
+   * @param {import("../tokeniser").Tokeniser} tokeniser
+   */
+  function static_member(tokeniser) {
+    const special = tokeniser.consume("static");
+    if (!special) return;
+    const member = Attribute.parse(tokeniser, { special }) ||
+      Operation.parse(tokeniser, { special }) ||
+      tokeniser.error("No body in static member");
+    return member;
+  }
+
+  class Interface extends Container {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     */
+    static parse(tokeniser, base, { partial = null } = {}) {
+      const tokens = { partial, base };
+      return Container.parse(tokeniser, new Interface({ source: tokeniser.source, tokens }), {
+        type: "interface",
+        inheritable: !partial,
+        allowedMembers: [
+          [Constant.parse],
+          [Constructor.parse],
+          [static_member],
+          [stringifier],
+          [IterableLike.parse],
+          [Attribute.parse],
+          [Operation.parse]
+        ]
+      });
+    }
+
+    get type() {
+      return "interface";
+    }
+
+    *validate(defs) {
+      yield* this.extAttrs.validate(defs);
+      if (
+        !this.partial &&
+        this.extAttrs.every(extAttr => extAttr.name !== "Exposed") &&
+        this.extAttrs.every(extAttr => extAttr.name !== "LegacyNoInterfaceObject")
+      ) {
+        const message = `Interfaces must have \`[Exposed]\` extended attribute. \
+To fix, add, for example, \`[Exposed=Window]\`. Please also consider carefully \
+if your interface should also be exposed in a Worker scope. Refer to the \
+[WebIDL spec section on Exposed](https://heycam.github.io/webidl/#Exposed) \
+for more information.`;
+        yield validationError(this.tokens.name, this, "require-exposed", message, {
+          autofix: autofixAddExposedWindow(this)
+        });
+      }
+      const oldConstructors = this.extAttrs.filter(extAttr => extAttr.name === "Constructor");
+      for (const constructor of oldConstructors) {
+        const message = `Constructors should now be represented as a \`constructor()\` operation on the interface \
+instead of \`[Constructor]\` extended attribute. Refer to the \
+[WebIDL spec section on constructor operations](https://heycam.github.io/webidl/#idl-constructors) \
+for more information.`;
+        yield validationError(constructor.tokens.name, this, "constructor-member", message, {
+          autofix: autofixConstructor(this, constructor)
+        });
+      }
+
+      const isGlobal = this.extAttrs.some(extAttr => extAttr.name === "Global");
+      if (isGlobal) {
+        const factoryFunctions = this.extAttrs.filter(extAttr => extAttr.name === "LegacyFactoryFunction");
+        for (const named of factoryFunctions) {
+          const message = `Interfaces marked as \`[Global]\` cannot have factory functions.`;
+          yield validationError(named.tokens.name, this, "no-constructible-global", message);
+        }
+
+        const constructors = this.members.filter(member => member.type === "constructor");
+        for (const named of constructors) {
+          const message = `Interfaces marked as \`[Global]\` cannot have constructors.`;
+          yield validationError(named.tokens.base, this, "no-constructible-global", message);
+        }
+      }
+
+      yield* super.validate(defs);
+      if (!this.partial) {
+        yield* checkInterfaceMemberDuplication(defs, this);
+      }
+    }
+  }
+
+  function autofixConstructor(interfaceDef, constructorExtAttr) {
+    interfaceDef = autoParenter(interfaceDef);
+    return () => {
+      const indentation = getLastIndentation(interfaceDef.extAttrs.tokens.open.trivia);
+      const memberIndent = interfaceDef.members.length ?
+        getLastIndentation(getFirstToken(interfaceDef.members[0]).trivia) :
+        getMemberIndentation(indentation);
+      const constructorOp = Constructor.parse(new Tokeniser(`\n${memberIndent}constructor();`));
+      constructorOp.extAttrs = new ExtendedAttributes({});
+      autoParenter(constructorOp).arguments = constructorExtAttr.arguments;
+
+      const existingIndex = findLastIndex(interfaceDef.members, m => m.type === "constructor");
+      interfaceDef.members.splice(existingIndex + 1, 0, constructorOp);
+
+      const { close }  = interfaceDef.tokens;
+      if (!close.trivia.includes("\n")) {
+        close.trivia += `\n${indentation}`;
+      }
+
+      const { extAttrs } = interfaceDef;
+      const index = extAttrs.indexOf(constructorExtAttr);
+      const removed = extAttrs.splice(index, 1);
+      if (!extAttrs.length) {
+        extAttrs.tokens.open = extAttrs.tokens.close = undefined;
+      } else if (extAttrs.length === index) {
+        extAttrs[index - 1].tokens.separator = undefined;
+      } else if (!extAttrs[index].tokens.name.trivia.trim()) {
+        extAttrs[index].tokens.name.trivia = removed[0].tokens.name.trivia;
+      }
+    };
+  }
+
+  class Mixin extends Container {
+    /**
+     * @typedef {import("../tokeniser.js").Token} Token
+     *
+     * @param {import("../tokeniser.js").Tokeniser} tokeniser
+     * @param {Token} base
+     * @param {object} [options]
+     * @param {Token} [options.partial]
+     */
+    static parse(tokeniser, base, { partial } = {}) {
+      const tokens = { partial, base };
+      tokens.mixin = tokeniser.consume("mixin");
+      if (!tokens.mixin) {
+        return;
+      }
+      return Container.parse(tokeniser, new Mixin({ source: tokeniser.source, tokens }), {
+        type: "interface mixin",
+        allowedMembers: [
+          [Constant.parse],
+          [stringifier],
+          [Attribute.parse, { noInherit: true }],
+          [Operation.parse, { regular: true }]
+        ]
+      });
+    }
+
+    get type() {
+      return "interface mixin";
+    }
+  }
+
+  class Field extends Base {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     */
+    static parse(tokeniser) {
+      /** @type {Base["tokens"]} */
+      const tokens = {};
+      const ret = autoParenter(new Field({ source: tokeniser.source, tokens }));
+      ret.extAttrs = ExtendedAttributes.parse(tokeniser);
+      tokens.required = tokeniser.consume("required");
+      ret.idlType = type_with_extended_attributes(tokeniser, "dictionary-type") || tokeniser.error("Dictionary member lacks a type");
+      tokens.name = tokeniser.consume("identifier") || tokeniser.error("Dictionary member lacks a name");
+      ret.default = Default.parse(tokeniser);
+      if (tokens.required && ret.default) tokeniser.error("Required member must not have a default");
+      tokens.termination = tokeniser.consume(";") || tokeniser.error("Unterminated dictionary member, expected `;`");
+      return ret.this;
+    }
+
+    get type() {
+      return "field";
+    }
+    get name() {
+      return unescape(this.tokens.name.value);
+    }
+    get required() {
+      return !!this.tokens.required;
+    }
+
+    *validate(defs) {
+      yield* this.idlType.validate(defs);
+    }
+  }
+
+  // @ts-check
+
+  class Dictionary extends Container {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     * @param {object} [options]
+     * @param {import("../tokeniser.js").Token} [options.partial]
+     */
+    static parse(tokeniser, { partial } = {}) {
+      const tokens = { partial };
+      tokens.base = tokeniser.consume("dictionary");
+      if (!tokens.base) {
+        return;
+      }
+      return Container.parse(tokeniser, new Dictionary({ source: tokeniser.source, tokens }), {
+        type: "dictionary",
+        inheritable: !partial,
+        allowedMembers: [
+          [Field.parse],
+        ]
+      });
+    }
+
+    get type() {
+      return "dictionary";
+    }
+  }
+
+  class Namespace extends Container {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     * @param {object} [options]
+     * @param {import("../tokeniser.js").Token} [options.partial]
+     */
+    static parse(tokeniser, { partial } = {}) {
+      const tokens = { partial };
+      tokens.base = tokeniser.consume("namespace");
+      if (!tokens.base) {
+        return;
+      }
+      return Container.parse(tokeniser, new Namespace({ source: tokeniser.source, tokens }), {
+        type: "namespace",
+        allowedMembers: [
+          [Attribute.parse, { noInherit: true, readonly: true }],
+          [Operation.parse, { regular: true }]
+        ]
+      });
+    }
+
+    get type() {
+      return "namespace";
+    }
+
+    *validate(defs) {
+      if (!this.partial && this.extAttrs.every(extAttr => extAttr.name !== "Exposed")) {
+        const message = `Namespaces must have [Exposed] extended attribute. \
+To fix, add, for example, [Exposed=Window]. Please also consider carefully \
+if your namespace should also be exposed in a Worker scope. Refer to the \
+[WebIDL spec section on Exposed](https://heycam.github.io/webidl/#Exposed) \
+for more information.`;
+        yield validationError(this.tokens.name, this, "require-exposed", message, {
+          autofix: autofixAddExposedWindow(this)
+        });
+      }
+      yield* super.validate(defs);
+    }
+  }
+
+  // @ts-check
+
+  class CallbackInterface extends Container {
+    /**
+     * @param {import("../tokeniser").Tokeniser} tokeniser
+     */
+    static parse(tokeniser, callback, { partial = null } = {}) {
+      const tokens = { callback };
+      tokens.base = tokeniser.consume("interface");
+      if (!tokens.base) {
+        return;
+      }
+      return Container.parse(tokeniser, new CallbackInterface({ source: tokeniser.source, tokens }), {
+        type: "callback interface",
+        inheritable: !partial,
+        allowedMembers: [
+          [Constant.parse],
+          [Operation.parse, { regular: true }]
+        ]
+      });
+    }
+
+    get type() {
+      return "callback interface";
+    }
+  }
+
+  /**
+   * @param {Tokeniser} tokeniser
+   * @param {object} options
+   * @param {boolean} [options.concrete]
+   */
+  function parseByTokens(tokeniser, options) {
+    const source = tokeniser.source;
+
+    function error(str) {
+      tokeniser.error(str);
+    }
+
+    function consume(...candidates) {
+      return tokeniser.consume(...candidates);
+    }
+
+    function callback() {
+      const callback = consume("callback");
+      if (!callback) return;
+      if (tokeniser.probe("interface")) {
+        return CallbackInterface.parse(tokeniser, callback);
+      }
+      return CallbackFunction.parse(tokeniser, callback);
+    }
+
+    function interface_(opts) {
+      const base = consume("interface");
+      if (!base) return;
+      const ret = Mixin.parse(tokeniser, base, opts) ||
+        Interface.parse(tokeniser, base, opts) ||
+        error("Interface has no proper body");
+      return ret;
+    }
+
+    function partial() {
+      const partial = consume("partial");
+      if (!partial) return;
+      return Dictionary.parse(tokeniser, { partial }) ||
+        interface_({ partial }) ||
+        Namespace.parse(tokeniser, { partial }) ||
+        error("Partial doesn't apply to anything");
+    }
+
+    function definition() {
+      return callback() ||
+        interface_() ||
+        partial() ||
+        Dictionary.parse(tokeniser) ||
+        Enum.parse(tokeniser) ||
+        Typedef.parse(tokeniser) ||
+        Includes.parse(tokeniser) ||
+        Namespace.parse(tokeniser);
+    }
+
+    function definitions() {
+      if (!source.length) return [];
+      const defs = [];
+      while (true) {
+        const ea = ExtendedAttributes.parse(tokeniser);
+        const def = definition();
+        if (!def) {
+          if (ea.length) error("Stray extended attributes");
+          break;
+        }
+        autoParenter(def).extAttrs = ea;
+        defs.push(def);
+      }
+      const eof = consume("eof");
+      if (options.concrete) {
+        defs.push(eof);
+      }
+      return defs;
+    }
+    const res = definitions();
+    if (tokeniser.position < source.length) error("Unrecognised tokens");
+    return res;
+  }
+
+  /**
+   * @param {string} str
+   * @param {object} [options]
+   * @param {*} [options.sourceName]
+   * @param {boolean} [options.concrete]
+   */
+  function parse(str, options = {}) {
+    const tokeniser = new Tokeniser(str);
+    if (typeof options.sourceName !== "undefined") {
+      tokeniser.source.name = options.sourceName;
+    }
+    return parseByTokens(tokeniser, options);
+  }
+
+  function noop(arg) {
+    return arg;
+  }
+
+  const templates = {
+    wrap: items => items.join(""),
+    trivia: noop,
+    name: noop,
+    reference: noop,
+    type: noop,
+    generic: noop,
+    nameless: noop,
+    inheritance: noop,
+    definition: noop,
+    extendedAttribute: noop,
+    extendedAttributeReference: noop
+  };
+
+  function write(ast, { templates: ts = templates } = {}) {
+    ts = Object.assign({}, templates, ts);
+
+    function reference(raw, { unescaped, context }) {
+      if (!unescaped) {
+        unescaped = raw.startsWith("_") ? raw.slice(1) : raw;
+      }
+      return ts.reference(raw, unescaped, context);
+    }
+
+    function token(t, wrapper = noop, ...args) {
+      if (!t) {
+        return "";
+      }
+      const value = wrapper(t.value, ...args);
+      return ts.wrap([ts.trivia(t.trivia), value]);
+    }
+
+    function reference_token(t, context) {
+      return token(t, reference, { context });
+    }
+
+    function name_token(t, arg) {
+      return token(t, ts.name, arg);
+    }
+
+    function type_body(it) {
+      if (it.union || it.generic) {
+        return ts.wrap([
+          token(it.tokens.base, ts.generic),
+          token(it.tokens.open),
+          ...it.subtype.map(type),
+          token(it.tokens.close)
+        ]);
+      }
+      const firstToken = it.tokens.prefix || it.tokens.base;
+      const prefix = it.tokens.prefix ? [
+        it.tokens.prefix.value,
+        ts.trivia(it.tokens.base.trivia)
+      ] : [];
+      const ref = reference(ts.wrap([
+        ...prefix,
+        it.tokens.base.value,
+        token(it.tokens.postfix)
+      ]), { unescaped: it.idlType, context: it });
+      return ts.wrap([ts.trivia(firstToken.trivia), ref]);
+    }
+    function type(it) {
+      return ts.wrap([
+        extended_attributes(it.extAttrs),
+        type_body(it),
+        token(it.tokens.nullable),
+        token(it.tokens.separator)
+      ]);
+    }
+    function default_(def) {
+      if (!def) {
+        return "";
+      }
+      return ts.wrap([
+        token(def.tokens.assign),
+        ...def.expression.map(t => token(t))
+      ]);
+    }
+    function argument(arg) {
+      return ts.wrap([
+        extended_attributes(arg.extAttrs),
+        token(arg.tokens.optional),
+        ts.type(type(arg.idlType)),
+        token(arg.tokens.variadic),
+        name_token(arg.tokens.name, { data: arg }),
+        default_(arg.default),
+        token(arg.tokens.separator)
+      ]);
+    }
+    function extended_attribute_listitem(str) {
+      return ts.wrap([
+        token(str.tokens.value),
+        token(str.tokens.separator)
+      ]);
+    }
+    function identifier(id, context) {
+      return ts.wrap([
+        reference_token(id.tokens.value, context),
+        token(id.tokens.separator)
+      ]);
+    }
+    function make_ext_at(it) {
+      const { rhsType } = it.params;
+      return ts.wrap([
+        ts.trivia(it.tokens.name.trivia),
+        ts.extendedAttribute(ts.wrap([
+          ts.extendedAttributeReference(it.name),
+          token(it.params.tokens.assign),
+          reference_token(it.params.tokens.secondaryName, it),
+          token(it.params.tokens.open),
+          ...!it.params.list ? [] :
+            it.params.list.map(
+              rhsType === "identifier-list" ? id => identifier(id, it) :
+              rhsType && rhsType.endsWith("-list") ? extended_attribute_listitem :
+              argument
+            ),
+          token(it.params.tokens.close)
+        ])),
+        token(it.tokens.separator)
+      ]);
+    }
+    function extended_attributes(eats) {
+      if (!eats.length) return "";
+      return ts.wrap([
+        token(eats.tokens.open),
+        ...eats.map(make_ext_at),
+        token(eats.tokens.close)
+      ]);
+    }
+
+    function operation(it, parent) {
+      const body = it.idlType ? [
+        ts.type(type(it.idlType)),
+        name_token(it.tokens.name, { data: it, parent }),
+        token(it.tokens.open),
+        ts.wrap(it.arguments.map(argument)),
+        token(it.tokens.close),
+      ] : [];
+      return ts.definition(ts.wrap([
+        extended_attributes(it.extAttrs),
+        it.tokens.name ? token(it.tokens.special) : token(it.tokens.special, ts.nameless, { data: it, parent }),
+        ...body,
+        token(it.tokens.termination)
+      ]), { data: it, parent });
+    }
+
+    function attribute(it, parent) {
+      return ts.definition(ts.wrap([
+        extended_attributes(it.extAttrs),
+        token(it.tokens.special),
+        token(it.tokens.readonly),
+        token(it.tokens.base),
+        ts.type(type(it.idlType)),
+        name_token(it.tokens.name, { data: it, parent }),
+        token(it.tokens.termination)
+      ]), { data: it, parent });
+    }
+
+    function constructor(it, parent) {
+      return ts.definition(ts.wrap([
+        extended_attributes(it.extAttrs),
+        token(it.tokens.base, ts.nameless, { data: it, parent }),
+        token(it.tokens.open),
+        ts.wrap(it.arguments.map(argument)),
+        token(it.tokens.close),
+        token(it.tokens.termination)
+      ]), { data: it, parent });
+    }
+
+    function inheritance(inh) {
+      if (!inh.tokens.inheritance) {
+        return "";
+      }
+      return ts.wrap([
+        token(inh.tokens.colon),
+        ts.trivia(inh.tokens.inheritance.trivia),
+        ts.inheritance(reference(inh.tokens.inheritance.value, { context: inh }))
+      ]);
+    }
+
+    function container(it) {
+      return ts.definition(ts.wrap([
+        extended_attributes(it.extAttrs),
+        token(it.tokens.callback),
+        token(it.tokens.partial),
+        token(it.tokens.base),
+        token(it.tokens.mixin),
+        name_token(it.tokens.name, { data: it }),
+        inheritance(it),
+        token(it.tokens.open),
+        iterate(it.members, it),
+        token(it.tokens.close),
+        token(it.tokens.termination)
+      ]), { data: it });
+    }
+
+    function field(it, parent) {
+      return ts.definition(ts.wrap([
+        extended_attributes(it.extAttrs),
+        token(it.tokens.required),
+        ts.type(type(it.idlType)),
+        name_token(it.tokens.name, { data: it, parent }),
+        default_(it.default),
+        token(it.tokens.termination)
+      ]), { data: it, parent });
+    }
+    function const_(it, parent) {
+      return ts.definition(ts.wrap([
+        extended_attributes(it.extAttrs),
+        token(it.tokens.base),
+        ts.type(type(it.idlType)),
+        name_token(it.tokens.name, { data: it, parent }),
+        token(it.tokens.assign),
+        token(it.tokens.value),
+        token(it.tokens.termination)
+      ]), { data: it, parent });
+    }
+    function typedef(it) {
+      return ts.definition(ts.wrap([
+        extended_attributes(it.extAttrs),
+        token(it.tokens.base),
+        ts.type(type(it.idlType)),
+        name_token(it.tokens.name, { data: it }),
+        token(it.tokens.termination)
+      ]), { data: it });
+    }
+    function includes(it) {
+      return ts.definition(ts.wrap([
+        extended_attributes(it.extAttrs),
+        reference_token(it.tokens.target, it),
+        token(it.tokens.includes),
+        reference_token(it.tokens.mixin, it),
+        token(it.tokens.termination)
+      ]), { data: it });
+    }
+    function callback(it) {
+      return ts.definition(ts.wrap([
+        extended_attributes(it.extAttrs),
+        token(it.tokens.base),
+        name_token(it.tokens.name, { data: it }),
+        token(it.tokens.assign),
+        ts.type(type(it.idlType)),
+        token(it.tokens.open),
+        ...it.arguments.map(argument),
+        token(it.tokens.close),
+        token(it.tokens.termination),
+      ]), { data: it });
+    }
+    function enum_(it) {
+      return ts.definition(ts.wrap([
+        extended_attributes(it.extAttrs),
+        token(it.tokens.base),
+        name_token(it.tokens.name, { data: it }),
+        token(it.tokens.open),
+        iterate(it.values, it),
+        token(it.tokens.close),
+        token(it.tokens.termination)
+      ]), { data: it });
+    }
+    function enum_value(v, parent) {
+      return ts.wrap([
+        ts.trivia(v.tokens.value.trivia),
+        ts.definition(
+          ts.wrap(['"', ts.name(v.value, { data: v, parent }), '"']),
+          { data: v, parent }
+        ),
+        token(v.tokens.separator)
+      ]);
+    }
+    function iterable_like(it, parent) {
+      return ts.definition(ts.wrap([
+        extended_attributes(it.extAttrs),
+        token(it.tokens.readonly),
+        token(it.tokens.async),
+        token(it.tokens.base, ts.generic),
+        token(it.tokens.open),
+        ts.wrap(it.idlType.map(type)),
+        token(it.tokens.close),
+        token(it.tokens.argsOpen),
+        ts.wrap(it.arguments.map(argument)),
+        token(it.tokens.argsClose),
+        token(it.tokens.termination)
+      ]), { data: it, parent });
+    }
+    function eof(it) {
+      return ts.trivia(it.trivia);
+    }
+
+    const table = {
+      interface: container,
+      "interface mixin": container,
+      namespace: container,
+      operation,
+      attribute,
+      constructor,
+      dictionary: container,
+      field,
+      const: const_,
+      typedef,
+      includes,
+      callback,
+      enum: enum_,
+      "enum-value": enum_value,
+      iterable: iterable_like,
+      maplike: iterable_like,
+      setlike: iterable_like,
+      "callback interface": container,
+      eof
+    };
+    function dispatch(it, parent) {
+      const dispatcher = table[it.type];
+      if (!dispatcher) {
+        throw new Error(`Type "${it.type}" is unsupported`);
+      }
+      return table[it.type](it, parent);
+    }
+    function iterate(things, parent) {
+      if (!things) return;
+      const results = things.map(thing => dispatch(thing, parent));
+      return ts.wrap(results);
+    }
+    return iterate(ast);
+  }
+
+  function getMixinMap(all, unique) {
+    const map = new Map();
+    const includes = all.filter(def => def.type === "includes");
+    for (const include of includes) {
+      const mixin = unique.get(include.includes);
+      if (!mixin) {
+        continue;
+      }
+      const array = map.get(include.target);
+      if (array) {
+        array.push(mixin);
+      } else {
+        map.set(include.target, [mixin]);
+      }
+    }
+    return map;
+  }
+
+  /**
+   * @typedef {ReturnType<typeof groupDefinitions>} Definitions
+   */
+  function groupDefinitions(all) {
+    const unique = new Map();
+    const duplicates = new Set();
+    const partials = new Map();
+    for (const def of all) {
+      if (def.partial) {
+        const array = partials.get(def.name);
+        if (array) {
+          array.push(def);
+        } else {
+          partials.set(def.name, [def]);
+        }
+        continue;
+      }
+      if (!def.name) {
+        continue;
+      }
+      if (!unique.has(def.name)) {
+        unique.set(def.name, def);
+      } else {
+        duplicates.add(def);
+      }
+    }
+    return {
+      all,
+      unique,
+      partials,
+      duplicates,
+      mixinMap: getMixinMap(all, unique),
+      cache: {
+        typedefIncludesDictionary: new WeakMap(),
+        dictionaryIncludesRequiredField: new WeakMap()
+      },
+    };
+  }
+
+  function* checkDuplicatedNames({ unique, duplicates }) {
+    for (const dup of duplicates) {
+      const { name } = dup;
+      const message = `The name "${name}" of type "${unique.get(name).type}" was already seen`;
+      yield validationError(dup.tokens.name, dup, "no-duplicate", message);
+    }
+  }
+
+  function* validateIterable(ast) {
+    const defs = groupDefinitions(ast);
+    for (const def of defs.all) {
+      if (def.validate) {
+        yield* def.validate(defs);
+      }
+    }
+    yield* checkDuplicatedNames(defs);
+  }
+
+  // Remove this once all of our support targets expose `.flat()` by default
+  function flatten(array) {
+    if (array.flat) {
+      return array.flat();
+    }
+    return [].concat(...array);
+  }
+
+  /**
+   * @param {*} ast AST or array of ASTs
+   */
+  function validate(ast) {
+    return [...validateIterable(flatten(ast))];
+  }
+
+  var _webidl2 = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    parse: parse,
+    write: write,
+    validate: validate,
+    WebIDLParseError: WebIDLParseError
+  });
+
+  /**
    * marked - a markdown parser
    * Copyright (c) 2011-2020, Christopher Jeffrey. (MIT Licensed)
    * https://github.com/markedjs/marked
@@ -760,7 +3412,7 @@ window.respecVersion = "25.16.5";
 
   const unescapeTest = /&(#(?:\d+)|(?:#x[0-9A-Fa-f]+)|(?:\w+));?/ig;
 
-  function unescape(html) {
+  function unescape$1(html) {
     // explicitly match decimal, hex, and named HTML entities
     return html.replace(unescapeTest, (_, n) => {
       n = n.toLowerCase();
@@ -798,7 +3450,7 @@ window.respecVersion = "25.16.5";
     if (sanitize) {
       let prot;
       try {
-        prot = decodeURIComponent(unescape(href))
+        prot = decodeURIComponent(unescape$1(href))
           .replace(nonWordAndColonTest, '')
           .toLowerCase();
       } catch (e) {
@@ -961,7 +3613,7 @@ window.respecVersion = "25.16.5";
 
   var helpers = {
     escape,
-    unescape,
+    unescape: unescape$1,
     edit,
     cleanUrl,
     resolveUrl,
@@ -2693,7 +5345,7 @@ window.respecVersion = "25.16.5";
 
   const { defaults: defaults$4 } = defaults;
   const {
-    unescape: unescape$1
+    unescape: unescape$1$1
   } = helpers;
 
   /**
@@ -2764,7 +5416,7 @@ window.respecVersion = "25.16.5";
             out += this.renderer.heading(
               this.parseInline(token.tokens),
               token.depth,
-              unescape$1(this.parseInline(token.tokens, this.textRenderer)),
+              unescape$1$1(this.parseInline(token.tokens, this.textRenderer)),
               this.slugger);
             continue;
           }
@@ -3732,6 +6384,7 @@ window.respecVersion = "25.16.5";
   /** @type {import("idb")} */
   // @ts-ignore
   const idb = _idb;
+  const webidl2 = _webidl2;
   /** @type {import("hyperhtml").default} */
   // @ts-ignore
   const html$1 = hyperHTML;
@@ -3745,6 +6398,19 @@ window.respecVersion = "25.16.5";
   // @ts-check
 
   const dashes = /-/g;
+  /**
+   * Hashes a string from char code. Can return a negative number.
+   * Based on https://gist.github.com/hyamamoto/fd435505d29ebfa3d9716fd2be8d42f0
+   *
+   * @param {String} text
+   */
+  function hashString(text) {
+    let hash = 0;
+    for (const char of text) {
+      hash = (Math.imul(31, hash) + char.charCodeAt(0)) | 0;
+    }
+    return String(hash);
+  }
 
   const localizationStrings = {
     en: {
@@ -3883,6 +6549,74 @@ window.respecVersion = "25.16.5";
     return `[${i + 1}](#${element.id})`;
   }
 
+  class IDBKeyVal {
+    /**
+     * @param {import("idb").IDBPDatabase} idb
+     * @param {string} storeName
+     */
+    constructor(idb, storeName) {
+      this.idb = idb;
+      this.storeName = storeName;
+    }
+
+    /** @param {string} key */
+    async get(key) {
+      return await this.idb
+        .transaction(this.storeName)
+        .objectStore(this.storeName)
+        .get(key);
+    }
+
+    /**
+     * @param {string[]} keys
+     */
+    async getMany(keys) {
+      const keySet = new Set(keys);
+      /** @type {Map<string, any>} */
+      const results = new Map();
+      let cursor = await this.idb.transaction(this.storeName).store.openCursor();
+      while (cursor) {
+        if (keySet.has(cursor.key)) {
+          results.set(cursor.key, cursor.value);
+        }
+        cursor = await cursor.continue();
+      }
+      return results;
+    }
+
+    /**
+     * @param {string} key
+     * @param {any} value
+     */
+    async set(key, value) {
+      const tx = this.idb.transaction(this.storeName, "readwrite");
+      tx.objectStore(this.storeName).put(value, key);
+      return await tx.done;
+    }
+
+    async addMany(entries) {
+      const tx = this.idb.transaction(this.storeName, "readwrite");
+      for (const [key, value] of entries) {
+        tx.objectStore(this.storeName).put(value, key);
+      }
+      return await tx.done;
+    }
+
+    async clear() {
+      const tx = this.idb.transaction(this.storeName, "readwrite");
+      tx.objectStore(this.storeName).clear();
+      return await tx.done;
+    }
+
+    async keys() {
+      const tx = this.idb.transaction(this.storeName);
+      /** @type {Promise<string[]>} */
+      const keys = tx.objectStore(this.storeName).getAllKeys();
+      await tx.done;
+      return keys;
+    }
+  }
+
   // STRING HELPERS
   // Takes an array and returns a string that separates each of its items with the proper commas and
   // "and". The second argument is a mapping function that can convert the items before they are
@@ -3910,6 +6644,17 @@ window.respecVersion = "25.16.5";
         return `${str.substr(0, lastComma)}${and}${str.slice(lastComma + 2)}`;
       }
     }
+  }
+
+  // Takes a string, applies some XML escapes, and returns the escaped string.
+  // Note that overall using either Handlebars' escaped output or jQuery is much
+  // preferred to operating on strings directly.
+  function xmlEscape(s) {
+    return s
+      .replace(/&/g, "&amp;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;");
   }
 
   /**
@@ -4113,6 +6858,18 @@ window.respecVersion = "25.16.5";
     const items = array.map(mapper);
     const joined = items.slice(0, -1).map(item => html$1`${item}, `);
     return html$1`${joined}${items[items.length - 1]}`;
+  }
+
+  /**
+   * Creates and sets an ID to an element (elem) by hashing the text content.
+   *
+   * @param {HTMLElement} elem element to hash from
+   * @param {String} prefix prefix to prepend to the generated id
+   */
+  function addHashId(elem, prefix = "") {
+    const text = norm(elem.textContent);
+    const hash = hashString(text);
+    return addId(elem, prefix, hash);
   }
 
   /**
@@ -4331,7 +7088,7 @@ window.respecVersion = "25.16.5";
    * @param {Node} outer outer node to be modified
    * @param {Element} wrapper wrapper node to be appended
    */
-  function wrapInner$1(outer, wrapper) {
+  function wrapInner(outer, wrapper) {
     wrapper.append(...outer.childNodes);
     outer.appendChild(wrapper);
     return outer;
@@ -6250,22 +9007,6 @@ window.respecVersion = "25.16.5";
 
   const name$j = "pcisig/style";
 
-  function attachFixupScript(document, version) {
-    const script = document.createElement("script");
-    script.addEventListener(
-      "load",
-      () => {
-        if (window.location.hash) {
-          // eslint-disable-next-line no-self-assign
-          window.location = window.location;
-        }
-      },
-      { once: true }
-    );
-    script.src = `https://sglaser.github.io/respec/Spec/scripts/${version}/fixup.js`;
-    document.body.appendChild(script);
-  }
-
   // Make a best effort to attach meta viewport at the top of the head.
   // Other plugins might subsequently push it down, but at least we start
   // at the right place. When ReSpec exports the HTML, it again moves the
@@ -6313,11 +9054,6 @@ window.respecVersion = "25.16.5";
         href: "https://sglaser.github.io/respec/Spec",
       },
       {
-        hint: "preload", // all specs need it, and we attach it on end-all.
-        href: "https://sglaser.github.io/respec/Spec/scripts/2019/fixup.js",
-        as: "script",
-      },
-      {
         hint: "preload", // all specs include on base.css.
         href: "https://sglaser.github.io/respec/Spec/StyleSheets/2019/base.css",
         as: "style",
@@ -6329,6 +9065,9 @@ window.respecVersion = "25.16.5";
         as: "image",
       },
     ]
+      .filter(item => {
+        conf.cssOverride || item.as != "style";
+      })
       .map(createResourceHint)
       .reduce((frag, link) => {
         frag.appendChild(link);
@@ -6424,16 +9163,6 @@ window.respecVersion = "25.16.5";
 
     // Select between released styles and experimental style.
     const version = selectStyleVersion(conf.useExperimentalStyles || "2019");
-    // Attach PCISIG fixup script after we are done.
-    if (version && !conf.noToc) {
-      sub(
-        "end-all",
-        () => {
-          attachFixupScript(document, version);
-        },
-        { once: true }
-      );
-    }
     const finalVersionPath = version ? `${version}/` : "";
     const finalStyleURL = `https://sglaser.github.io/respec/Spec/StyleSheets/${finalVersionPath}${styleFile}.css`;
 
@@ -6471,165 +9200,8 @@ window.respecVersion = "25.16.5";
   });
 
   // @ts-check
-  const name$l = "core/github";
 
-  let resolveGithubPromise;
-  let rejectGithubPromise;
-  /** @type {Promise<{ apiBase: string, fullName: string, branch: string, repoURL: string } | null>} */
-  const github = new Promise((resolve, reject) => {
-    resolveGithubPromise = resolve;
-    rejectGithubPromise = message => {
-      pub("error", message);
-      reject(new Error(message));
-    };
-  });
-
-  const localizationStrings$1 = {
-    en: {
-      file_a_bug: "File a bug",
-      participate: "Participate",
-      commit_history: "Commit history",
-    },
-    ko: {
-      participate: "참여",
-    },
-    zh: {
-      participate: "参与：",
-      file_a_bug: "反馈错误",
-    },
-    ja: {
-      file_a_bug: "問題報告",
-      participate: "参加方法：",
-      commit_history: "変更履歴",
-    },
-    nl: {
-      commit_history: "Revisiehistorie",
-      file_a_bug: "Dien een melding in",
-      participate: "Doe mee",
-    },
-    es: {
-      commit_history: "Historia de cambios",
-      file_a_bug: "Nota un bug",
-      participate: "Participe",
-    },
-    de: {
-      file_a_bug: "Fehler melden",
-      participate: "Mitmachen",
-      commit_history: "Revisionen",
-    },
-  };
-  const l10n$4 = getIntlData(localizationStrings$1);
-
-  async function run$8(conf) {
-    if (!conf.hasOwnProperty("github") || !conf.github) {
-      // nothing to do, bail out.
-      resolveGithubPromise(null);
-      return;
-    }
-    if (
-      typeof conf.github === "object" &&
-      !conf.github.hasOwnProperty("repoURL")
-    ) {
-      const msg =
-        "Config option `[github](https://github.com/w3c/respec/wiki/github)` " +
-        "is missing property `repoURL`.";
-      rejectGithubPromise(msg);
-      return;
-    }
-    let tempURL = conf.github.repoURL || conf.github;
-    if (!tempURL.endsWith("/")) tempURL += "/";
-    let ghURL;
-    try {
-      ghURL = new URL(tempURL, "https://github.com");
-    } catch {
-      const msg = `\`respecConf.github\` is not a valid URL? (${ghURL})`;
-      rejectGithubPromise(msg);
-      return;
-    }
-    if (ghURL.origin !== "https://github.com") {
-      const msg = `\`respecConf.github\` must be HTTPS and pointing to GitHub. (${ghURL})`;
-      rejectGithubPromise(msg);
-      return;
-    }
-    const [org, repo] = ghURL.pathname.split("/").filter(item => item);
-    if (!org || !repo) {
-      const msg =
-        "`respecConf.github` URL needs a path with, for example, w3c/my-spec";
-      rejectGithubPromise(msg);
-      return;
-    }
-    const branch = conf.github.branch || "gh-pages";
-    const issueBase = new URL("./issues/", ghURL).href;
-    const newProps = {
-      edDraftURI: `https://${org.toLowerCase()}.github.io/${repo}/`,
-      githubToken: undefined,
-      githubUser: undefined,
-      issueBase,
-      atRiskBase: issueBase,
-      otherLinks: [],
-      pullBase: new URL("./pulls/", ghURL).href,
-      shortName: repo,
-    };
-    const otherLink = {
-      key: l10n$4.participate,
-      data: [
-        {
-          value: `GitHub ${org}/${repo}`,
-          href: ghURL,
-        },
-        {
-          value: l10n$4.file_a_bug,
-          href: newProps.issueBase,
-        },
-        {
-          value: l10n$4.commit_history,
-          href: new URL(`./commits/${branch}`, ghURL.href).href,
-        },
-        {
-          value: "Pull requests",
-          href: newProps.pullBase,
-        },
-      ],
-    };
-    // Assign new properties, but retain existing ones
-    let githubAPI = "https://respec.org/github";
-    if (conf.githubAPI) {
-      if (new URL(conf.githubAPI).hostname === window.parent.location.hostname) {
-        // for testing
-        githubAPI = conf.githubAPI;
-      } else {
-        const msg = "`respecConfig.githubAPI` should not be added manually.";
-        pub("warn", msg);
-      }
-    }
-    const normalizedGHObj = {
-      branch,
-      repoURL: ghURL.href,
-      apiBase: githubAPI,
-      fullName: `${org}/${repo}`,
-    };
-    resolveGithubPromise(normalizedGHObj);
-
-    const normalizedConfig = {
-      ...newProps,
-      ...conf,
-      github: normalizedGHObj,
-      githubAPI,
-    };
-    Object.assign(conf, normalizedConfig);
-    conf.otherLinks.unshift(otherLink);
-  }
-
-  var github$1 = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    name: name$l,
-    github: github,
-    run: run$8
-  });
-
-  // @ts-check
-
-  const name$m = "core/data-include";
+  const name$l = "core/data-include";
 
   /**
    * @param {HTMLElement} el
@@ -6690,7 +9262,7 @@ window.respecVersion = "25.16.5";
     ].forEach(attr => el.removeAttribute(attr));
   }
 
-  async function run$9() {
+  async function run$8() {
     /** @type {NodeListOf<HTMLElement>} */
     const includables = document.querySelectorAll("[data-include]");
 
@@ -6716,8 +9288,8 @@ window.respecVersion = "25.16.5";
 
   var dataInclude = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$m,
-    run: run$9
+    name: name$l,
+    run: run$8
   });
 
   /**
@@ -6731,9 +9303,9 @@ window.respecVersion = "25.16.5";
    * any mismatch.
    *
    */
-  const name$n = "core/title";
+  const name$m = "core/title";
 
-  const localizationStrings$2 = {
+  const localizationStrings$1 = {
     en: {
       default_title: "No Title",
     },
@@ -6745,9 +9317,9 @@ window.respecVersion = "25.16.5";
     },
   };
 
-  const l10n$5 = getIntlData(localizationStrings$2);
+  const l10n$4 = getIntlData(localizationStrings$1);
 
-  function run$a(conf) {
+  function run$9(conf) {
     /** @type {HTMLElement} */
     const h1Elem =
       document.querySelector("h1#title") || html$1`<h1 id="title"></h1>`;
@@ -6777,7 +9349,7 @@ window.respecVersion = "25.16.5";
     // If the h1 is newly created, it won't be connected. In this case
     // we use the <title> or a localized fallback.
     if (!h1Elem.isConnected) {
-      h1Elem.textContent = document.title || `${l10n$5.default_title}`;
+      h1Elem.textContent = document.title || `${l10n$4.default_title}`;
     }
 
     let documentTitle = norm(h1Elem.textContent);
@@ -6801,8 +9373,8 @@ window.respecVersion = "25.16.5";
 
   var title = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$n,
-    run: run$a
+    name: name$m,
+    run: run$9
   });
 
   // @ts-check
@@ -6825,9 +9397,7 @@ window.respecVersion = "25.16.5";
     return html$1`
     <dd class="${data.class ? data.class : null}">
       ${data.href
-        ? html$1`
-            <a href="${data.href}">${data.value || data.href}</a>
-          `
+        ? html$1`<a href="${data.href}">${data.value || data.href}</a>`
         : ""}
     </dd>
   `;
@@ -6837,9 +9407,7 @@ window.respecVersion = "25.16.5";
 
   var showLogo = obj => {
     /** @type {HTMLAnchorElement} */
-    const a = html$1`
-    <a href="${obj.url || ""}" class="logo"></a>
-  `;
+    const a = html$1`<a href="${obj.url || ""}" class="logo"></a>`;
     if (!obj.alt) {
       showInlineWarning(a, "Found spec logo without an `alt` attribute");
     }
@@ -6861,7 +9429,7 @@ window.respecVersion = "25.16.5";
 
   // @ts-check
 
-  const localizationStrings$3 = {
+  const localizationStrings$2 = {
     en: {
       until: "Until",
     },
@@ -6870,10 +9438,10 @@ window.respecVersion = "25.16.5";
     },
   };
 
-  const lang$a = lang in localizationStrings$3 ? lang : "en";
+  const lang$a = lang in localizationStrings$2 ? lang : "en";
 
   var showPeople = (items = []) => {
-    const l10n = localizationStrings$3[lang$a];
+    const l10n = localizationStrings$2[lang$a];
     return items.map(getItem);
 
     function getItem(p) {
@@ -6897,11 +9465,7 @@ window.respecVersion = "25.16.5";
         <a class="u-url url p-name fn" href="${p.url}">${personName}</a>
       `);
       } else {
-        contents.push(
-          html$1`
-          <span class="p-name fn">${personName}</span>
-        `
-        );
+        contents.push(html$1`<span class="p-name fn">${personName}</span>`);
       }
       if (p.orcid) {
         contents.push(
@@ -6941,11 +9505,7 @@ window.respecVersion = "25.16.5";
           `
           );
         } else {
-          contents.push(
-            html$1`
-            (${company})
-          `
-          );
+          contents.push(html$1`(${company})`);
         }
       }
       if (p.note) contents.push(document.createTextNode(` (${p.note})`));
@@ -6974,11 +9534,7 @@ window.respecVersion = "25.16.5";
           );
         }
         timeElem.dateTime = toShortIsoDate(retiredDate);
-        contents.push(
-          html$1`
-          - ${l10n.until.concat(" ")}${timeElem}
-        `
-        );
+        contents.push(html$1`- ${l10n.until.concat(" ")}${timeElem}`);
       }
 
       // @ts-ignore: html types only support Element but we use a DocumentFragment here
@@ -6988,14 +9544,10 @@ window.respecVersion = "25.16.5";
     }
 
     function getExtra(extra) {
-      const span = html$1`
-      <span class="${extra.class || null}"></span>
-    `;
+      const span = html$1`<span class="${extra.class || null}"></span>`;
       let textContainer = span;
       if (extra.href) {
-        textContainer = html$1`
-        <a href="${extra.href}"></a>
-      `;
+        textContainer = html$1`<a href="${extra.href}"></a>`;
         span.appendChild(textContainer);
       }
       textContainer.textContent = extra.name;
@@ -7005,7 +9557,7 @@ window.respecVersion = "25.16.5";
 
   // @ts-check
 
-  const localizationStrings$4 = {
+  const localizationStrings$3 = {
     en: {
       author: "Author:",
       authors: "Authors:",
@@ -7068,7 +9620,7 @@ window.respecVersion = "25.16.5";
     },
   };
 
-  const l10n$6 = getIntlData(localizationStrings$4);
+  const l10n$5 = getIntlData(localizationStrings$3);
 
   const ccLicense = "https://creativecommons.org/licenses/by/3.0/";
 
@@ -7112,7 +9664,8 @@ window.respecVersion = "25.16.5";
     return html$1`
     <div class="head">
       <div id="respec-banner">
-        <span id="respec-banner-status">${conf.maturity}</span>&nbsp;&mdash;&nbsp;
+        <span id="respec-banner-status">${conf.maturity}</span
+        >&nbsp;&mdash;&nbsp;
         <span id="respec-banner-spec-name">${conf.title}</span>
       </div>
       ${conf.logos.map(showLogo)} ${getSpecTitleElem(conf)}
@@ -7126,13 +9679,13 @@ window.respecVersion = "25.16.5";
       <dl>
         ${!conf.isNoTrack
           ? html$1`
-              <dt>${l10n$6.this_version}</dt>
+              <dt>${l10n$5.this_version}</dt>
               <dd>
                 <a class="u-url" href="${conf.thisVersion}"
                   >${conf.thisVersion}</a
                 >
               </dd>
-              <dt>${l10n$6.latest_published_version}</dt>
+              <dt>${l10n$5.latest_published_version}</dt>
               <dd>
                 ${conf.latestVersion
                   ? html$1`
@@ -7144,7 +9697,7 @@ window.respecVersion = "25.16.5";
           : ""}
         ${conf.edDraftURI
           ? html$1`
-              <dt>${l10n$6.latest_editors_draft}</dt>
+              <dt>${l10n$5.latest_editors_draft}</dt>
               <dd><a href="${conf.edDraftURI}">${conf.edDraftURI}</a></dd>
             `
           : ""}
@@ -7166,7 +9719,7 @@ window.respecVersion = "25.16.5";
           : ""}
         ${conf.bugTrackerHTML
           ? html$1`
-              <dt>${l10n$6.bug_tracker}</dt>
+              <dt>${l10n$5.bug_tracker}</dt>
               <dd>${[conf.bugTrackerHTML]}</dd>
             `
           : ""}
@@ -7193,23 +9746,21 @@ window.respecVersion = "25.16.5";
               <dt>Latest Recommendation:</dt>
               <dd><a href="${conf.prevRecURI}">${conf.prevRecURI}</a></dd>
             `}
-        <dt>${conf.multipleEditors ? l10n$6.editors : l10n$6.editor}</dt>
+        <dt>${conf.multipleEditors ? l10n$5.editors : l10n$5.editor}</dt>
         ${showPeople(conf.editors)}
         ${Array.isArray(conf.formerEditors) && conf.formerEditors.length > 0
           ? html$1`
               <dt>
                 ${conf.multipleFormerEditors
-                  ? l10n$6.former_editors
-                  : l10n$6.former_editor}
+                  ? l10n$5.former_editors
+                  : l10n$5.former_editor}
               </dt>
               ${showPeople(conf.formerEditors)}
             `
           : ""}
         ${conf.authors
           ? html$1`
-              <dt>
-                ${conf.multipleAuthors ? l10n$6.authors : l10n$6.author}
-              </dt>
+              <dt>${conf.multipleAuthors ? l10n$5.authors : l10n$5.author}</dt>
               ${showPeople(conf.authors)}
             `
           : ""}
@@ -7246,17 +9797,13 @@ window.respecVersion = "25.16.5";
    * @param {string=} cssClass
    */
   function linkLicense(text, url, cssClass) {
-    return html$1`
-    <a rel="license" href="${url}" class="${cssClass}">${text}</a>
-  `;
+    return html$1`<a rel="license" href="${url}" class="${cssClass}">${text}</a>`;
   }
 
   function renderCopyright(conf) {
     return conf.isUnofficial
       ? conf.additionalCopyrightHolders
-        ? html$1`
-          <p class="copyright">${[conf.additionalCopyrightHolders]}</p>
-        `
+        ? html$1`<p class="copyright">${[conf.additionalCopyrightHolders]}</p>`
         : conf.overrideCopyright
         ? [conf.overrideCopyright]
         : html$1`
@@ -7281,9 +9828,7 @@ window.respecVersion = "25.16.5";
       ${conf.copyrightStart ? `${conf.copyrightStart}-` : ""}${conf.publishYear}
       <a href="http://www.pcisig.com">PCI-SIG</a>
       ${conf.additionalCopyrightHolders
-        ? html$1`
-            &amp; ${[conf.additionalCopyrightHolders]}
-          `
+        ? html$1`&amp; ${[conf.additionalCopyrightHolders]}`
         : ""}
     </p>
     <dl class="copyright">
@@ -7416,9 +9961,7 @@ window.respecVersion = "25.16.5";
                   >.
                 </p>
                 ${conf.addPatentNote
-                  ? html$1`
-                      <p>${[conf.addPatentNote]}</p>
-                    `
+                  ? html$1`<p>${[conf.addPatentNote]}</p>`
                   : ""}
               `}
         `}
@@ -7430,15 +9973,15 @@ window.respecVersion = "25.16.5";
     const { prUrl, prNumber, edDraftURI } = conf;
     return html$1`
     <details class="annoying-warning" open="">
-      <summary
-        >This is a
+      <summary>
+        This is a
         preview${prUrl && prNumber
           ? html$1`
               of pull request
               <a href="${prUrl}">#${prNumber}</a>
             `
-          : ""}</summary
-      >
+          : ""}
+      </summary>
       <p>
         Do not attempt to implement this version of the specification. Do not
         reference this version as authoritative in any way.
@@ -7710,7 +10253,7 @@ window.respecVersion = "25.16.5";
 
   // @ts-check
 
-  const name$o = "pcisig/pcisig-headers";
+  const name$n = "pcisig/pcisig-headers";
 
   const PCISIGDate = new Intl.DateTimeFormat(["en-AU"], {
     timeZone: "UTC",
@@ -7893,15 +10436,6 @@ window.respecVersion = "25.16.5";
     },
   };
 
-  const baseLogo = Object.freeze({
-    id: "",
-    alt: "",
-    href: "",
-    src: "",
-    height: "48",
-    width: "72",
-  });
-
   /**
    * @param {*} conf
    * @param {string} prop
@@ -7921,7 +10455,7 @@ window.respecVersion = "25.16.5";
     return new Date(ISODate.format(new Date()));
   }
 
-  function run$b(conf) {
+  function run$a(conf) {
     conf.isUnofficial = conf.specStatus === "unofficial";
     if (conf.isUnofficial && !Array.isArray(conf.logos)) {
       conf.logos = [];
@@ -7942,10 +10476,7 @@ window.respecVersion = "25.16.5";
     }
     if (["cc0", "cc-by"].includes(conf.license)) {
       let msg = `You cannot use license "${conf.license}" with PCISIG Specs. `;
-      const non_cc0 = licenses.keys
-        .remove("cc0")
-        .remove("cc-by")
-        .toString();
+      const non_cc0 = licenses.keys.remove("cc0").remove("cc-by").toString();
       msg += `Please set 'respecConfig.license:' to one of ${non_cc0} instead.`;
       pub("error", msg);
     }
@@ -8070,7 +10601,7 @@ window.respecVersion = "25.16.5";
         pub("error", "At least one editor is required");
     }
 
-    const peopCheck = function(it) {
+    const peopCheck = function (it) {
       if (!it.name) pub("error", "All authors and editors must have a name.");
       if (it.orcid) {
         try {
@@ -8106,6 +10637,7 @@ window.respecVersion = "25.16.5";
     conf.multipleEditors = conf.editors && conf.editors.length > 1;
     conf.multipleFormerEditors = conf.formerEditors.length > 1;
     conf.multipleAuthors = conf.authors && conf.authors.length > 1;
+    // eslint-disable-next-line no-unused-vars
     (conf.alternateFormats || []).forEach((i, it) => {
       if (!it.uri || !it.label)
         pub("error", "All alternate formats must have a uri and a label.");
@@ -8350,15 +10882,15 @@ window.respecVersion = "25.16.5";
 
   var pcisigHeaders = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$o,
-    run: run$b
+    name: name$n,
+    run: run$a
   });
 
   // @ts-check
 
-  const name$p = "pcisig/footnotes";
+  const name$o = "pcisig/footnotes";
 
-  function run$c() {
+  function run$b() {
     document.querySelectorAll("span.footnote").forEach((footnote, index) => {
       const id = addId(footnote, "footnote", `${index + 1}`);
       footnote.insertAdjacentHTML(
@@ -8376,30 +10908,26 @@ window.respecVersion = "25.16.5";
       );
       footnote.insertAdjacentHTML(
         "afterbegin",
-        html$1`
-        <span class="footnote-online"> [</span>
-      `
+        html$1`<span class="footnote-online"> [</span>`
       );
       footnote.insertAdjacentHTML(
         "beforeend",
-        html$1`
-        <span class="footnote-online">] </span>
-      `
+        html$1`<span class="footnote-online">] </span>`
       );
     });
   }
 
   var footnotes = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$p,
-    run: run$c
+    name: name$o,
+    run: run$b
   });
 
   // @ts-check
 
-  const name$q = "pcisig/tablenotes";
+  const name$p = "pcisig/tablenotes";
 
-  function run$d() {
+  function run$c() {
     // console.log("in tablenotes");
     const tableid_to_notes_entries = new Map();
     //
@@ -8469,15 +10997,15 @@ window.respecVersion = "25.16.5";
 
   var tablenotes = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$q,
-    run: run$d
+    name: name$p,
+    run: run$c
   });
 
   // @ts-check
 
-  const name$r = "core/data-transform";
+  const name$q = "core/data-transform";
 
-  function run$e() {
+  function run$d() {
     /** @type {NodeListOf<HTMLElement>} */
     const transformables = document.querySelectorAll("[data-transform]");
     transformables.forEach(el => {
@@ -8488,14 +11016,14 @@ window.respecVersion = "25.16.5";
 
   var dataTransform = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$r,
-    run: run$e
+    name: name$q,
+    run: run$d
   });
 
   // @ts-check
-  const name$s = "core/dfn-abbr";
+  const name$r = "core/dfn-abbr";
 
-  function run$f() {
+  function run$e() {
     /** @type {NodeListOf<HTMLElement>} */
     const elements = document.querySelectorAll("[data-abbr]");
     for (const elem of elements) {
@@ -8544,8 +11072,8 @@ window.respecVersion = "25.16.5";
 
   var dataAbbr = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$s,
-    run: run$f
+    name: name$r,
+    run: run$e
   });
 
   // @ts-check
@@ -9044,8 +11572,6 @@ window.respecVersion = "25.16.5";
   /** @type {Conf['biblio']} */
   const biblio = {};
 
-  const name$t = "core/biblio";
-
   const bibrefsURL = new URL("https://specref.herokuapp.com/bibrefs?refs=");
 
   // Opportunistically dns-prefetch to bibref server, as we don't know yet
@@ -9055,11 +11581,9 @@ window.respecVersion = "25.16.5";
     href: bibrefsURL.origin,
   });
   document.head.appendChild(link);
-  let doneResolver$2;
 
   /** @type {Promise<Conf['biblio']>} */
   const done$2 = new Promise(resolve => {
-    doneResolver$2 = resolve;
   });
 
   async function updateFromNetwork(
@@ -9107,118 +11631,9 @@ window.respecVersion = "25.16.5";
     return entry;
   }
 
-  /**
-   * @param {string[]} neededRefs
-   */
-  async function getReferencesFromIdb(neededRefs) {
-    const idbRefs = [];
-
-    // See if we have them in IDB
-    try {
-      await biblioDB.ready; // can throw
-      const promisesToFind = neededRefs.map(async id => ({
-        id,
-        data: await biblioDB.find(id),
-      }));
-      idbRefs.push(...(await Promise.all(promisesToFind)));
-    } catch (err) {
-      // IndexedDB died, so we need to go to the network for all
-      // references
-      idbRefs.push(...neededRefs.map(id => ({ id, data: null })));
-      console.warn(err);
-    }
-
-    return idbRefs;
-  }
-
-  class Plugin {
-    /** @param {Conf} conf */
-    constructor(conf) {
-      this.conf = conf;
-    }
-
-    /**
-     * Normative references take precedence over informative ones,
-     * so any duplicates ones are removed from the informative set.
-     */
-    normalizeReferences() {
-      const normalizedNormativeRefs = new Set(
-        [...this.conf.normativeReferences].map(key => key.toLowerCase())
-      );
-      Array.from(this.conf.informativeReferences)
-        .filter(key => normalizedNormativeRefs.has(key.toLowerCase()))
-        .forEach(redundantKey =>
-          this.conf.informativeReferences.delete(redundantKey)
-        );
-    }
-
-    getRefKeys() {
-      return {
-        informativeReferences: Array.from(this.conf.informativeReferences),
-        normativeReferences: Array.from(this.conf.normativeReferences),
-      };
-    }
-
-    async run() {
-      const finish = () => {
-        doneResolver$2(this.conf.biblio);
-      };
-      if (!this.conf.localBiblio) {
-        this.conf.localBiblio = {};
-      }
-      this.conf.biblio = biblio;
-      const localAliases = Object.keys(this.conf.localBiblio)
-        .filter(key => this.conf.localBiblio[key].hasOwnProperty("aliasOf"))
-        .map(key => this.conf.localBiblio[key].aliasOf)
-        .filter(key => !this.conf.localBiblio.hasOwnProperty(key));
-      this.normalizeReferences();
-      const allRefs = this.getRefKeys();
-      const neededRefs = Array.from(
-        new Set(
-          allRefs.normativeReferences
-            .concat(allRefs.informativeReferences)
-            // Filter, as to not go to network for local refs
-            .filter(key => !this.conf.localBiblio.hasOwnProperty(key))
-            // but include local aliases which refer to external specs
-            .concat(localAliases)
-            .sort()
-        )
-      );
-      const idbRefs = await getReferencesFromIdb(neededRefs);
-      const split = { hasData: [], noData: [] };
-      idbRefs.forEach(ref => {
-        (ref.data ? split.hasData : split.noData).push(ref);
-      });
-      split.hasData.forEach(ref => {
-        biblio[ref.id] = ref.data;
-      });
-      const externalRefs = split.noData.map(item => item.id);
-      if (externalRefs.length) {
-        // Going to the network for refs we don't have
-        const data = await updateFromNetwork(externalRefs, { forceUpdate: true });
-        Object.assign(biblio, data);
-      }
-      Object.assign(biblio, this.conf.localBiblio);
-      finish();
-    }
-  }
-
-  var biblio$1 = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    biblio: biblio,
-    name: name$t,
-    updateFromNetwork: updateFromNetwork,
-    resolveRef: resolveRef,
-    Plugin: Plugin,
-    wireReference: wireReference,
-    stringifyReference: stringifyReference
-  });
-
   // @ts-check
 
-  const name$u = "core/render-biblio";
-
-  const localizationStrings$5 = {
+  const localizationStrings$4 = {
     en: {
       info_references: "Informative references",
       norm_references: "Normative references",
@@ -9254,20 +11669,7 @@ window.respecVersion = "25.16.5";
     },
   };
 
-  const l10n$7 = getIntlData(localizationStrings$5);
-
-  const REF_STATUSES = new Map([
-    ["CR", "W3C Candidate Recommendation"],
-    ["ED", "W3C Editor's Draft"],
-    ["FPWD", "W3C First Public Working Draft"],
-    ["LCWD", "W3C Last Call Working Draft"],
-    ["NOTE", "W3C Note"],
-    ["PER", "W3C Proposed Edited Recommendation"],
-    ["PR", "W3C Proposed Recommendation"],
-    ["REC", "W3C Recommendation"],
-    ["WD", "W3C Working Draft"],
-    ["WG-NOTE", "W3C Working Group Note"],
-  ]);
+  const l10n$6 = getIntlData(localizationStrings$4);
 
   const defaultsReference = Object.freeze({
     authors: [],
@@ -9278,121 +11680,6 @@ window.respecVersion = "25.16.5";
     title: "",
     etAl: false,
   });
-
-  const endWithDot = endNormalizer(".");
-
-  /** @param {Conf} conf */
-  function run$g(conf) {
-    const informs = Array.from(conf.informativeReferences);
-    const norms = Array.from(conf.normativeReferences);
-
-    if (!informs.length && !norms.length) return;
-
-    /** @type {HTMLElement} */
-    const refSection =
-      document.querySelector("section#references") ||
-      html$1`<section id="references"></section>`;
-
-    if (!document.querySelector("section#references > h2")) {
-      refSection.prepend(html$1`<h2>${l10n$7.references}</h2>`);
-    }
-
-    refSection.classList.add("appendix");
-
-    if (norms.length) {
-      const sec = createReferencesSection(norms, l10n$7.norm_references);
-      refSection.appendChild(sec);
-    }
-    if (informs.length) {
-      const sec = createReferencesSection(informs, l10n$7.info_references);
-      refSection.appendChild(sec);
-    }
-
-    document.body.appendChild(refSection);
-  }
-
-  /**
-   * @param {string[]} refs
-   * @param {string} title
-   * @returns {HTMLElement}
-   */
-  function createReferencesSection(refs, title) {
-    const { goodRefs, badRefs } = groupRefs(refs.map(toRefContent));
-    const uniqueRefs = getUniqueRefs(goodRefs);
-
-    const refsToShow = uniqueRefs
-      .concat(badRefs)
-      .sort((a, b) =>
-        a.ref.toLocaleLowerCase().localeCompare(b.ref.toLocaleLowerCase())
-      );
-
-    const sec = html$1`<section>
-    <h3>${title}</h3>
-    <dl class="bibliography">${refsToShow.map(showRef)}</dl>
-  </section>`;
-    addId(sec, "", title);
-
-    const aliases = getAliases(goodRefs);
-    decorateInlineReference(uniqueRefs, aliases);
-    warnBadRefs(badRefs);
-
-    return sec;
-  }
-
-  /**
-   * returns refcontent and unique key for a reference among its aliases
-   * and warns about circular references
-   * @param {String} ref
-   * @typedef {ReturnType<typeof toRefContent>} Ref
-   */
-  function toRefContent(ref) {
-    let refcontent = biblio[ref];
-    let key = ref;
-    const circular = new Set([key]);
-    while (refcontent && refcontent.aliasOf) {
-      if (circular.has(refcontent.aliasOf)) {
-        refcontent = null;
-        const msg = `Circular reference in biblio DB between [\`${ref}\`] and [\`${key}\`].`;
-        pub("error", msg);
-      } else {
-        key = refcontent.aliasOf;
-        refcontent = biblio[key];
-        circular.add(key);
-      }
-    }
-    if (refcontent && !refcontent.id) {
-      refcontent.id = ref.toLowerCase();
-    }
-    return { ref, refcontent };
-  }
-
-  /** @param {Ref[]} refs */
-  function groupRefs(refs) {
-    const goodRefs = [];
-    const badRefs = [];
-    for (const ref of refs) {
-      if (ref.refcontent) {
-        goodRefs.push(ref);
-      } else {
-        badRefs.push(ref);
-      }
-    }
-    return { goodRefs, badRefs };
-  }
-
-  /** @param {Ref[]} refs */
-  function getUniqueRefs(refs) {
-    /** @type {Map<string, Ref>} */
-    const uniqueRefs = new Map();
-    for (const ref of refs) {
-      if (!uniqueRefs.has(ref.refcontent.id)) {
-        // the condition ensures that only the first used [[TERM]]
-        // shows up in #references section
-        uniqueRefs.set(ref.refcontent.id, ref);
-      }
-    }
-    return [...uniqueRefs.values()];
-  }
 
   /**
    * Render an inline citation
@@ -9411,154 +11698,12 @@ window.respecVersion = "25.16.5";
     return linkText ? elem : html$1`[${elem}]`;
   }
 
-  /**
-   * renders a reference
-   * @param {Ref} ref
-   */
-  function showRef({ ref, refcontent }) {
-    const refId = `bib-${ref.toLowerCase()}`;
-    if (refcontent) {
-      return html$1`
-      <dt id="${refId}">[${ref}]</dt>
-      <dd>${{ html: stringifyReference(refcontent) }}</dd>
-    `;
-    } else {
-      return html$1`
-      <dt id="${refId}">[${ref}]</dt>
-      <dd><em class="respec-offending-element">Reference not found.</em></dd>
-    `;
-    }
-  }
-
-  function endNormalizer(endStr) {
-    return str => {
-      const trimmed = str.trim();
-      const result =
-        !trimmed || trimmed.endsWith(endStr) ? trimmed : trimmed + endStr;
-      return result;
-    };
-  }
-
-  function wireReference(rawRef, target = "_blank") {
-    if (typeof rawRef !== "object") {
-      throw new TypeError("Only modern object references are allowed");
-    }
-    const ref = Object.assign({}, defaultsReference, rawRef);
-    const authors = ref.authors.join("; ") + (ref.etAl ? " et al" : "");
-    const status = REF_STATUSES.get(ref.status) || ref.status;
-    return html$1.wire(ref)`
-    <cite>
-      <a
-        href="${ref.href}"
-        target="${target}"
-        rel="noopener noreferrer">
-        ${ref.title.trim()}</a>.
-    </cite>
-    <span class="authors">
-      ${endWithDot(authors)}
-    </span>
-    <span class="publisher">
-      ${endWithDot(ref.publisher)}
-    </span>
-    <span class="pubDate">
-      ${endWithDot(ref.date)}
-    </span>
-    <span class="pubStatus">
-      ${endWithDot(status)}
-    </span>
-  `;
-  }
-
-  /** @param {BiblioData|string} ref */
-  function stringifyReference(ref) {
-    if (typeof ref === "string") return ref;
-    let output = `<cite>${ref.title}</cite>`;
-
-    output = ref.href ? `<a href="${ref.href}">${output}</a>. ` : `${output}. `;
-
-    if (ref.authors && ref.authors.length) {
-      output += ref.authors.join("; ");
-      if (ref.etAl) output += " et al";
-      output += ". ";
-    }
-    if (ref.publisher) {
-      output = `${output} ${endWithDot(ref.publisher)} `;
-    }
-    if (ref.date) output += `${ref.date}. `;
-    if (ref.status) output += `${REF_STATUSES.get(ref.status) || ref.status}. `;
-    if (ref.href) output += `URL: <a href="${ref.href}">${ref.href}</a>`;
-    return output;
-  }
-
-  /**
-   * get aliases for a reference "key"
-   */
-  function getAliases(refs) {
-    return refs.reduce((aliases, ref) => {
-      const key = ref.refcontent.id;
-      const keys = !aliases.has(key)
-        ? aliases.set(key, []).get(key)
-        : aliases.get(key);
-      keys.push(ref.ref);
-      return aliases;
-    }, new Map());
-  }
-
-  /**
-   * fix biblio reference URLs
-   * Add title attribute to references
-   */
-  function decorateInlineReference(refs, aliases) {
-    refs
-      .map(({ ref, refcontent }) => {
-        const refUrl = `#bib-${ref.toLowerCase()}`;
-        const selectors = aliases
-          .get(refcontent.id)
-          .map(alias => `a.bibref[href="#bib-${alias.toLowerCase()}"]`)
-          .join(",");
-        const elems = document.querySelectorAll(selectors);
-        return { refUrl, elems, refcontent };
-      })
-      .forEach(({ refUrl, elems, refcontent }) => {
-        elems.forEach(a => {
-          a.setAttribute("href", refUrl);
-          a.setAttribute("title", refcontent.title);
-          a.dataset.linkType = "biblio";
-        });
-      });
-  }
-
-  /**
-   * warn about bad references
-   */
-  function warnBadRefs(badRefs) {
-    badRefs.forEach(({ ref }) => {
-      const badrefs = [
-        ...document.querySelectorAll(
-          `a.bibref[href="#bib-${ref.toLowerCase()}"]`
-        ),
-      ].filter(({ textContent: t }) => t.toLowerCase() === ref.toLowerCase());
-      const msg = `Bad reference: [\`${ref}\`] (appears ${badrefs.length} times)`;
-      pub("error", msg);
-      console.warn("Bad references: ", badrefs);
-    });
-  }
-
-  var renderBiblio = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    name: name$u,
-    run: run$g,
-    renderInlineCitation: renderInlineCitation,
-    wireReference: wireReference,
-    stringifyReference: stringifyReference
-  });
-
   // @ts-check
 
-  const name$v = "core/inlines";
+  const name$s = "core/inlines";
   const rfc2119Usage = {};
 
-  const localizationStrings$6 = {
+  const localizationStrings$5 = {
     en: {
       rfc2119Keywords() {
         return new RegExp(
@@ -9592,7 +11737,7 @@ window.respecVersion = "25.16.5";
       },
     },
   };
-  const l10n$8 = getIntlData(localizationStrings$6);
+  const l10n$7 = getIntlData(localizationStrings$5);
 
   // Inline `code`
   // TODO: Replace (?!`) at the end with (?:<!`) at the start when Firefox + Safari
@@ -9769,7 +11914,7 @@ window.respecVersion = "25.16.5";
     return document.createTextNode(text);
   }
 
-  function run$h(conf) {
+  function run$f(conf) {
     const abbrMap = new Map();
     document.normalize();
     if (!document.querySelector("section#conformance")) {
@@ -9796,7 +11941,7 @@ window.respecVersion = "25.16.5";
     const txts = getTextNodes(document.body, exclusions, {
       wsNodes: false, // we don't want nodes with just whitespace
     });
-    const keywords = l10n$8.rfc2119Keywords();
+    const keywords = l10n$7.rfc2119Keywords();
     const rx = new RegExp(
       `(${[
       keywords.source,
@@ -9873,13 +12018,13 @@ window.respecVersion = "25.16.5";
 
   var inlines = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$v,
+    name: name$s,
     rfc2119Usage: rfc2119Usage,
-    run: run$h
+    run: run$f
   });
 
   // @ts-check
-  const name$w = "pcisig/pcisig-conformance";
+  const name$t = "pcisig/pcisig-conformance";
 
   /**
    * @param {Element} conformance
@@ -9913,7 +12058,7 @@ window.respecVersion = "25.16.5";
     conformance.prepend(...content.childNodes);
   }
 
-  function run$i() {
+  function run$g() {
     const conformance = document.querySelector("section#conformance");
     if (conformance) {
       processConformance(conformance);
@@ -9922,757 +12067,97 @@ window.respecVersion = "25.16.5";
 
   var pcisigConformance = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$w,
-    run: run$i
+    name: name$t,
+    run: run$g
   });
 
   // Module pcisig/pre-dfn
   // Finds all <dfn> elements and adjust dfn-type attribute.
 
-  const name$x = "pcisig/pre-dfn";
+  const name$u = "pcisig/pre-dfn";
 
-  function run$j() {
+  function run$h() {
     const dfnClass = [
-      "dfn",
-      "pin",
-      "signal",
+      "term",
+      "argument",
+      "bit",
+      "command",
+      "data",
+      "data-block",
+      "encoding",
+      "enum",
+      "field",
+      "message",
+      "msg",
       "op",
       "opcode",
       "operation",
-      "request",
-      "response",
-      "bit",
-      "reply",
-      "message",
-      "msg",
-      "command",
-      "term",
-      "field",
+      "parameter",
+      "pin",
       "register",
       "regpict",
+      "reply",
+      "request",
+      "response",
+      "signal",
       "state",
       "value",
-      "parameter",
-      "argument",
     ];
 
     document.querySelectorAll("dfn:not([data-dfn-type])").forEach(dfn => {
-      let tag = dfnClass[0]; // default "dfn"
+      let tag = dfnClass[0]; // default "term"
       dfnClass.forEach(t => {
         if (dfn.classList && dfn.classList.contains(t)) tag = t;
       });
-      dfn.setAttribute("data-dfn-type", tag); // core/dfn will convert this to data-dfn-type
+      if (tag === "field") {
+        dfn.setAttribute("data-dfn-idl", tag);
+        dfn.setAttribute("data-dfn-type", "idl");
+      } else {
+        dfn.setAttribute("data-dfn-type", tag);
+      }
     });
   }
 
   var preDfn = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$x,
-    run: run$j
+    name: name$u,
+    run: run$h
   });
 
   // @ts-check
 
-  const name$y = "core/dfn";
-
-  function run$k() {
-    document.querySelectorAll("dfn").forEach(dfn => {
-      const titles = getDfnTitles(dfn);
-      registerDefinition(dfn, titles);
-
-      // Treat Internal Slots as IDL.
-      if (!dfn.dataset.dfnType && /^\[\[\w+\]\]$/.test(titles[0])) {
-        dfn.dataset.dfnType = "idl";
-      }
-
-      // Only add `lt`s that are different from the text content
-      if (titles.length === 1 && titles[0] === norm(dfn.textContent)) {
-        return;
-      }
-      dfn.dataset.lt = titles.join("|");
-    });
-  }
-
-  var dfn = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    name: name$y,
-    run: run$k
-  });
-
-  // @ts-check
-
-  const name$z = "core/pluralize";
-
-  function run$l(conf) {
-    if (!conf.pluralize) return;
-
-    const pluralizeDfn = getPluralizer();
-
-    /** @type {NodeListOf<HTMLElement>} */
-    const dfns = document.querySelectorAll(
-      "dfn:not([data-lt-no-plural]):not([data-lt-noDefault])"
-    );
-    dfns.forEach(dfn => {
-      const terms = [dfn.textContent];
-      if (dfn.dataset.lt) terms.push(...dfn.dataset.lt.split("|"));
-      if (dfn.dataset.localLt) {
-        terms.push(...dfn.dataset.localLt.split("|"));
-      }
-
-      const plurals = new Set(terms.map(pluralizeDfn).filter(plural => plural));
-
-      if (plurals.size) {
-        const userDefinedPlurals = dfn.dataset.plurals
-          ? dfn.dataset.plurals.split("|")
-          : [];
-        const uniquePlurals = [...new Set([...userDefinedPlurals, ...plurals])];
-        dfn.dataset.plurals = uniquePlurals.join("|");
-        registerDefinition(dfn, uniquePlurals);
-      }
-    });
-  }
-
-  function getPluralizer() {
-    /** @type {Set<string>} */
-    const links = new Set();
-    /** @type {NodeListOf<HTMLAnchorElement>} */
-    const reflessAnchors = document.querySelectorAll("a:not([href])");
-    reflessAnchors.forEach(el => {
-      const normText = norm(el.textContent).toLowerCase();
-      links.add(normText);
-      if (el.dataset.lt) {
-        links.add(el.dataset.lt);
-      }
-    });
-
-    /** @type {Set<string>} */
-    const dfnTexts = new Set();
-    /** @type {NodeListOf<HTMLElement>} */
-    const dfns = document.querySelectorAll("dfn:not([data-lt-noDefault])");
-    dfns.forEach(dfn => {
-      const normText = norm(dfn.textContent).toLowerCase();
-      dfnTexts.add(normText);
-      if (dfn.dataset.lt) {
-        dfn.dataset.lt.split("|").forEach(lt => dfnTexts.add(lt));
-      }
-      if (dfn.dataset.localLt) {
-        dfn.dataset.localLt.split("|").forEach(lt => dfnTexts.add(lt));
-      }
-    });
-
-    // returns pluralized/singularized term if `text` needs pluralization/singularization, "" otherwise
-    return function pluralizeDfn(/** @type {string} */ text) {
-      const normText = norm(text).toLowerCase();
-      const plural = pluralize$1.isSingular(normText)
-        ? pluralize$1.plural(normText)
-        : pluralize$1.singular(normText);
-      return links.has(plural) && !dfnTexts.has(plural) ? plural : "";
-    };
-  }
-
-  var pluralize$2 = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    name: name$z,
-    run: run$l
-  });
-
-  // @ts-check
-
-  const name$A = "core/examples";
-
-  const localizationStrings$7 = {
-    en: {
-      example: "Example",
-    },
-    nl: {
-      example: "Voorbeeld",
-    },
-    es: {
-      example: "Ejemplo",
-    },
-    ko: {
-      example: "예시",
-    },
-    ja: {
-      example: "例",
-    },
-    de: {
-      example: "Beispiel",
-    },
-    zh: {
-      example: "例",
-    },
-  };
-
-  const l10n$9 = getIntlData(localizationStrings$7);
-
-  const cssPromise = loadStyle$2();
-
-  async function loadStyle$2() {
-    try {
-      return (await Promise.resolve().then(function () { return examples$2; })).default;
-    } catch {
-      return fetchAsset("examples.css");
-    }
-  }
+  const topLevelEntities = new Set([
+    "callback interface",
+    "callback",
+    "dictionary",
+    "enum",
+    "interface mixin",
+    "interface",
+    "typedef",
+  ]);
 
   /**
-   * @typedef {object} Report
-   * @property {number} number
-   * @property {boolean} illegal
-   * @property {string} [title]
-   * @property {string} [content]
+   * This function looks for a <dfn> element whose title is 'name' and
+   * that is "for" 'parent', which is the empty string when 'name'
+   * refers to a top-level entity. For top-level entities, <dfn>
+   * elements that inherit a non-empty [dfn-for] attribute are also
+   * counted as matching.
    *
-   * @param {HTMLElement} elem
-   * @param {number} num
-   * @param {Report} report
+   * When a matching <dfn> is found, it's given <code> formatting,
+   * marked as an IDL definition, and returned. If no <dfn> is found,
+   * the function returns 'undefined'.
+   * @param {*} defn
+   * @param {string} name
    */
-  function makeTitle(elem, num, report) {
-    report.title = elem.title;
-    if (report.title) elem.removeAttribute("title");
-    const number = num > 0 ? ` ${num}` : "";
-    const title = report.title
-      ? html$1`<span class="example-title">: ${report.title}</span>`
-      : "";
-    return html$1`<div class="marker">
-    <a class="self-link">${l10n$9.example}<bdi>${number}</bdi></a
-    >${title}
-  </div>`;
-  }
-
-  async function run$m() {
-    /** @type {NodeListOf<HTMLElement>} */
-    const examples = document.querySelectorAll(
-      "pre.example, pre.illegal-example, aside.example"
-    );
-    if (!examples.length) return;
-
-    const css = await cssPromise;
-    document.head.insertBefore(
-      html$1`<style>
-      ${css}
-    </style>`,
-      document.querySelector("link")
-    );
-
-    let number = 0;
-    examples.forEach(example => {
-      const illegal = example.classList.contains("illegal-example");
-      /** @type {Report} */
-      const report = {
-        number,
-        illegal,
-      };
-      const { title } = example;
-      if (example.localName === "aside") {
-        ++number;
-        const div = makeTitle(example, number, report);
-        example.prepend(div);
-        if (title) {
-          addId(example, `example-${number}`, title); // title gets used
-        } else {
-          // use the number as the title... so, e.g., "example-5"
-          addId(example, "example", String(number));
-        }
-        const { id } = example;
-        const selfLink = div.querySelector("a.self-link");
-        selfLink.href = `#${id}`;
-        pub("example", report);
-      } else {
-        const inAside = !!example.closest("aside");
-        if (!inAside) ++number;
-
-        report.content = example.innerHTML;
-
-        // wrap
-        example.classList.remove("example", "illegal-example");
-        // relocate the id to the div
-        const id = example.id ? example.id : null;
-        if (id) example.removeAttribute("id");
-        const exampleTitle = makeTitle(example, inAside ? 0 : number, report);
-        const div = html$1`<div class="example" id="${id}">
-        ${exampleTitle} ${example.cloneNode(true)}
-      </div>`;
-        if (title) {
-          addId(div, `example-${number}`, title);
-        }
-        addId(div, `example`, String(number));
-        const selfLink = div.querySelector("a.self-link");
-        selfLink.href = `#${div.id}`;
-        example.replaceWith(div);
-        if (!inAside) pub("example", report);
-      }
-    });
-  }
-
-  var examples = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    name: name$A,
-    run: run$m
-  });
-
-  // @ts-check
-
-  const name$B = "core/issues-notes";
-
-  const localizationStrings$8 = {
-    en: {
-      editors_note: "Editor's note",
-      feature_at_risk: "(Feature at Risk) Issue",
-      issue: "Issue",
-      issue_summary: "Issue Summary",
-      implementation_note: "Implementation Note",
-      no_issues_in_spec: "There are no issues listed in this specification.",
-      note: "Note",
-      warning: "Warning",
-    },
-    ja: {
-      note: "注",
-      editors_note: "編者注",
-      feature_at_risk: "(変更の可能性のある機能) Issue",
-      issue: "Issue",
-      issue_summary: "Issue の要約",
-      no_issues_in_spec: "この仕様には未解決の issues は含まれていません．",
-      warning: "警告",
-    },
-    nl: {
-      editors_note: "Redactionele noot",
-      issue_summary: "Lijst met issues",
-      no_issues_in_spec: "Er zijn geen problemen vermeld in deze specificatie.",
-      note: "Noot",
-      warning: "Waarschuwing",
-    },
-    es: {
-      editors_note: "Nota de editor",
-      issue: "Cuestión",
-      issue_summary: "Resumen de la cuestión",
-      note: "Nota",
-      no_issues_in_spec: "No hay problemas enumerados en esta especificación.",
-      warning: "Aviso",
-    },
-    de: {
-      editors_note: "Redaktioneller Hinweis",
-      issue: "Frage",
-      issue_summary: "Offene Fragen",
-      no_issues_in_spec: "Diese Spezifikation enthält keine offenen Fragen.",
-      note: "Hinweis",
-      warning: "Warnung",
-    },
-    zh: {
-      editors_note: "编者注",
-      feature_at_risk: "（有可能变动的特性）Issue",
-      issue: "Issue",
-      issue_summary: "Issue 总结",
-      no_issues_in_spec: "本规范中未列出任何 issue。",
-      note: "注",
-      warning: "警告",
-    },
-  };
-
-  const cssPromise$1 = loadStyle$3();
-
-  async function loadStyle$3() {
-    try {
-      return (await Promise.resolve().then(function () { return issuesNotes$2; })).default;
-    } catch {
-      return fetchAsset("issues-notes.css");
+  function findDfn(defn, name, { parent = "" } = {}) {
+    switch (defn.type) {
+      case "constructor":
+      case "operation":
+        return findOperationDfn(defn, parent, name);
+      default:
+        return findNormalDfn(defn, parent, name);
     }
   }
-
-  const l10n$a = getIntlData(localizationStrings$8);
-
-  /**
-   * @typedef {object} Report
-   * @property {string} type
-   * @property {boolean} inline
-   * @property {number} number
-   * @property {string} title
-
-   * @typedef {object} GitHubLabel
-   * @property {string} color
-   * @property {string} name
-   *
-   * @typedef {object} GitHubIssue
-   * @property {string} title
-   * @property {string} state
-   * @property {string} bodyHTML
-   * @property {GitHubLabel[]} labels
-
-   * @param {NodeListOf<HTMLElement>} ins
-   * @param {Map<string, GitHubIssue>} ghIssues
-   * @param {*} conf
-   */
-  function handleIssues(ins, ghIssues, conf) {
-    const getIssueNumber = createIssueNumberGetter();
-    const issueList = document.createElement("ul");
-    ins.forEach(inno => {
-      const { type, displayType, isFeatureAtRisk } = getIssueType(inno);
-      const isIssue = type === "issue";
-      const isInline = inno.localName === "span";
-      const { number: dataNum } = inno.dataset;
-      const report = {
-        type,
-        inline: isInline,
-        title: inno.title,
-        number: getIssueNumber(inno),
-      };
-      // wrap
-      if (!isInline) {
-        const cssClass = isFeatureAtRisk ? `${type} atrisk` : type;
-        const ariaRole = type === "note" || type === "impnote" ? "note" : null;
-        const div = html$1`<div class="${cssClass}" role="${ariaRole}"></div>`;
-        const title = document.createElement("span");
-        const className = `${type}-title marker`;
-        // prettier-ignore
-        const titleParent = html$1`<div role="heading" class="${className}">${title}</div>`;
-        addId(titleParent, "h", type);
-        let text = displayType;
-        if (inno.id) {
-          div.id = inno.id;
-          inno.removeAttribute("id");
-        } else {
-          addId(
-            div,
-            "issue-container",
-            report.number ? `number-${report.number}` : ""
-          );
-        }
-        /** @type {GitHubIssue} */
-        let ghIssue;
-        if (isIssue) {
-          if (report.number !== undefined) {
-            text += ` ${report.number}`;
-          }
-          if (inno.dataset.hasOwnProperty("number")) {
-            const link = linkToIssueTracker(dataNum, conf, { isFeatureAtRisk });
-            if (link) {
-              title.before(link);
-              link.append(title);
-            }
-            title.classList.add("issue-number");
-            ghIssue = ghIssues.get(dataNum);
-            if (!ghIssue) {
-              pub("warning", `Failed to fetch issue number ${dataNum}`);
-            }
-            if (ghIssue && !report.title) {
-              report.title = ghIssue.title;
-            }
-          }
-          if (report.number !== undefined) {
-            // Add entry to #issue-summary.
-            issueList.append(createIssueSummaryEntry(l10n$a.issue, report, div.id));
-          }
-        }
-        title.textContent = text;
-        if (report.title) {
-          inno.removeAttribute("title");
-          const { repoURL = "" } = conf.github || {};
-          const labels = ghIssue ? ghIssue.labels : [];
-          if (ghIssue && ghIssue.state === "CLOSED") {
-            div.classList.add("closed");
-          }
-          titleParent.append(createLabelsGroup(labels, report.title, repoURL));
-        }
-        /** @type {HTMLElement | DocumentFragment} */
-        let body = inno;
-        inno.replaceWith(div);
-        body.classList.remove(type);
-        body.removeAttribute("data-number");
-        if (ghIssue && !body.innerHTML.trim()) {
-          body = document
-            .createRange()
-            .createContextualFragment(ghIssue.bodyHTML);
-        }
-        div.append(titleParent, body);
-        const level = parents(titleParent, "section").length + 2;
-        titleParent.setAttribute("aria-level", level);
-      }
-      pub(report.type, report);
-    });
-    makeIssueSectionSummary(issueList);
-  }
-
-  function createIssueNumberGetter() {
-    if (document.querySelector(".issue[data-number]")) {
-      return element => {
-        if (element.dataset.number) {
-          return Number(element.dataset.number);
-        }
-      };
-    }
-
-    let issueNumber = 0;
-    return element => {
-      if (element.classList.contains("issue") && element.localName !== "span") {
-        return ++issueNumber;
-      }
-    };
-  }
-
-  /**
-   * @typedef {object} IssueType
-   * @property {string} type
-   * @property {string} displayType
-   * @property {boolean} isFeatureAtRisk
-   *
-   * @param {HTMLElement} inno
-   * @return {IssueType}
-   */
-  function getIssueType(inno) {
-    const isIssue = inno.classList.contains("issue");
-    const isWarning = inno.classList.contains("warning");
-    const isEdNote = inno.classList.contains("ednote");
-    const isImpNote = inno.classList.contains("impnote");
-    const isFeatureAtRisk = inno.classList.contains("atrisk");
-    const type = isIssue
-      ? "issue"
-      : isWarning
-      ? "warning"
-      : isEdNote
-      ? "ednote"
-      : isImpNote
-      ? "impnote"
-      : "note";
-    const displayType = isIssue
-      ? isFeatureAtRisk
-        ? l10n$a.feature_at_risk
-        : l10n$a.issue
-      : isWarning
-      ? l10n$a.warning
-      : isEdNote
-      ? l10n$a.editors_note
-      : isImpNote
-      ? l10n$a.implementation_note
-      : l10n$a.note;
-    return { type, displayType, isFeatureAtRisk };
-  }
-
-  /**
-   * @param {string} dataNum
-   * @param {*} conf
-   */
-  function linkToIssueTracker(dataNum, conf, { isFeatureAtRisk = false } = {}) {
-    // Set issueBase to cause issue to be linked to the external issue tracker
-    if (!isFeatureAtRisk && conf.issueBase) {
-      return html$1`<a href="${conf.issueBase + dataNum}" />`;
-    } else if (isFeatureAtRisk && conf.atRiskBase) {
-      return html$1`<a href="${conf.atRiskBase + dataNum}" />`;
-    }
-  }
-
-  /**
-   * @param {string} l10nIssue
-   * @param {Report} report
-   */
-  function createIssueSummaryEntry(l10nIssue, report, id) {
-    const issueNumberText = `${l10nIssue} ${report.number}`;
-    const title = report.title
-      ? html$1`<span style="text-transform: none">: ${report.title}</span>`
-      : "";
-    return html$1`<li><a href="${`#${id}`}">${issueNumberText}</a>${title}</li>`;
-  }
-
-  /**
-   *
-   * @param {HTMLUListElement} issueList
-   */
-  function makeIssueSectionSummary(issueList) {
-    const issueSummaryElement = document.getElementById("issue-summary");
-    if (!issueSummaryElement) return;
-    const heading = issueSummaryElement.querySelector("h2, h3, h4, h5, h6");
-
-    issueList.hasChildNodes()
-      ? issueSummaryElement.append(issueList)
-      : issueSummaryElement.append(html$1`<p>${l10n$a.no_issues_in_spec}</p>`);
-    if (
-      !heading ||
-      (heading && heading !== issueSummaryElement.firstElementChild)
-    ) {
-      issueSummaryElement.insertAdjacentHTML(
-        "afterbegin",
-        `<h2>${l10n$a.issue_summary}</h2>`
-      );
-    }
-  }
-
-  /**
-   * @param {GitHubLabel[]} labels
-   * @param {string} title
-   * @param {string} repoURL
-   */
-  function createLabelsGroup(labels, title, repoURL) {
-    const labelsGroup = labels.map(label => createLabel(label, repoURL));
-    const labelNames = labels.map(label => label.name);
-    const joinedNames = joinAnd(labelNames);
-    if (labelsGroup.length) {
-      labelsGroup.unshift(document.createTextNode(" "));
-    }
-    if (labelNames.length) {
-      const ariaLabel = `This issue is labelled as ${joinedNames}.`;
-      return html$1`<span class="issue-label" aria-label="${ariaLabel}"
-      >: ${title}${labelsGroup}</span
-    >`;
-    }
-    return html$1`<span class="issue-label">: ${title}${labelsGroup}</span>`;
-  }
-
-  /** @param {string} bgColorHex background color as a hex value without '#' */
-  function textColorFromBgColor(bgColorHex) {
-    return parseInt(bgColorHex, 16) > 0xffffff / 2 ? "#000" : "#fff";
-  }
-
-  /**
-   * @param {GitHubLabel} label
-   * @param {string} repoURL
-   */
-  function createLabel(label, repoURL) {
-    const { color: bgColor, name } = label;
-    const issuesURL = new URL("./issues/", repoURL);
-    issuesURL.searchParams.set("q", `is:issue is:open label:"${label.name}"`);
-    const color = textColorFromBgColor(bgColor);
-    const style = `background-color: #${bgColor}; color: ${color}`;
-    return html$1`<a
-    class="respec-gh-label"
-    style="${style}"
-    href="${issuesURL.href}"
-    >${name}</a
-  >`;
-  }
-
-  /**
-   * @returns {Promise<Map<string, GitHubIssue>>}
-   */
-  async function fetchAndStoreGithubIssues(github) {
-    if (!github || !github.apiBase) {
-      return new Map();
-    }
-
-    /** @type {NodeListOf<HTMLElement>} */
-    const specIssues = document.querySelectorAll(".issue[data-number]");
-    const issueNumbers = [...specIssues]
-      .map(elem => Number.parseInt(elem.dataset.number, 10))
-      .filter(issueNumber => issueNumber);
-
-    if (!issueNumbers.length) {
-      return new Map();
-    }
-
-    const url = new URL("issues", `${github.apiBase}/${github.fullName}/`);
-    url.searchParams.set("issues", issueNumbers.join(","));
-
-    const response = await fetch(url.href);
-    if (!response.ok) {
-      const msg = `Error fetching issues from GitHub. (HTTP Status ${response.status}).`;
-      pub("error", msg);
-      return new Map();
-    }
-
-    /** @type {{ [issueNumber: string]: GitHubIssue }} */
-    const issues = await response.json();
-    return new Map(Object.entries(issues));
-  }
-
-  async function run$n(conf) {
-    const query = ".issue, .note, .warning, .ednote, .impnote";
-    /** @type {NodeListOf<HTMLElement>} */
-    const issuesAndNotes = document.querySelectorAll(query);
-    if (!issuesAndNotes.length) {
-      return; // nothing to do.
-    }
-    const ghIssues = await fetchAndStoreGithubIssues(conf.github);
-    const css = await cssPromise$1;
-    const { head: headElem } = document;
-    headElem.insertBefore(
-      html$1`<style>
-      ${css}
-    </style>`,
-      headElem.querySelector("link")
-    );
-    handleIssues(issuesAndNotes, ghIssues, conf);
-    const ednotes = document.querySelectorAll(".ednote");
-    ednotes.forEach(ednote => {
-      ednote.classList.remove("ednote");
-      ednote.classList.add("note");
-    });
-  }
-
-  var issuesNotes = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    name: name$B,
-    run: run$n
-  });
-
-  // @ts-check
-
-  const name$C = "core/best-practices";
-
-  const localizationStrings$9 = {
-    en: {
-      best_practice: "Best Practice ",
-    },
-    ja: {
-      best_practice: "最良実施例 ",
-    },
-    de: {
-      best_practice: "Musterbeispiel ",
-    },
-    zh: {
-      best_practice: "最佳实践 ",
-    },
-  };
-  const l10n$b = getIntlData(localizationStrings$9);
-  const lang$b = lang in localizationStrings$9 ? lang : "en";
-
-  function run$o() {
-    /** @type {NodeListOf<HTMLElement>} */
-    const bps = document.querySelectorAll(".practicelab");
-    const bpSummary = document.getElementById("bp-summary");
-    const summaryItems = bpSummary ? document.createElement("ul") : null;
-    [...bps].forEach((bp, num) => {
-      const id = addId(bp, "bp");
-      const localizedBpName = html$1`<a class="marker self-link" href="${`#${id}`}"
-      ><bdi lang="${lang$b}">${l10n$b.best_practice}${num + 1}</bdi></a
-    >`;
-
-      // Make the summary items, if we have a summary
-      if (summaryItems) {
-        const li = html$1`<li>${localizedBpName}: ${makeSafeCopy(bp)}</li>`;
-        summaryItems.appendChild(li);
-      }
-
-      const container = bp.closest("div");
-      if (!container) {
-        // This is just an inline best practice...
-        bp.classList.add("advisement");
-        return;
-      }
-
-      // Make the advisement box
-      container.classList.add("advisement");
-      const title = html$1`${localizedBpName.cloneNode(true)}: ${bp}`;
-      container.prepend(...title.childNodes);
-    });
-    if (bps.length) {
-      if (bpSummary) {
-        bpSummary.appendChild(html$1`<h2>Best Practices Summary</h2>`);
-        bpSummary.appendChild(summaryItems);
-      }
-    } else if (bpSummary) {
-      pub(
-        "warn",
-        "Using best practices summary (#bp-summary) but no best practices found."
-      );
-      bpSummary.remove();
-    }
-  }
-
-  var bestPractices = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    name: name$C,
-    run: run$o
-  });
-
-  // @ts-check
 
   /**
    * @param {string} type
@@ -10746,6 +12231,20 @@ window.respecVersion = "25.16.5";
   }
 
   /**
+   * @param {*} defn
+   * @param {string} parent
+   * @param {string} name
+   */
+  function findOperationDfn(defn, parent, name) {
+    // Overloads all have unique names
+    if (name.includes("!overload")) {
+      return findNormalDfn(defn, parent, name);
+    }
+    const asMethodName = `${name}()`;
+    return findNormalDfn(defn, parent, asMethodName, name);
+  }
+
+  /**
    * @param {HTMLElement} dfn
    * @param {Record<"local" | "exportable", string[]>} names
    */
@@ -10763,6 +12262,41 @@ window.respecVersion = "25.16.5";
   }
 
   /**
+   * @param {*} defn
+   * @param {string} parent
+   * @param {...string} names
+   */
+  function findNormalDfn(defn, parent, ...names) {
+    const { type } = defn;
+    for (const name of names) {
+      let resolvedName =
+        type === "enum-value" && name === "" ? "the-empty-string" : name;
+      let dfns = getDfns(resolvedName, parent, name, type);
+      // If we haven't found any definitions with explicit [for]
+      // and [title], look for a dotted definition, "parent.name".
+      if (dfns.length === 0 && parent !== "") {
+        resolvedName = `${parent}.${resolvedName}`;
+        const alternativeDfns = definitionMap.get(resolvedName);
+        if (alternativeDfns && alternativeDfns.size === 1) {
+          dfns = [...alternativeDfns];
+          registerDefinition(dfns[0], [resolvedName]);
+        }
+      } else {
+        resolvedName = name;
+      }
+      if (dfns.length > 1) {
+        const msg = `WebIDL identifier \`${name}\` ${
+        parent ? `for \`${parent}\`` : ""
+      } is defined multiple times`;
+        showInlineError(dfns, msg, "Duplicate definition.");
+      }
+      if (dfns.length) {
+        return dfns[0];
+      }
+    }
+  }
+
+  /**
    * @param {HTMLElement} dfnElem
    * @param {*} idlAst
    * @param {string} parent
@@ -10770,7 +12304,7 @@ window.respecVersion = "25.16.5";
    */
   function decorateDfn(dfnElem, idlAst, parent, name) {
     if (!dfnElem.id) {
-      const lCaseParent = parent.toLowerCase();
+      const lCaseParent = parent.toLowerCase().replace(/\s/g, "-");
       const middle = lCaseParent ? `${lCaseParent}-` : "";
       let last = name.toLowerCase().replace(/[()]/g, "").replace(/\s/g, "-");
       if (last === "") last = "the-empty-string";
@@ -10797,7 +12331,7 @@ window.respecVersion = "25.16.5";
     ) {
       const code = dfnElem.ownerDocument.createElement("code");
       code.classList.add("code-dfn");
-      wrapInner$1(dfnElem, code);
+      wrapInner(dfnElem, code);
     }
 
     // Add data-lt and data-local-lt values and register them
@@ -10810,6 +12344,41 @@ window.respecVersion = "25.16.5";
     }
 
     return dfnElem;
+  }
+
+  /**
+   * @param {string} name
+   * @param {string} parent data-dfn-for
+   * @param {string} originalName
+   * @param {string} type
+   */
+  function getDfns(name, parent, originalName, type) {
+    const foundDfns = definitionMap.get(name);
+    if (!foundDfns || foundDfns.size === 0) {
+      return [];
+    }
+    const dfnForArray = [...foundDfns];
+    // Definitions that have a name and [data-dfn-for] that exactly match the
+    // IDL entity:
+    const dfns = dfnForArray.filter(dfn => {
+      // This is explicitly marked as a concept, so we can't use it
+      if (dfn.dataset.dfnType === "dfn") return false;
+
+      /** @type {HTMLElement} */
+      const closestDfnFor = dfn.closest(`[data-dfn-for]`);
+      return closestDfnFor && closestDfnFor.dataset.dfnFor === parent;
+    });
+
+    if (dfns.length === 0 && parent === "" && dfnForArray.length === 1) {
+      // Make sure the name exactly matches
+      return dfnForArray[0].textContent === originalName ? dfnForArray : [];
+    } else if (topLevelEntities.has(type) && dfnForArray.length) {
+      const dfn = dfnForArray.find(
+        dfn => dfn.textContent.trim() === originalName
+      );
+      if (dfn) return [dfn];
+    }
+    return dfns;
   }
 
   /**
@@ -10826,7 +12395,7 @@ window.respecVersion = "25.16.5";
 
   // @ts-check
 
-  const name$D = "pcisig/draw-csrs";
+  const name$v = "pcisig/draw-csrs";
 
   /**
    * insert_unused_table_rows inserts "reserved" rows into a tables for
@@ -10913,24 +12482,28 @@ window.respecVersion = "25.16.5";
     // console.log(`pcisig_reg: ${tbl.outerHTML} tbody="${tbl.querySelector("tbody:first-of-type").outerHTML}"`);
     if (tbl.hasAttribute("id")) {
       json.figName = tbl.getAttribute("id").replace(/^tbl-/, "");
-    } else if (tbl.hasAttribute("title")) {
-      json.figName = tbl.getAttribute("title");
-    } else if (tbl.querySelector("caption")) {
-      json.figName = tbl.querySelector("caption").textContent;
+      // console.log(`draw_csrs.parse_table 1 json.figName = ${json.figName}`);
     } else {
-      json.figName = "";
+      if (tbl.hasAttribute("title")) {
+        json.figName = tbl.getAttribute("title");
+      } else if (tbl.querySelector("caption")) {
+        json.figName = tbl.querySelector("caption").textContent;
+      } else {
+        json.figName = "";
+      }
+      json.figName = json.figName
+        .toLowerCase()
+        .replace(/^\s+/, "")
+        .replace(/\s+$/, "")
+        .replace(/[^\-.0-9a-z_]+/gi, "-")
+        .replace(/^-+/, "")
+        .replace(/-+$/, "")
+        .replace(/\.$/, ".x")
+        .replace(/^([^a-z])/i, "x$1")
+        .replace(/^$/, "generatedID");
+      tbl.setAttribute("id", `tbl-${json.figName}`);
+      // console.log(`draw_csrs.parse_table 2 json.figName = ${json.figName}`);
     }
-    json.figName = json.figName
-      .toLowerCase()
-      .replace(/^\s+/, "")
-      .replace(/\s+$/, "")
-      .replace(/[^\-.0-9a-z_]+/gi, "-")
-      .replace(/^-+/, "")
-      .replace(/-+$/, "")
-      .replace(/\.$/, ".x")
-      .replace(/^([^a-z])/i, "x$1")
-      .replace(/^$/, "generatedID");
-
     if (tbl.hasAttribute("data-json")) {
       try {
         mergeJSON(json, tbl.getAttribute("data-json"));
@@ -10945,6 +12518,7 @@ window.respecVersion = "25.16.5";
     // console.log(`core/draw-csrs table id="${tbl.getAttribute("id")}"`);
     if (!tbl.hasAttribute("dfn-data-for")) {
       tbl.setAttribute("data-dfn-for", json.figName);
+      // console.log(`draw_csrs.parse_table 3 tbl.data-dfn-for = ${json.figName}`);
     }
 
     if (tbl.hasAttribute("data-width"))
@@ -10999,7 +12573,9 @@ window.respecVersion = "25.16.5";
           if (!dfn.hasAttribute("class")) dfn.classList.add("field");
           // dfn.setAttribute("data-dfn-for", lt);
           dfn.setAttribute("data-dfn-type", "field");
-          addId(dfn, "field", `${tblName}-${fieldName.toLowerCase()}`);
+          // console.log(`draw_csrs.parse_table 4 addID = ${dfn.outerHTML}`);
+          addId(dfn, "field", `${json.figName}-${fieldName.toLowerCase()}`);
+          // console.log(`draw_csrs.parse_table 5 addID = ${dfn.outerHTML}`);
           decorateDfn(
             // @ts-ignore
             dfn,
@@ -11007,7 +12583,7 @@ window.respecVersion = "25.16.5";
             tblName,
             fieldName
           );
-          // console.log(`decorateDfn(${dfn.outerHTML})`);
+          // console.log(`draw_csrs.decorateDfn(${dfn.outerHTML})`);
           const val = desc.querySelector("span.value:first-of-type");
           let value = "";
           if (val) {
@@ -11065,7 +12641,7 @@ window.respecVersion = "25.16.5";
    * representing the table.
    * @returns {Promise<void>}
    */
-  async function run$p() {
+  async function run$i() {
     document
       .querySelectorAll("figure.regipct-generated")
       .forEach(item => item.remove());
@@ -11080,7 +12656,7 @@ window.respecVersion = "25.16.5";
       tbl.insertAdjacentHTML(
         "beforebegin",
         `<figure class="regpict-generated register"
-                id="fig-${tbl.getAttribute("id").replace(/^#tbl-/, "")}">
+                id="fig-${tbl.getAttribute("id").replace(/^tbl-/, "")}">
                 <pre class="json">
                 ${JSON.stringify(json, null, 2)}
                 </pre>
@@ -11095,10 +12671,10 @@ window.respecVersion = "25.16.5";
 
   var drawCsrs = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$D,
+    name: name$v,
     insert_unused_table_rows: insert_unused_table_rows,
     parse_table: parse_table,
-    run: run$p
+    run: run$i
   });
 
   var commonjsGlobal$1 = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -13804,7 +15380,7 @@ window.respecVersion = "25.16.5";
     }
   }
 
-  var Base = function Base() {
+  var Base$1 = function Base() {
     _classCallCheck(this, Base);
   };
 
@@ -13816,7 +15392,7 @@ window.respecVersion = "25.16.5";
     return globals.document.createElementNS(ns, name);
   }
   function makeInstance(element) {
-    if (element instanceof Base) return element;
+    if (element instanceof Base$1) return element;
 
     if (_typeof(element) === 'object') {
       return adopter(element);
@@ -13845,7 +15421,7 @@ window.respecVersion = "25.16.5";
     // check for presence of node
     if (!node) return null; // make sure a node isn't already adopted
 
-    if (node.instance instanceof Base) return node.instance; // initialize variables
+    if (node.instance instanceof Base$1) return node.instance; // initialize variables
 
     var className = capitalize(node.nodeName || 'Dom'); // Make sure that gradients are adopted correctly
 
@@ -16479,12 +18055,12 @@ window.respecVersion = "25.16.5";
       return Array.prototype.concat.apply([], this);
     }
   });
-  var reserved = ['toArray', 'constructor', 'each'];
+  var reserved$1 = ['toArray', 'constructor', 'each'];
 
   List.extend = function (methods) {
     methods = methods.reduce(function (obj, name) {
       // Don't overwrite own methods
-      if (reserved.includes(name)) return obj; // Don't add private methods
+      if (reserved$1.includes(name)) return obj; // Don't add private methods
 
       if (name[0] === '_') return obj; // Relay every call to each()
 
@@ -16595,10 +18171,10 @@ window.respecVersion = "25.16.5";
     }]);
 
     return EventTarget;
-  }(Base);
+  }(Base$1);
   register(EventTarget, 'EventTarget');
 
-  function noop() {} // Default animation values
+  function noop$1() {} // Default animation values
 
   var timeline = {
     duration: 400,
@@ -17800,7 +19376,7 @@ window.respecVersion = "25.16.5";
   });
   register(Circle, 'Circle');
 
-  var Container =
+  var Container$1 =
   /*#__PURE__*/
   function (_Element) {
     _inherits(Container, _Element);
@@ -17836,7 +19412,7 @@ window.respecVersion = "25.16.5";
 
     return Container;
   }(Element);
-  register(Container, 'Container');
+  register(Container$1, 'Container');
 
   var Defs =
   /*#__PURE__*/
@@ -17862,7 +19438,7 @@ window.respecVersion = "25.16.5";
     }]);
 
     return Defs;
-  }(Container);
+  }(Container$1);
   register(Defs, 'Defs');
 
   var Ellipse =
@@ -18019,7 +19595,7 @@ window.respecVersion = "25.16.5";
     }]);
 
     return Gradient;
-  }(Container);
+  }(Container$1);
   extend(Gradient, gradiented);
   registerMethods({
     Container: {
@@ -18094,7 +19670,7 @@ window.respecVersion = "25.16.5";
     }]);
 
     return Pattern;
-  }(Container);
+  }(Container$1);
   registerMethods({
     Container: {
       // Create pattern element in defs
@@ -18459,7 +20035,7 @@ window.respecVersion = "25.16.5";
     }]);
 
     return Marker;
-  }(Container);
+  }(Container$1);
   registerMethods({
     Container: {
       marker: function marker() {
@@ -20332,8 +21908,8 @@ window.respecVersion = "25.16.5";
       key: "queue",
       value: function queue(initFn, runFn, retargetFn, isTransform) {
         this._queue.push({
-          initialiser: initFn || noop,
-          runner: runFn || noop,
+          initialiser: initFn || noop$1,
+          runner: runFn || noop$1,
           retarget: retargetFn,
           isTransform: isTransform,
           initialised: false,
@@ -21249,7 +22825,7 @@ window.respecVersion = "25.16.5";
     }]);
 
     return Svg;
-  }(Container);
+  }(Container$1);
   registerMethods({
     Container: {
       // Create nested svg document
@@ -21273,7 +22849,7 @@ window.respecVersion = "25.16.5";
     }
 
     return _Symbol;
-  }(Container);
+  }(Container$1);
   registerMethods({
     Container: {
       symbol: wrapWithAttrCheck(function () {
@@ -21304,7 +22880,7 @@ window.respecVersion = "25.16.5";
   	length: length
   });
 
-  var Text =
+  var Text$1 =
   /*#__PURE__*/
   function (_Shape) {
     _inherits(Text, _Shape);
@@ -21500,20 +23076,20 @@ window.respecVersion = "25.16.5";
 
     return Text;
   }(Shape);
-  extend(Text, textable);
+  extend(Text$1, textable);
   registerMethods({
     Container: {
       // Create text element
       text: wrapWithAttrCheck(function (text) {
-        return this.put(new Text()).text(text);
+        return this.put(new Text$1()).text(text);
       }),
       // Create plain text element
       plain: wrapWithAttrCheck(function (text) {
-        return this.put(new Text()).plain(text);
+        return this.put(new Text$1()).plain(text);
       })
     }
   });
-  register(Text, 'Text');
+  register(Text$1, 'Text');
 
   var Tspan =
   /*#__PURE__*/
@@ -21567,7 +23143,7 @@ window.respecVersion = "25.16.5";
       key: "newLine",
       value: function newLine() {
         // fetch text parent
-        var t = this.parent(Text); // mark new line
+        var t = this.parent(Text$1); // mark new line
 
         this.dom.newLined = true;
         var fontSize = globals.window.getComputedStyle(this.node).getPropertyValue('font-size');
@@ -21578,7 +23154,7 @@ window.respecVersion = "25.16.5";
     }]);
 
     return Tspan;
-  }(Text);
+  }(Text$1);
   extend(Tspan, textable);
   registerMethods({
     Tspan: {
@@ -21627,7 +23203,7 @@ window.respecVersion = "25.16.5";
     }]);
 
     return ClipPath;
-  }(Container);
+  }(Container$1);
   registerMethods({
     Container: {
       // Create clipping element
@@ -21769,7 +23345,7 @@ window.respecVersion = "25.16.5";
     }]);
 
     return G;
-  }(Container);
+  }(Container$1);
   registerMethods({
     Container: {
       // Create a group element
@@ -21806,7 +23382,7 @@ window.respecVersion = "25.16.5";
     }]);
 
     return A;
-  }(Container);
+  }(Container$1);
   registerMethods({
     Container: {
       // Create a hyperlink element
@@ -21862,7 +23438,7 @@ window.respecVersion = "25.16.5";
     }]);
 
     return Mask;
-  }(Container);
+  }(Container$1);
   registerMethods({
     Container: {
       mask: wrapWithAttrCheck(function () {
@@ -21992,12 +23568,12 @@ window.respecVersion = "25.16.5";
     }]);
 
     return TextPath;
-  }(Text);
+  }(Text$1);
   registerMethods({
     Container: {
       textPath: wrapWithAttrCheck(function (text, path) {
         // Convert text to instance if needed
-        if (!(text instanceof Text)) {
+        if (!(text instanceof Text$1)) {
           text = this.text(text);
         }
 
@@ -22038,8 +23614,8 @@ window.respecVersion = "25.16.5";
       // creates a textPath from this path
       text: wrapWithAttrCheck(function (text) {
         // Convert text to instance if needed
-        if (!(text instanceof Text)) {
-          text = new Text().addTo(this.parent()).text(text);
+        if (!(text instanceof Text$1)) {
+          text = new Text$1().addTo(this.parent()).text(text);
         } // Create textPath from text and path and return
 
 
@@ -22089,17 +23665,17 @@ window.respecVersion = "25.16.5";
   var SVG = makeInstance;
   extend([Svg, _Symbol, Image, Pattern, Marker], getMethodsFor('viewbox'));
   extend([Line, Polyline, Polygon, Path], getMethodsFor('marker'));
-  extend(Text, getMethodsFor('Text'));
+  extend(Text$1, getMethodsFor('Text'));
   extend(Path, getMethodsFor('Path'));
   extend(Defs, getMethodsFor('Defs'));
-  extend([Text, Tspan], getMethodsFor('Tspan'));
+  extend([Text$1, Tspan], getMethodsFor('Tspan'));
   extend([Rect, Ellipse, Circle, Gradient], getMethodsFor('radius'));
   extend(EventTarget, getMethodsFor('EventTarget'));
   extend(Dom, getMethodsFor('Dom'));
   extend(Element, getMethodsFor('Element'));
   extend(Shape, getMethodsFor('Shape')); // extend(Element, getConstructor('Memory'))
 
-  extend(Container, getMethodsFor('Container'));
+  extend(Container$1, getMethodsFor('Container'));
   extend(Runner, getMethodsFor('Runner'));
   List.extend(getMethodNames());
   registerMorphableType([SVGNumber, Color, Box, Matrix, SVGArray, PointArray, PathArray]);
@@ -22108,9 +23684,9 @@ window.respecVersion = "25.16.5";
   // @ts-check
   // import css from "text!../../src/pcisig/css/regpict.css";
 
-  const name$E = "pcisig/regpict";
+  const name$w = "pcisig/regpict";
 
-  const cssPromise$2 = loadStyle$4();
+  const cssPromise = loadStyle$2();
 
   const debugOverride = false;
 
@@ -22193,7 +23769,7 @@ window.respecVersion = "25.16.5";
     }
   }
 
-  async function loadStyle$4() {
+  async function loadStyle$2() {
     try {
       return (await Promise.resolve().then(function () { return regpict$2; })).default;
     } catch {
@@ -22624,14 +24200,14 @@ window.respecVersion = "25.16.5";
       const ret = figLeft + cellWidth * (adj_bit - 0.5);
       if (debug) {
         console.log(
-          `${`${i} leftOf   left_to_right=${left_to_right}` +
+          `${
+          `${i} leftOf   left_to_right=${left_to_right}` +
           ` figLeft=${figLeft}` +
           ` cellWidth=${cellWidth}` +
           ` visibleLSB=${visibleLSB}` +
           ` visibleMSB=${visibleMSB}` +
-          ` adj_bit= ${adj_bit}`}${
-          isMultiRow ? ` wordWidth=${wordWidth}` : ""
-        }\t--> ret= ${ret}`
+          ` adj_bit= ${adj_bit}`
+        }${isMultiRow ? ` wordWidth=${wordWidth}` : ""}\t--> ret= ${ret}`
         );
       }
       return ret;
@@ -22667,14 +24243,14 @@ window.respecVersion = "25.16.5";
       const ret = figLeft + cellWidth * (adj_bit + 0.5);
       if (debug) {
         console.log(
-          `${`${i} rightOf  left_to_right= ${left_to_right} ` +
+          `${
+          `${i} rightOf  left_to_right= ${left_to_right} ` +
           ` figLeft=${figLeft}` +
           ` cellWidth=${cellWidth}` +
           ` visibleLSB=${visibleLSB}` +
           ` visibleMSB=${visibleMSB}` +
-          ` adj_bit=${adj_bit}`}${
-          isMultiRow ? ` wordWidth=${wordWidth}` : ""
-        }\t--> ret=${ret}`
+          ` adj_bit=${adj_bit}`
+        }${isMultiRow ? ` wordWidth=${wordWidth}` : ""}\t--> ret=${ret}`
         );
       }
       return ret;
@@ -22710,14 +24286,14 @@ window.respecVersion = "25.16.5";
       const ret = figLeft + cellWidth * adj_bit;
       if (debug) {
         console.log(
-          `${`${i} middleOf left_to_right=${left_to_right}` +
+          `${
+          `${i} middleOf left_to_right=${left_to_right}` +
           ` figLeft=${figLeft}` +
           ` cellWidth=${cellWidth}` +
           ` visibleLSB=${visibleLSB}` +
           ` visibleMSB=${visibleMSB}` +
-          ` adj_bit=${adj_bit}`}${
-          isMultiRow ? ` wordWidth=${wordWidth}` : ""
-        }\t--> ret=${ret}`
+          ` adj_bit=${adj_bit}`
+        }${isMultiRow ? ` wordWidth=${wordWidth}` : ""}\t--> ret=${ret}`
         );
       }
       return ret;
@@ -22747,9 +24323,7 @@ window.respecVersion = "25.16.5";
     let bitLineCount = 0;
     let max_text_width = 12 * 8; // allow for 12 characters at 8px each
 
-    const svg = SVG()
-      .addTo(divsvg)
-      .attr({ width: 800, height: 500 }); // will be overridden
+    const svg = SVG().addTo(divsvg).attr({ width: 800, height: 500 }); // will be overridden
 
     if (isMemoryBlock) {
       // create header for memory block (31..0)
@@ -22792,9 +24366,9 @@ window.respecVersion = "25.16.5";
             .addClass("regBitNumMiddle");
           if (debug) {
             console.log(
-              `bitnum-middle +${byte}/${bit} at x=${middleOf(
-              bit + byte
-            )} y=${cellTop - 20}`
+              `bitnum-middle +${byte}/${bit} at x=${middleOf(bit + byte)} y=${
+              cellTop - 20
+            }`
             );
           }
           pos = left_to_right ? leftOf(byte + bit) : rightOf(byte + bit);
@@ -22813,8 +24387,9 @@ window.respecVersion = "25.16.5";
           .addClass("regByteNumMiddle");
         if (debug) {
           console.log(
-            `bitnum-middle +${byte} at x=${leftOf(byte) +
-            cellWidth * 4} y= ${byteHeight}`
+            `bitnum-middle +${byte} at x=${
+            leftOf(byte) + cellWidth * 4
+          } y= ${byteHeight}`
           );
         }
       }
@@ -22842,8 +24417,9 @@ window.respecVersion = "25.16.5";
                 .addClass("regBitNumMiddle");
               if (debug) {
                 console.log(
-                  `bitnum-middle ${f.lsb} at x=${middleOf(f.lsb)} y=${cellTop -
-                  20}`
+                  `bitnum-middle ${f.lsb} at x=${middleOf(f.lsb)} y=${
+                  cellTop - 20
+                }`
                 );
               }
             } else {
@@ -22878,8 +24454,9 @@ window.respecVersion = "25.16.5";
                 .addClass(cls);
               if (debug) {
                 console.log(
-                  `bitnum-lsb ${f.lsb} at x=${pos} y=${cellTop -
-                  20} left_to_right=${left_to_right}`
+                  `bitnum-lsb ${f.lsb} at x=${pos} y=${
+                  cellTop - 20
+                } left_to_right=${left_to_right}`
                 );
               }
 
@@ -22911,8 +24488,9 @@ window.respecVersion = "25.16.5";
                 .addClass(cls);
               if (debug) {
                 console.log(
-                  `bitnum-msb ${f.msb} at x=${pos} y=${cellTop -
-                  20} left_to_right=${left_to_right}`
+                  `bitnum-msb ${f.msb} at x=${pos} y=${
+                  cellTop - 20
+                } left_to_right=${left_to_right}`
                 );
               }
             }
@@ -23139,13 +24717,13 @@ window.respecVersion = "25.16.5";
           const boxTop = cellTop + cellHeight * startRow;
           if (debug) {
             console.log(
-              `${`field ${f.name}` +
+              `${
+              `field ${f.name}` +
               ` msb=${f.msb}` +
               ` lsb=${f.lsb}` +
               ` attr=${f.attr}` +
-              ` isUnused=${f.isUnused}`}${"id" in f ? f.id : ""}${
-              hasValue ? " hasValue" : ""
-            }`
+              ` isUnused=${f.isUnused}`
+            }${"id" in f ? f.id : ""}${hasValue ? " hasValue" : ""}`
             );
             console.log(
               // ` text.clientWidth=${text.clientWidth}` +
@@ -23282,10 +24860,10 @@ window.respecVersion = "25.16.5";
     if (src.hasAttribute(attribute)) dest[property] = src.getAttribute(attribute);
   }
 
-  async function run$q(conf) {
+  async function run$j(conf) {
     pub("start", "core/regpict");
     if (!conf.noRegpictCSS) {
-      const css = await cssPromise$2;
+      const css = await cssPromise;
       document.head.insertBefore(
         html$1`
         <style>
@@ -23401,16 +24979,717 @@ window.respecVersion = "25.16.5";
 
   var regpict = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$E,
+    name: name$w,
     draw_regpict: draw_regpict,
-    run: run$q
+    run: run$j
   });
 
   // @ts-check
 
-  const name$F = "core/figures";
+  const name$x = "core/dfn";
 
-  const localizationStrings$a = {
+  function run$k() {
+    document.querySelectorAll("dfn").forEach(dfn => {
+      const titles = getDfnTitles(dfn);
+      registerDefinition(dfn, titles);
+
+      // Treat Internal Slots as IDL.
+      if (!dfn.dataset.dfnType && /^\[\[\w+\]\]$/.test(titles[0])) {
+        dfn.dataset.dfnType = "idl";
+      }
+
+      // Only add `lt`s that are different from the text content
+      if (titles.length === 1 && titles[0] === norm(dfn.textContent)) {
+        return;
+      }
+      dfn.dataset.lt = titles.join("|");
+    });
+  }
+
+  var dfn = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    name: name$x,
+    run: run$k
+  });
+
+  // @ts-check
+
+  const name$y = "core/pluralize";
+
+  function run$l(conf) {
+    if (!conf.pluralize) return;
+
+    const pluralizeDfn = getPluralizer();
+
+    /** @type {NodeListOf<HTMLElement>} */
+    const dfns = document.querySelectorAll(
+      "dfn:not([data-lt-no-plural]):not([data-lt-noDefault])"
+    );
+    dfns.forEach(dfn => {
+      const terms = [dfn.textContent];
+      if (dfn.dataset.lt) terms.push(...dfn.dataset.lt.split("|"));
+      if (dfn.dataset.localLt) {
+        terms.push(...dfn.dataset.localLt.split("|"));
+      }
+
+      const plurals = new Set(terms.map(pluralizeDfn).filter(plural => plural));
+
+      if (plurals.size) {
+        const userDefinedPlurals = dfn.dataset.plurals
+          ? dfn.dataset.plurals.split("|")
+          : [];
+        const uniquePlurals = [...new Set([...userDefinedPlurals, ...plurals])];
+        dfn.dataset.plurals = uniquePlurals.join("|");
+        registerDefinition(dfn, uniquePlurals);
+      }
+    });
+  }
+
+  function getPluralizer() {
+    /** @type {Set<string>} */
+    const links = new Set();
+    /** @type {NodeListOf<HTMLAnchorElement>} */
+    const reflessAnchors = document.querySelectorAll("a:not([href])");
+    reflessAnchors.forEach(el => {
+      const normText = norm(el.textContent).toLowerCase();
+      links.add(normText);
+      if (el.dataset.lt) {
+        links.add(el.dataset.lt);
+      }
+    });
+
+    /** @type {Set<string>} */
+    const dfnTexts = new Set();
+    /** @type {NodeListOf<HTMLElement>} */
+    const dfns = document.querySelectorAll("dfn:not([data-lt-noDefault])");
+    dfns.forEach(dfn => {
+      const normText = norm(dfn.textContent).toLowerCase();
+      dfnTexts.add(normText);
+      if (dfn.dataset.lt) {
+        dfn.dataset.lt.split("|").forEach(lt => dfnTexts.add(lt));
+      }
+      if (dfn.dataset.localLt) {
+        dfn.dataset.localLt.split("|").forEach(lt => dfnTexts.add(lt));
+      }
+    });
+
+    // returns pluralized/singularized term if `text` needs pluralization/singularization, "" otherwise
+    return function pluralizeDfn(/** @type {string} */ text) {
+      const normText = norm(text).toLowerCase();
+      const plural = pluralize$1.isSingular(normText)
+        ? pluralize$1.plural(normText)
+        : pluralize$1.singular(normText);
+      return links.has(plural) && !dfnTexts.has(plural) ? plural : "";
+    };
+  }
+
+  var pluralize$2 = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    name: name$y,
+    run: run$l
+  });
+
+  // @ts-check
+
+  const name$z = "core/examples";
+
+  const localizationStrings$6 = {
+    en: {
+      example: "Example",
+    },
+    nl: {
+      example: "Voorbeeld",
+    },
+    es: {
+      example: "Ejemplo",
+    },
+    ko: {
+      example: "예시",
+    },
+    ja: {
+      example: "例",
+    },
+    de: {
+      example: "Beispiel",
+    },
+    zh: {
+      example: "例",
+    },
+  };
+
+  const l10n$8 = getIntlData(localizationStrings$6);
+
+  const cssPromise$1 = loadStyle$3();
+
+  async function loadStyle$3() {
+    try {
+      return (await Promise.resolve().then(function () { return examples$2; })).default;
+    } catch {
+      return fetchAsset("examples.css");
+    }
+  }
+
+  /**
+   * @typedef {object} Report
+   * @property {number} number
+   * @property {boolean} illegal
+   * @property {string} [title]
+   * @property {string} [content]
+   *
+   * @param {HTMLElement} elem
+   * @param {number} num
+   * @param {Report} report
+   */
+  function makeTitle(elem, num, report) {
+    report.title = elem.title;
+    if (report.title) elem.removeAttribute("title");
+    const number = num > 0 ? ` ${num}` : "";
+    const title = report.title
+      ? html$1`<span class="example-title">: ${report.title}</span>`
+      : "";
+    return html$1`<div class="marker">
+    <a class="self-link">${l10n$8.example}<bdi>${number}</bdi></a
+    >${title}
+  </div>`;
+  }
+
+  async function run$m() {
+    /** @type {NodeListOf<HTMLElement>} */
+    const examples = document.querySelectorAll(
+      "pre.example, pre.illegal-example, aside.example"
+    );
+    if (!examples.length) return;
+
+    const css = await cssPromise$1;
+    document.head.insertBefore(
+      html$1`<style>
+      ${css}
+    </style>`,
+      document.querySelector("link")
+    );
+
+    let number = 0;
+    examples.forEach(example => {
+      const illegal = example.classList.contains("illegal-example");
+      /** @type {Report} */
+      const report = {
+        number,
+        illegal,
+      };
+      const { title } = example;
+      if (example.localName === "aside") {
+        ++number;
+        const div = makeTitle(example, number, report);
+        example.prepend(div);
+        if (title) {
+          addId(example, `example-${number}`, title); // title gets used
+        } else {
+          // use the number as the title... so, e.g., "example-5"
+          addId(example, "example", String(number));
+        }
+        const { id } = example;
+        const selfLink = div.querySelector("a.self-link");
+        selfLink.href = `#${id}`;
+        pub("example", report);
+      } else {
+        const inAside = !!example.closest("aside");
+        if (!inAside) ++number;
+
+        report.content = example.innerHTML;
+
+        // wrap
+        example.classList.remove("example", "illegal-example");
+        // relocate the id to the div
+        const id = example.id ? example.id : null;
+        if (id) example.removeAttribute("id");
+        const exampleTitle = makeTitle(example, inAside ? 0 : number, report);
+        const div = html$1`<div class="example" id="${id}">
+        ${exampleTitle} ${example.cloneNode(true)}
+      </div>`;
+        if (title) {
+          addId(div, `example-${number}`, title);
+        }
+        addId(div, `example`, String(number));
+        const selfLink = div.querySelector("a.self-link");
+        selfLink.href = `#${div.id}`;
+        example.replaceWith(div);
+        if (!inAside) pub("example", report);
+      }
+    });
+  }
+
+  var examples = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    name: name$z,
+    run: run$m
+  });
+
+  // @ts-check
+
+  const name$A = "core/issues-notes";
+
+  const localizationStrings$7 = {
+    en: {
+      editors_note: "Editor's note",
+      feature_at_risk: "(Feature at Risk) Issue",
+      issue: "Issue",
+      issue_summary: "Issue Summary",
+      implementation_note: "Implementation Note",
+      no_issues_in_spec: "There are no issues listed in this specification.",
+      note: "Note",
+      warning: "Warning",
+    },
+    ja: {
+      note: "注",
+      editors_note: "編者注",
+      feature_at_risk: "(変更の可能性のある機能) Issue",
+      issue: "Issue",
+      issue_summary: "Issue の要約",
+      no_issues_in_spec: "この仕様には未解決の issues は含まれていません．",
+      warning: "警告",
+    },
+    nl: {
+      editors_note: "Redactionele noot",
+      issue_summary: "Lijst met issues",
+      no_issues_in_spec: "Er zijn geen problemen vermeld in deze specificatie.",
+      note: "Noot",
+      warning: "Waarschuwing",
+    },
+    es: {
+      editors_note: "Nota de editor",
+      issue: "Cuestión",
+      issue_summary: "Resumen de la cuestión",
+      note: "Nota",
+      no_issues_in_spec: "No hay problemas enumerados en esta especificación.",
+      warning: "Aviso",
+    },
+    de: {
+      editors_note: "Redaktioneller Hinweis",
+      issue: "Frage",
+      issue_summary: "Offene Fragen",
+      no_issues_in_spec: "Diese Spezifikation enthält keine offenen Fragen.",
+      note: "Hinweis",
+      warning: "Warnung",
+    },
+    zh: {
+      editors_note: "编者注",
+      feature_at_risk: "（有可能变动的特性）Issue",
+      issue: "Issue",
+      issue_summary: "Issue 总结",
+      no_issues_in_spec: "本规范中未列出任何 issue。",
+      note: "注",
+      warning: "警告",
+    },
+  };
+
+  const cssPromise$2 = loadStyle$4();
+
+  async function loadStyle$4() {
+    try {
+      return (await Promise.resolve().then(function () { return issuesNotes$2; })).default;
+    } catch {
+      return fetchAsset("issues-notes.css");
+    }
+  }
+
+  const l10n$9 = getIntlData(localizationStrings$7);
+
+  /**
+   * @typedef {object} Report
+   * @property {string} type
+   * @property {boolean} inline
+   * @property {number} number
+   * @property {string} title
+
+   * @typedef {object} GitHubLabel
+   * @property {string} color
+   * @property {string} name
+   *
+   * @typedef {object} GitHubIssue
+   * @property {string} title
+   * @property {string} state
+   * @property {string} bodyHTML
+   * @property {GitHubLabel[]} labels
+
+   * @param {NodeListOf<HTMLElement>} ins
+   * @param {Map<string, GitHubIssue>} ghIssues
+   * @param {*} conf
+   */
+  function handleIssues(ins, ghIssues, conf) {
+    const getIssueNumber = createIssueNumberGetter();
+    const issueList = document.createElement("ul");
+    ins.forEach(inno => {
+      const { type, displayType, isFeatureAtRisk } = getIssueType(inno);
+      const isIssue = type === "issue";
+      const isInline = inno.localName === "span";
+      const { number: dataNum } = inno.dataset;
+      const report = {
+        type,
+        inline: isInline,
+        title: inno.title,
+        number: getIssueNumber(inno),
+      };
+      // wrap
+      if (!isInline) {
+        const cssClass = isFeatureAtRisk ? `${type} atrisk` : type;
+        const ariaRole = type === "note" || type === "impnote" ? "note" : null;
+        const div = html$1`<div class="${cssClass}" role="${ariaRole}"></div>`;
+        const title = document.createElement("span");
+        const className = `${type}-title marker`;
+        // prettier-ignore
+        const titleParent = html$1`<div role="heading" class="${className}">${title}</div>`;
+        addId(titleParent, "h", type);
+        let text = displayType;
+        if (inno.id) {
+          div.id = inno.id;
+          inno.removeAttribute("id");
+        } else {
+          addId(
+            div,
+            "issue-container",
+            report.number ? `number-${report.number}` : ""
+          );
+        }
+        /** @type {GitHubIssue} */
+        let ghIssue;
+        if (isIssue) {
+          if (report.number !== undefined) {
+            text += ` ${report.number}`;
+          }
+          if (inno.dataset.hasOwnProperty("number")) {
+            const link = linkToIssueTracker(dataNum, conf, { isFeatureAtRisk });
+            if (link) {
+              title.before(link);
+              link.append(title);
+            }
+            title.classList.add("issue-number");
+            ghIssue = ghIssues.get(dataNum);
+            if (!ghIssue) {
+              pub("warning", `Failed to fetch issue number ${dataNum}`);
+            }
+            if (ghIssue && !report.title) {
+              report.title = ghIssue.title;
+            }
+          }
+          if (report.number !== undefined) {
+            // Add entry to #issue-summary.
+            issueList.append(createIssueSummaryEntry(l10n$9.issue, report, div.id));
+          }
+        }
+        title.textContent = text;
+        if (report.title) {
+          inno.removeAttribute("title");
+          const { repoURL = "" } = conf.github || {};
+          const labels = ghIssue ? ghIssue.labels : [];
+          if (ghIssue && ghIssue.state === "CLOSED") {
+            div.classList.add("closed");
+          }
+          titleParent.append(createLabelsGroup(labels, report.title, repoURL));
+        }
+        /** @type {HTMLElement | DocumentFragment} */
+        let body = inno;
+        inno.replaceWith(div);
+        body.classList.remove(type);
+        body.removeAttribute("data-number");
+        if (ghIssue && !body.innerHTML.trim()) {
+          body = document
+            .createRange()
+            .createContextualFragment(ghIssue.bodyHTML);
+        }
+        div.append(titleParent, body);
+        const level = parents(titleParent, "section").length + 2;
+        titleParent.setAttribute("aria-level", level);
+      }
+      pub(report.type, report);
+    });
+    makeIssueSectionSummary(issueList);
+  }
+
+  function createIssueNumberGetter() {
+    if (document.querySelector(".issue[data-number]")) {
+      return element => {
+        if (element.dataset.number) {
+          return Number(element.dataset.number);
+        }
+      };
+    }
+
+    let issueNumber = 0;
+    return element => {
+      if (element.classList.contains("issue") && element.localName !== "span") {
+        return ++issueNumber;
+      }
+    };
+  }
+
+  /**
+   * @typedef {object} IssueType
+   * @property {string} type
+   * @property {string} displayType
+   * @property {boolean} isFeatureAtRisk
+   *
+   * @param {HTMLElement} inno
+   * @return {IssueType}
+   */
+  function getIssueType(inno) {
+    const isIssue = inno.classList.contains("issue");
+    const isWarning = inno.classList.contains("warning");
+    const isEdNote = inno.classList.contains("ednote");
+    const isImpNote = inno.classList.contains("impnote");
+    const isFeatureAtRisk = inno.classList.contains("atrisk");
+    const type = isIssue
+      ? "issue"
+      : isWarning
+      ? "warning"
+      : isEdNote
+      ? "ednote"
+      : isImpNote
+      ? "impnote"
+      : "note";
+    const displayType = isIssue
+      ? isFeatureAtRisk
+        ? l10n$9.feature_at_risk
+        : l10n$9.issue
+      : isWarning
+      ? l10n$9.warning
+      : isEdNote
+      ? l10n$9.editors_note
+      : isImpNote
+      ? l10n$9.implementation_note
+      : l10n$9.note;
+    return { type, displayType, isFeatureAtRisk };
+  }
+
+  /**
+   * @param {string} dataNum
+   * @param {*} conf
+   */
+  function linkToIssueTracker(dataNum, conf, { isFeatureAtRisk = false } = {}) {
+    // Set issueBase to cause issue to be linked to the external issue tracker
+    if (!isFeatureAtRisk && conf.issueBase) {
+      return html$1`<a href="${conf.issueBase + dataNum}" />`;
+    } else if (isFeatureAtRisk && conf.atRiskBase) {
+      return html$1`<a href="${conf.atRiskBase + dataNum}" />`;
+    }
+  }
+
+  /**
+   * @param {string} l10nIssue
+   * @param {Report} report
+   */
+  function createIssueSummaryEntry(l10nIssue, report, id) {
+    const issueNumberText = `${l10nIssue} ${report.number}`;
+    const title = report.title
+      ? html$1`<span style="text-transform: none">: ${report.title}</span>`
+      : "";
+    return html$1`<li><a href="${`#${id}`}">${issueNumberText}</a>${title}</li>`;
+  }
+
+  /**
+   *
+   * @param {HTMLUListElement} issueList
+   */
+  function makeIssueSectionSummary(issueList) {
+    const issueSummaryElement = document.getElementById("issue-summary");
+    if (!issueSummaryElement) return;
+    const heading = issueSummaryElement.querySelector("h2, h3, h4, h5, h6");
+
+    issueList.hasChildNodes()
+      ? issueSummaryElement.append(issueList)
+      : issueSummaryElement.append(html$1`<p>${l10n$9.no_issues_in_spec}</p>`);
+    if (
+      !heading ||
+      (heading && heading !== issueSummaryElement.firstElementChild)
+    ) {
+      issueSummaryElement.insertAdjacentHTML(
+        "afterbegin",
+        `<h2>${l10n$9.issue_summary}</h2>`
+      );
+    }
+  }
+
+  /**
+   * @param {GitHubLabel[]} labels
+   * @param {string} title
+   * @param {string} repoURL
+   */
+  function createLabelsGroup(labels, title, repoURL) {
+    const labelsGroup = labels.map(label => createLabel(label, repoURL));
+    const labelNames = labels.map(label => label.name);
+    const joinedNames = joinAnd(labelNames);
+    if (labelsGroup.length) {
+      labelsGroup.unshift(document.createTextNode(" "));
+    }
+    if (labelNames.length) {
+      const ariaLabel = `This issue is labelled as ${joinedNames}.`;
+      return html$1`<span class="issue-label" aria-label="${ariaLabel}"
+      >: ${title}${labelsGroup}</span
+    >`;
+    }
+    return html$1`<span class="issue-label">: ${title}${labelsGroup}</span>`;
+  }
+
+  /** @param {string} bgColorHex background color as a hex value without '#' */
+  function textColorFromBgColor(bgColorHex) {
+    return parseInt(bgColorHex, 16) > 0xffffff / 2 ? "#000" : "#fff";
+  }
+
+  /**
+   * @param {GitHubLabel} label
+   * @param {string} repoURL
+   */
+  function createLabel(label, repoURL) {
+    const { color: bgColor, name } = label;
+    const issuesURL = new URL("./issues/", repoURL);
+    issuesURL.searchParams.set("q", `is:issue is:open label:"${label.name}"`);
+    const color = textColorFromBgColor(bgColor);
+    const style = `background-color: #${bgColor}; color: ${color}`;
+    return html$1`<a
+    class="respec-gh-label"
+    style="${style}"
+    href="${issuesURL.href}"
+    >${name}</a
+  >`;
+  }
+
+  /**
+   * @returns {Promise<Map<string, GitHubIssue>>}
+   */
+  async function fetchAndStoreGithubIssues(github) {
+    if (!github || !github.apiBase) {
+      return new Map();
+    }
+
+    /** @type {NodeListOf<HTMLElement>} */
+    const specIssues = document.querySelectorAll(".issue[data-number]");
+    const issueNumbers = [...specIssues]
+      .map(elem => Number.parseInt(elem.dataset.number, 10))
+      .filter(issueNumber => issueNumber);
+
+    if (!issueNumbers.length) {
+      return new Map();
+    }
+
+    const url = new URL("issues", `${github.apiBase}/${github.fullName}/`);
+    url.searchParams.set("issues", issueNumbers.join(","));
+
+    const response = await fetch(url.href);
+    if (!response.ok) {
+      const msg = `Error fetching issues from GitHub. (HTTP Status ${response.status}).`;
+      pub("error", msg);
+      return new Map();
+    }
+
+    /** @type {{ [issueNumber: string]: GitHubIssue }} */
+    const issues = await response.json();
+    return new Map(Object.entries(issues));
+  }
+
+  async function run$n(conf) {
+    const query = ".issue, .note, .warning, .ednote, .impnote";
+    /** @type {NodeListOf<HTMLElement>} */
+    const issuesAndNotes = document.querySelectorAll(query);
+    if (!issuesAndNotes.length) {
+      return; // nothing to do.
+    }
+    const ghIssues = await fetchAndStoreGithubIssues(conf.github);
+    const css = await cssPromise$2;
+    const { head: headElem } = document;
+    headElem.insertBefore(
+      html$1`<style>
+      ${css}
+    </style>`,
+      headElem.querySelector("link")
+    );
+    handleIssues(issuesAndNotes, ghIssues, conf);
+    const ednotes = document.querySelectorAll(".ednote");
+    ednotes.forEach(ednote => {
+      ednote.classList.remove("ednote");
+      ednote.classList.add("note");
+    });
+  }
+
+  var issuesNotes = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    name: name$A,
+    run: run$n
+  });
+
+  // @ts-check
+
+  const name$B = "core/best-practices";
+
+  const localizationStrings$8 = {
+    en: {
+      best_practice: "Best Practice ",
+    },
+    ja: {
+      best_practice: "最良実施例 ",
+    },
+    de: {
+      best_practice: "Musterbeispiel ",
+    },
+    zh: {
+      best_practice: "最佳实践 ",
+    },
+  };
+  const l10n$a = getIntlData(localizationStrings$8);
+  const lang$b = lang in localizationStrings$8 ? lang : "en";
+
+  function run$o() {
+    /** @type {NodeListOf<HTMLElement>} */
+    const bps = document.querySelectorAll(".practicelab");
+    const bpSummary = document.getElementById("bp-summary");
+    const summaryItems = bpSummary ? document.createElement("ul") : null;
+    [...bps].forEach((bp, num) => {
+      const id = addId(bp, "bp");
+      const localizedBpName = html$1`<a class="marker self-link" href="${`#${id}`}"
+      ><bdi lang="${lang$b}">${l10n$a.best_practice}${num + 1}</bdi></a
+    >`;
+
+      // Make the summary items, if we have a summary
+      if (summaryItems) {
+        const li = html$1`<li>${localizedBpName}: ${makeSafeCopy(bp)}</li>`;
+        summaryItems.appendChild(li);
+      }
+
+      const container = bp.closest("div");
+      if (!container) {
+        // This is just an inline best practice...
+        bp.classList.add("advisement");
+        return;
+      }
+
+      // Make the advisement box
+      container.classList.add("advisement");
+      const title = html$1`${localizedBpName.cloneNode(true)}: ${bp}`;
+      container.prepend(...title.childNodes);
+    });
+    if (bps.length) {
+      if (bpSummary) {
+        bpSummary.appendChild(html$1`<h2>Best Practices Summary</h2>`);
+        bpSummary.appendChild(summaryItems);
+      }
+    } else if (bpSummary) {
+      pub(
+        "warn",
+        "Using best practices summary (#bp-summary) but no best practices found."
+      );
+      bpSummary.remove();
+    }
+  }
+
+  var bestPractices = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    name: name$B,
+    run: run$o
+  });
+
+  // @ts-check
+
+  const name$C = "core/figures";
+
+  const localizationStrings$9 = {
     en: {
       list_of_figures: "List of Figures",
       fig: "Figure ",
@@ -23441,9 +25720,9 @@ window.respecVersion = "25.16.5";
     },
   };
 
-  const l10n$c = getIntlData(localizationStrings$a);
+  const l10n$b = getIntlData(localizationStrings$9);
 
-  function run$r() {
+  function run$p() {
     normalizeImages(document);
 
     const tof = collectFigures();
@@ -23453,7 +25732,7 @@ window.respecVersion = "25.16.5";
     if (tof.length && tofElement) {
       decorateTableOfFigures(tofElement);
       tofElement.append(
-        html$1`<h2>${l10n$c.list_of_figures}</h2>`,
+        html$1`<h2>${l10n$b.list_of_figures}</h2>`,
         html$1`<ul class="tof">
         ${tof}
       </ul>`
@@ -23489,10 +25768,10 @@ window.respecVersion = "25.16.5";
     const title = caption.textContent;
     addId(figure, "fig", title);
     // set proper caption title
-    wrapInner$1(caption, html$1`<span class='fig-title'></span>`);
+    wrapInner(caption, html$1`<span class="fig-title"></span>`);
     caption.prepend(
-      html$1`<span class='fighdr'>${l10n$c.fig}</span>`,
-      html$1`<bdi class='figno'>${i + 1}</bdi>`,
+      html$1`<span class="fighdr">${l10n$b.fig}</span>`,
+      html$1`<bdi class="figno">${i + 1}</bdi>`,
       " "
     );
   }
@@ -23521,8 +25800,8 @@ window.respecVersion = "25.16.5";
         // footnotes, issues, errors, and text explicitly marked noToC are not in a ToC
         anchor.remove();
       });
-    return html$1`<li class='tofline'>
-    <a class='tocxref' href='${`#${figureId}`}'>${tofCaption.childNodes}</a>
+    return html$1`<li class="tofline">
+    <a class="tocxref" href="${`#${figureId}`}">${tofCaption.childNodes}</a>
   </li>`;
   }
 
@@ -23589,24 +25868,24 @@ window.respecVersion = "25.16.5";
 
   var figures = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$F,
-    run: run$r
+    name: name$C,
+    run: run$p
   });
 
   // @ts-check
 
-  const name$G = "core/equations";
+  const name$D = "core/equations";
 
-  const localizationStrings$b = {
+  const localizationStrings$a = {
     en: {
       list_of_equations: "List of Equations",
       eqn: "Equation ",
     },
   };
 
-  const l10n$d = getIntlData(localizationStrings$b);
+  const l10n$c = getIntlData(localizationStrings$a);
 
-  function run$s() {
+  function run$q() {
     normalizeImages$1(document);
 
     const toe = collectEquations();
@@ -23616,9 +25895,7 @@ window.respecVersion = "25.16.5";
     if (toe.length && toeElement) {
       decorateTableOfEquations(toeElement);
       toeElement.append(
-        html$1`
-        <h2>${l10n$d.list_of_equations}</h2>
-      `,
+        html$1`<h2>${l10n$c.list_of_equations}</h2>`,
         html$1`
         <ul class="toe">
           ${toe}
@@ -23657,19 +25934,10 @@ window.respecVersion = "25.16.5";
     const title = caption.textContent;
     addId(equation, "eqn", title);
     // set proper caption title
-    wrapInner$1(
-      caption,
-      html$1`
-      <span class="eqn-title"></span>
-    `
-    );
+    wrapInner(caption, html$1`<span class="eqn-title"></span>`);
     caption.prepend(
-      html$1`
-      <span class="eqnhdr">${l10n$d.eqn}</span>
-    `,
-      html$1`
-      <bdi class="eqnno">${i + 1}</bdi>
-    `,
+      html$1`<span class="eqnhdr">${l10n$c.eqn}</span>`,
+      html$1`<bdi class="eqnno">${i + 1}</bdi>`,
       " "
     );
   }
@@ -23768,24 +26036,24 @@ window.respecVersion = "25.16.5";
 
   var equations = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$G,
-    run: run$s
+    name: name$D,
+    run: run$q
   });
 
   // @ts-check
 
-  const name$H = "core/tables";
+  const name$E = "core/tables";
 
-  const localizationStrings$c = {
+  const localizationStrings$b = {
     en: {
       list_of_tables: "List of Tables",
       tbl: "Table ",
     },
   };
 
-  const l10n$e = getIntlData(localizationStrings$c);
+  const l10n$d = getIntlData(localizationStrings$b);
 
-  function run$t() {
+  function run$r() {
     const tot = collectTables();
 
     // Create a Table of Tables if a section with id 'tot' exists.
@@ -23793,9 +26061,7 @@ window.respecVersion = "25.16.5";
     if (tot.length && totElement) {
       decorateTableOfTables(totElement);
       totElement.append(
-        html$1`
-        <h2>${l10n$e.list_of_tables}</h2>
-      `,
+        html$1`<h2>${l10n$d.list_of_tables}</h2>`,
         html$1`
         <ul class="tot">
           ${tot}
@@ -23833,19 +26099,10 @@ window.respecVersion = "25.16.5";
     const title = caption.textContent;
     addId(table, "tbl", title);
     // set proper caption title
-    wrapInner$1(
-      caption,
-      html$1`
-      <span class="tbl-title"></span>
-    `
-    );
+    wrapInner(caption, html$1`<span class="tbl-title"></span>`);
     caption.prepend(
-      html$1`
-      <span class="tblhdr">${l10n$e.tbl}</span>
-    `,
-      html$1`
-      <bdi class="tblno">${i + 1}</bdi>
-    `,
+      html$1`<span class="tblhdr">${l10n$d.tbl}</span>`,
+      html$1`<bdi class="tblno">${i + 1}</bdi>`,
       " "
     );
   }
@@ -23932,12 +26189,479 @@ window.respecVersion = "25.16.5";
 
   var tables = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$H,
-    run: run$t
+    name: name$E,
+    run: run$r
   });
 
   // @ts-check
-  const name$I = "core/data-cite";
+  /**
+   * Module core/webidl-clipboard
+   *
+   * This module adds a button to each IDL pre making it possible to copy
+   * well-formatted IDL to the clipboard.
+   *
+   */
+  const name$F = "core/webidl-clipboard";
+
+  function createButton() {
+    const copyButton = document.createElement("button");
+    copyButton.innerHTML =
+      '<svg height="16" viewBox="0 0 14 16" width="14"><path fill-rule="evenodd" d="M2 13h4v1H2v-1zm5-6H2v1h5V7zm2 3V8l-3 3 3 3v-2h5v-2H9zM4.5 9H2v1h2.5V9zM2 12h2.5v-1H2v1zm9 1h1v2c-.02.28-.11.52-.3.7-.19.18-.42.28-.7.3H1c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1h3c0-1.11.89-2 2-2 1.11 0 2 .89 2 2h3c.55 0 1 .45 1 1v5h-1V6H1v9h10v-2zM2 5h8c0-.55-.45-1-1-1H8c-.55 0-1-.45-1-1s-.45-1-1-1-1 .45-1 1-.45 1-1 1H3c-.55 0-1 .45-1 1z"/></svg>';
+    copyButton.title = "Copy IDL to clipboard";
+    copyButton.classList.add("respec-button-copy-paste", "removeOnSave");
+    return copyButton;
+  }
+
+  const copyButton = createButton();
+
+  /**
+   * Adds a HTML button that copies WebIDL to the clipboard.
+   *
+   * @param {HTMLSpanElement} idlHeader
+   */
+  function addCopyIDLButton(idlHeader) {
+    // There may be multiple <span>s of IDL, so we take everything
+    // apart from the idl header.
+    const pre = idlHeader.closest("pre.idl");
+    const idl = pre.cloneNode(true);
+    idl.querySelector(".idlHeader").remove();
+    const { textContent: idlText } = idl;
+    const button = copyButton.cloneNode(true);
+    button.addEventListener("click", () => {
+      navigator.clipboard.writeText(idlText);
+    });
+    idlHeader.append(button);
+  }
+
+  var webidlClipboard = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    name: name$F,
+    addCopyIDLButton: addCopyIDLButton
+  });
+
+  // Module core/webidl
+
+  const name$G = "core/webidl";
+
+  const operationNames = {};
+  const idlPartials = {};
+
+  const templates$1 = {
+    wrap(items) {
+      return items
+        .flat()
+        .filter(x => x !== "")
+        .map(x => (typeof x === "string" ? new Text(x) : x));
+    },
+    trivia(t) {
+      if (!t.trim()) {
+        return t;
+      }
+      return html$1`<span class="idlSectionComment">${t}</span>`;
+    },
+    generic(keyword) {
+      // Shepherd classifies "interfaces" as starting with capital letters,
+      // like Promise, FrozenArray, etc.
+      return /^[A-Z]/.test(keyword)
+        ? html$1`<a data-xref-type="interface" data-cite="WebIDL">${keyword}</a>`
+        : // Other keywords like sequence, maplike, etc...
+          html$1`<a data-xref-type="dfn" data-cite="WebIDL">${keyword}</a>`;
+    },
+    reference(wrapped, unescaped, context) {
+      if (context.type === "extended-attribute" && context.name !== "Exposed") {
+        return wrapped;
+      }
+      let type = "_IDL_";
+      let cite = null;
+      let lt;
+      switch (unescaped) {
+        case "Window":
+          type = "interface";
+          cite = "HTML";
+          break;
+        case "object":
+          type = "interface";
+          cite = "WebIDL";
+          break;
+        default: {
+          const isWorkerType = unescaped.includes("Worker");
+          if (isWorkerType && context.type === "extended-attribute") {
+            lt = `${unescaped}GlobalScope`;
+            type = "interface";
+            cite = ["Worker", "DedicatedWorker", "SharedWorker"].includes(
+              unescaped
+            )
+              ? "HTML"
+              : null;
+          }
+        }
+      }
+      return html$1`<a data-xref-type="${type}" data-cite="${cite}" data-lt="${lt}"
+      >${wrapped}</a
+    >`;
+    },
+    name(escaped, { data, parent }) {
+      if (data.idlType && data.idlType.type === "argument-type") {
+        return html$1`<span class="idlParamName">${escaped}</span>`;
+      }
+      const idlLink = defineIdlName(escaped, data, parent);
+      if (data.type !== "enum-value") {
+        const className = parent ? "idlName" : "idlID";
+        idlLink.classList.add(className);
+      }
+      return idlLink;
+    },
+    nameless(escaped, { data, parent }) {
+      switch (data.type) {
+        case "constructor":
+          return defineIdlName(escaped, data, parent);
+        default:
+          return escaped;
+      }
+    },
+    type(contents) {
+      return html$1`<span class="idlType">${contents}</span>`;
+    },
+    inheritance(contents) {
+      return html$1`<span class="idlSuperclass">${contents}</span>`;
+    },
+    definition(contents, { data, parent }) {
+      const className = getIdlDefinitionClassName(data);
+      switch (data.type) {
+        case "includes":
+        case "enum-value":
+          return html$1`<span class="${className}">${contents}</span>`;
+      }
+      const parentName = parent ? parent.name : "";
+      const { name, idlId } = getNameAndId(data, parentName);
+      return html$1`<span
+      class="${className}"
+      id="${idlId}"
+      data-idl
+      data-title="${name}"
+      >${contents}</span
+    >`;
+    },
+    extendedAttribute(contents) {
+      const result = html$1`<span class="extAttr">${contents}</span>`;
+      return result;
+    },
+    extendedAttributeReference(name) {
+      return html$1`<a data-xref-type="extended-attribute">${name}</a>`;
+    },
+  };
+
+  /**
+   * Returns a link to existing <dfn> or creates one if doesn’t exists.
+   */
+  function defineIdlName(escaped, data, parent) {
+    const parentName = parent ? parent.name : "";
+    const { name } = getNameAndId(data, parentName);
+    const dfn = findDfn(data, name, {
+      parent: parentName,
+    });
+    const linkType = getDfnType(data.type);
+    if (dfn) {
+      if (!data.partial) {
+        dfn.dataset.export = "";
+        dfn.dataset.dfnType = linkType;
+      }
+      decorateDfn(dfn, data, parentName, name);
+      const href = `#${dfn.id}`;
+      return html$1`<a
+      data-link-for="${parentName}"
+      data-link-type="${linkType}"
+      href="${href}"
+      class="internalDFN"
+      ><code>${escaped}</code></a
+    >`;
+    }
+
+    const isDefaultJSON =
+      data.type === "operation" &&
+      data.name === "toJSON" &&
+      data.extAttrs.some(({ name }) => name === "Default");
+    if (isDefaultJSON) {
+      return html$1`<a data-link-type="dfn" data-lt="default toJSON steps"
+      >${escaped}</a
+    >`;
+    }
+    if (!data.partial) {
+      const dfn = html$1`<dfn data-export data-dfn-type="${linkType}"
+      >${escaped}</dfn
+    >`;
+      registerDefinition(dfn, [name]);
+      decorateDfn(dfn, data, parentName, name);
+      return dfn;
+    }
+
+    const unlinkedAnchor = html$1`<a
+    data-idl="${data.partial ? "partial" : null}"
+    data-link-type="${linkType}"
+    data-title="${data.name}"
+    data-xref-type="${linkType}"
+    >${escaped}</a
+  >`;
+
+    const showWarnings =
+      name && data.type !== "typedef" && !(data.partial && !dfn);
+    if (showWarnings) {
+      const styledName = data.type === "operation" ? `${name}()` : name;
+      const ofParent = parentName ? ` \`${parentName}\`'s` : "";
+      const msg = `Missing \`<dfn>\` for${ofParent} \`${styledName}\` ${data.type}. [More info](https://github.com/w3c/respec/wiki/WebIDL-thing-is-not-defined).`;
+      showInlineWarning(unlinkedAnchor, msg, "");
+    }
+    return unlinkedAnchor;
+  }
+
+  /**
+   * Map to Shepherd types, for export.
+   * @see https://tabatkins.github.io/bikeshed/#dfn-types
+   */
+  function getDfnType(idlType) {
+    switch (idlType) {
+      case "operation":
+        return "method";
+      case "field":
+        return "dict-member";
+      case "callback interface":
+      case "interface mixin":
+        return "interface";
+      default:
+        return idlType;
+    }
+  }
+
+  function getIdlDefinitionClassName(defn) {
+    switch (defn.type) {
+      case "callback interface":
+        return "idlInterface";
+      case "operation":
+        return "idlMethod";
+      case "field":
+        return "idlMember";
+      case "enum-value":
+        return "idlEnumItem";
+      case "callback function":
+        return "idlCallback";
+    }
+    return `idl${defn.type[0].toUpperCase()}${defn.type.slice(1)}`;
+  }
+
+  const nameResolverMap = new WeakMap();
+  function getNameAndId(defn, parent = "") {
+    if (nameResolverMap.has(defn)) {
+      return nameResolverMap.get(defn);
+    }
+    const result = resolveNameAndId(defn, parent);
+    nameResolverMap.set(defn, result);
+    return result;
+  }
+
+  function resolveNameAndId(defn, parent) {
+    let name = getDefnName(defn);
+    let idlId = getIdlId(name, parent);
+    switch (defn.type) {
+      // Top-level entities with linkable members.
+      case "callback interface":
+      case "dictionary":
+      case "interface":
+      case "interface mixin": {
+        idlId += resolvePartial(defn);
+        break;
+      }
+      case "constructor":
+      case "operation": {
+        const overload = resolveOverload(name, parent);
+        if (overload) {
+          name += overload;
+          idlId += overload;
+        } else if (defn.arguments.length) {
+          idlId += defn.arguments
+            .map(arg => `-${arg.name.toLowerCase()}`)
+            .join("");
+        }
+        break;
+      }
+    }
+    return { name, idlId };
+  }
+
+  function resolvePartial(defn) {
+    if (!defn.partial) {
+      return "";
+    }
+    if (!idlPartials[defn.name]) {
+      idlPartials[defn.name] = 0;
+    }
+    idlPartials[defn.name] += 1;
+    return `-partial-${idlPartials[defn.name]}`;
+  }
+
+  function resolveOverload(name, parentName) {
+    const qualifiedName = `${parentName}.${name}`;
+    const fullyQualifiedName = `${qualifiedName}()`;
+    let overload;
+    if (!operationNames[fullyQualifiedName]) {
+      operationNames[fullyQualifiedName] = 0;
+    }
+    if (!operationNames[qualifiedName]) {
+      operationNames[qualifiedName] = 0;
+    } else {
+      overload = `!overload-${operationNames[qualifiedName]}`;
+    }
+    operationNames[fullyQualifiedName] += 1;
+    operationNames[qualifiedName] += 1;
+    return overload || "";
+  }
+
+  function getIdlId(name, parentName) {
+    if (!parentName) {
+      return `idl-def-${name.toLowerCase()}`;
+    }
+    return `idl-def-${parentName.toLowerCase()}-${name.toLowerCase()}`;
+  }
+
+  function getDefnName(defn) {
+    switch (defn.type) {
+      case "enum-value":
+        return defn.value;
+      case "operation":
+        return defn.name;
+      default:
+        return defn.name || defn.type;
+    }
+  }
+
+  /**
+   * @param {Element} idlElement
+   * @param {number} index
+   */
+  function renderWebIDL(idlElement, index) {
+    let parse;
+    try {
+      parse = webidl2.parse(idlElement.textContent, {
+        sourceName: String(index),
+      });
+    } catch (e) {
+      showInlineError(
+        idlElement,
+        `Failed to parse WebIDL: ${e.bareMessage}.`,
+        e.bareMessage,
+        { details: `<pre>${e.context}</pre>` }
+      );
+      // Skip this <pre> and move on to the next one.
+      return [];
+    }
+    // we add "idl" as the canonical match, so both "webidl" and "idl" work
+    idlElement.classList.add("def", "idl");
+    const highlights = webidl2.write(parse, { templates: templates$1 });
+    html$1.bind(idlElement)`${highlights}`;
+    idlElement.querySelectorAll("[data-idl]").forEach(elem => {
+      if (elem.dataset.dfnFor) {
+        return;
+      }
+      const title = elem.dataset.title;
+      // Select the nearest ancestor element that can contain members.
+      const parent = elem.parentElement.closest("[data-idl][data-title]");
+      if (parent) {
+        elem.dataset.dfnFor = parent.dataset.title;
+      }
+      if (elem.localName === "dfn") {
+        registerDefinition(elem, [title]);
+      }
+    });
+    // cross reference
+    const closestCite = idlElement.closest("[data-cite], body");
+    const { dataset } = closestCite;
+    if (!dataset.cite) dataset.cite = "WebIDL";
+    // includes webidl in some form
+    if (!/\bwebidl\b/i.test(dataset.cite)) {
+      const cites = dataset.cite.trim().split(/\s+/);
+      dataset.cite = ["WebIDL", ...cites].join(" ");
+    }
+    addIDLHeader(idlElement);
+    return parse;
+  }
+  /**
+   * Adds a "WebIDL" decorative header/permalink to a block of WebIDL.
+   * @param {HTMLPreElement} pre
+   */
+  function addIDLHeader(pre) {
+    addHashId(pre, "webidl");
+    const header = html$1`<span class="idlHeader"
+    ><a class="self-link" href="${`#${pre.id}`}">WebIDL</a></span
+  >`;
+    pre.prepend(header);
+    addCopyIDLButton(header);
+  }
+
+  const cssPromise$3 = loadStyle$5();
+
+  async function loadStyle$5() {
+    try {
+      return (await Promise.resolve().then(function () { return webidl$2; })).default;
+    } catch {
+      return fetchAsset("webidl.css");
+    }
+  }
+
+  let _hasWebIdl = undefined; // unknown
+
+  function hasWebIdl() {
+    if (_hasWebIdl == undefined) {
+      const idls = document.querySelectorAll("pre.idl, pre.webidl");
+      _hasWebIdl = idls.length;
+    }
+    return _hasWebIdl;
+  }
+
+  async function run$s() {
+    const idls = document.querySelectorAll("pre.idl, pre.webidl");
+    if (!idls.length) {
+      return;
+    }
+    if (!document.querySelector(".idl:not(pre), .webidl:not(pre)")) {
+      const link = document.querySelector("head link");
+      if (link) {
+        const style = document.createElement("style");
+        style.textContent = await cssPromise$3;
+        link.before(style);
+      }
+    }
+
+    const astArray = [...idls].map(renderWebIDL);
+
+    const validations = webidl2.validate(astArray);
+    for (const validation of validations) {
+      let details = `<pre>${validation.context}</pre>`;
+      if (validation.autofix) {
+        validation.autofix();
+        const idlToFix = webidl2.write(astArray[validation.sourceName]);
+        const escaped = xmlEscape(idlToFix);
+        details += `Try fixing as:
+      <pre>${escaped}</pre>`;
+      }
+      showInlineError(
+        idls[validation.sourceName],
+        `WebIDL validation error: ${validation.bareMessage}`,
+        validation.bareMessage,
+        { details }
+      );
+    }
+    document.normalize();
+  }
+
+  var webidl = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    name: name$G,
+    addIDLHeader: addIDLHeader,
+    hasWebIdl: hasWebIdl,
+    run: run$s
+  });
+
+  // @ts-check
+  const name$H = "core/data-cite";
 
   /**
    * An arbitrary constant value used as an alias to current spec's shortname. It
@@ -24007,7 +26731,7 @@ window.respecVersion = "25.16.5";
         anchor.textContent = title;
         elem.append(anchor);
       } else {
-        wrapInner$1(elem, anchor);
+        wrapInner(elem, anchor);
       }
       if (wrapInCiteEl) {
         const cite = document.createElement("cite");
@@ -24078,7 +26802,7 @@ window.respecVersion = "25.16.5";
     return details;
   }
 
-  async function run$u() {
+  async function run$t() {
     /** @type {NodeListOf<HTMLElement>} */
     const elems = document.querySelectorAll(
       "dfn[data-cite]:not([data-cite='']), a[data-cite]:not([data-cite=''])"
@@ -24132,20 +26856,20 @@ window.respecVersion = "25.16.5";
 
   var dataCite = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$I,
+    name: name$H,
     THIS_SPEC: THIS_SPEC,
     toCiteDetails: toCiteDetails,
-    run: run$u
+    run: run$t
   });
 
   // @ts-check
 
-  const name$J = "core/link-to-dfn";
+  const name$I = "core/link-to-dfn";
 
   /** @type {HTMLElement[]} */
   const possibleExternalLinks = [];
 
-  const localizationStrings$d = {
+  const localizationStrings$c = {
     en: {
       /**
        * @param {string} title
@@ -24184,9 +26908,9 @@ window.respecVersion = "25.16.5";
       duplicateTitle: "在文档中有重复的定义。",
     },
   };
-  const l10n$f = getIntlData(localizationStrings$d);
+  const l10n$e = getIntlData(localizationStrings$c);
 
-  async function run$v(conf) {
+  async function run$u(conf) {
     const titleToDfns = mapTitleToDfns();
     /** @type {HTMLAnchorElement[]} */
     const badLinks = [];
@@ -24222,14 +26946,32 @@ window.respecVersion = "25.16.5";
     }
   }
 
+  // function resultToString(result) {
+  //   let retval = `resultToString(result.size=${result.size}) =`;
+  //   for (const dFor of result.keys()) {
+  //     retval += `\n  result(${dFor}).size=${result.get(dFor).size}`;
+  //     for (const dType of result.get(dFor).keys()) {
+  //       retval += `\n    ${dFor}, ${dType}) = ${
+  //         result.get(dFor).get(dType).outerHTML
+  //       }`;
+  //     }
+  //   }
+  //   return retval;
+  // }
+
   function mapTitleToDfns() {
     /** @type {CaseInsensitiveMap<Map<string, Map<string, HTMLElement>>>} */
     const titleToDfns = new CaseInsensitiveMap();
     for (const key of definitionMap.keys()) {
       const { result, duplicates } = collectDfns(key);
+      // console.log(
+      //   `mapTitleToDfns: ${key} = result: ${resultToString(
+      //     result
+      //   )} duplicates:${duplicates}`
+      // );
       titleToDfns.set(key, result);
       if (duplicates.length > 0) {
-        showInlineError(duplicates, l10n$f.duplicateMsg(key), l10n$f.duplicateTitle);
+        showInlineError(duplicates, l10n$e.duplicateMsg(key), l10n$e.duplicateTitle);
       }
     }
     return titleToDfns;
@@ -24266,7 +27008,29 @@ window.respecVersion = "25.16.5";
       result.get(dfnFor).set(type, dfn);
       addId(dfn, "dfn", title);
     }
-
+    if (result.size === 1 && !result.has("")) {
+      for (const value of result.values()) {
+        if (value.size === 1) {
+          result.set("", value);
+        }
+      }
+    }
+    // eslint-disable-next-line no-constant-condition
+    // if (true) {
+    //   console.log(`collectDfns(${title}) result.size=${result.size}`);
+    //   for (const dFor of result.keys()) {
+    //     console.log(
+    //       `collectDfns(${title}) result(${dFor}).size=${result.get(dFor).size}`
+    //     );
+    //     for (const dType of result.get(dFor).keys()) {
+    //       console.log(
+    //         `collectDfns(${dFor}, ${dType}) = ${
+    //           result.get(dFor).get(dType).outerHTML
+    //         }`
+    //       );
+    //     }
+    //   }
+    // }
     return { result, duplicates };
   }
 
@@ -24277,14 +27041,32 @@ window.respecVersion = "25.16.5";
    */
   function findMatchingDfn(anchor, titleToDfns) {
     const linkTargets = getLinkTargets(anchor);
-    const target = linkTargets.find(
-      target =>
+    // console.log(
+    //   `findMatchingDfn(${anchor.outerHTML}) linkTargets=${JSON.stringify(
+    //     linkTargets
+    //   )}`
+    // );
+    const target = linkTargets.find(target => {
+      // console.log(
+      //   `findMatchingDfn(${anchor.outerHTML}) target=${JSON.stringify(target)}`
+      // );
+      // console.log(`findMatchingDfn(${anchor.outerHTML}) titleToDfns.has(${target.title})=${titleToDfns.has(target.title)}`);
+      // console.log(`findMatchingDfn(${anchor.outerHTML}) titleToDfns.get(${target.title}).has(${target.for})=${titleToDfns.get(target.title).has(target.for)}`);
+      return (
         titleToDfns.has(target.title) &&
-        titleToDfns.get(target.title).has(target.for)
-    );
+        (titleToDfns.get(target.title).has(target.for) ||
+          titleToDfns.get(target.title).size === 1)
+      );
+    });
+    // console.log(
+    //   `findMatchingDfn(${anchor.outerHTML}) target#2=${JSON.stringify(target)}`
+    // );
     if (!target) return;
-
+    // console.log(
+    //   `findMatchingDfn(${anchor.outerHTML}) target#3=${JSON.stringify(target)}`
+    // );
     const dfnsByType = titleToDfns.get(target.title).get(target.for);
+    // console.log(`findMatchingDfn(${anchor.outerHTML}) dfnsByType = ${dfnsByType}`);
     const { linkType } = anchor.dataset;
     if (linkType) {
       const type = linkType === "dfn" ? "dfn" : "idl";
@@ -24305,6 +27087,9 @@ window.respecVersion = "25.16.5";
     let noLocalMatch = false;
     const { linkFor } = anchor.dataset;
     const { dfnFor } = dfn.dataset;
+    // console.log(
+    //   `processAnchor(anchor=${anchor.outerHTML}  dfn=${dfn.outerHTML}  titleToDfns=${titleToDfns})`
+    // );
     if (dfn.dataset.cite) {
       anchor.dataset.cite = dfn.dataset.cite;
     } else if (linkFor && !titleToDfns.get(linkFor) && linkFor !== dfnFor) {
@@ -24358,7 +27143,10 @@ window.respecVersion = "25.16.5";
     const isIDL = dfn.dataset.hasOwnProperty("idl");
     const needsCode = shouldWrapByCode(anchor) || shouldWrapByCode(dfn, term);
     if (!isIDL || needsCode) {
-      wrapInner$1(anchor, document.createElement("code"));
+      wrapInner(
+        anchor,
+        document.createElement("code") // .setAttribute("class", "code-dfn")
+      );
     }
   }
 
@@ -24437,15 +27225,1035 @@ window.respecVersion = "25.16.5";
 
   var linkToDfn = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$J,
+    name: name$I,
     possibleExternalLinks: possibleExternalLinks,
-    run: run$v
+    run: run$u
   });
 
   // @ts-check
-  const name$K = "core/contrib";
 
-  async function run$w(conf) {
+  /**
+   * @typedef {import('core/xref').RequestEntry} RequestEntry
+   * @typedef {import('core/xref').Response} Response
+   * @typedef {import('core/xref').SearchResultEntry} SearchResultEntry
+   */
+
+  const VERSION_CHECK_WAIT = 5 * 60 * 1000; // 5 min
+
+  async function getIdbCache() {
+    const db = await idb.openDB("xref", 1, {
+      upgrade(db) {
+        db.createObjectStore("xrefs");
+      },
+    });
+    return new IDBKeyVal(db, "xrefs");
+  }
+
+  /**
+   * @param {RequestEntry[]} uniqueQueryKeys
+   * @returns {Promise<Map<string, SearchResultEntry[]>>}
+   */
+  async function resolveXrefCache(uniqueQueryKeys) {
+    try {
+      const cache = await getIdbCache();
+      return await resolveFromCache(uniqueQueryKeys, cache);
+    } catch (err) {
+      console.error(err);
+      return new Map();
+    }
+  }
+
+  /**
+   * @param {RequestEntry[]} keys
+   * @param {IDBKeyVal} cache
+   * @returns {Promise<Map<string, SearchResultEntry[]>>}
+   */
+  async function resolveFromCache(keys, cache) {
+    const bustCache = await shouldBustCache(cache);
+    if (bustCache) {
+      await cache.clear();
+      return new Map();
+    }
+
+    const cachedData = await cache.getMany(keys.map(key => key.id));
+    return cachedData;
+  }
+
+  /**
+   * Get last updated timestamp from server and bust cache based on that. This
+   * way, we prevent dirty/erroneous/stale data being kept on a client (which is
+   * possible if we use a `MAX_AGE` based caching strategy).
+   * @param {IDBKeyVal} cache
+   */
+  async function shouldBustCache(cache) {
+    const lastChecked = await cache.get("__LAST_VERSION_CHECK__");
+    const now = Date.now();
+
+    if (!lastChecked) {
+      await cache.set("__LAST_VERSION_CHECK__", now);
+      return false;
+    }
+    if (now - lastChecked < VERSION_CHECK_WAIT) {
+      // avoid checking network for any data update if old cache "fresh"
+      return false;
+    }
+
+    const url = new URL("meta/version", API_URL).href;
+    const res = await fetch(url);
+    if (!res.ok) return false;
+    const lastUpdated = await res.text();
+    await cache.set("__LAST_VERSION_CHECK__", now);
+    return parseInt(lastUpdated, 10) > lastChecked;
+  }
+
+  /**
+   * @param {Map<string, SearchResultEntry[]>} data
+   */
+  async function cacheXrefData(data) {
+    try {
+      const cache = await getIdbCache();
+      // add data to cache
+      await cache.addMany(data);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // @ts-check
+
+  const name$J = "core/xref";
+
+  const profiles = {
+    "web-platform": ["HTML", "INFRA", "URL", "WEBIDL", "DOM", "FETCH"],
+  };
+
+  const API_URL = "https://respec.org/xref/";
+
+  if (
+    !document.querySelector("link[rel='preconnect'][href='https://respec.org']")
+  ) {
+    const link = createResourceHint({
+      hint: "preconnect",
+      href: "https://respec.org",
+    });
+    document.head.appendChild(link);
+  }
+
+  /**
+   * @param {Object} conf respecConfig
+   */
+  async function run$v(conf) {
+    if (!conf.xref) {
+      return;
+    }
+
+    const xref = normalizeConfig(conf.xref);
+    if (xref.specs) {
+      const bodyCite = document.body.dataset.cite
+        ? document.body.dataset.cite.split(/\s+/)
+        : [];
+      document.body.dataset.cite = bodyCite.concat(xref.specs).join(" ");
+    }
+
+    const elems = possibleExternalLinks.concat(findExplicitExternalLinks());
+    if (!elems.length) return;
+
+    /** @type {RequestEntry[]} */
+    const queryKeys = [];
+    for (const elem of elems) {
+      const entry = getRequestEntry(elem);
+      const id = await objectHash(entry);
+      queryKeys.push({ ...entry, id });
+    }
+
+    const data = await getData(queryKeys, xref.url);
+    addDataCiteToTerms(elems, queryKeys, data, conf);
+
+    sub("beforesave", cleanup$1);
+  }
+
+  /**
+   * Find additional references that need to be looked up externally.
+   * Examples: a[data-cite="spec"], dfn[data-cite="spec"], dfn.externalDFN
+   */
+  function findExplicitExternalLinks() {
+    /** @type {NodeListOf<HTMLElement>} */
+    const links = document.querySelectorAll(
+      "a[data-cite]:not([data-cite='']):not([data-cite*='#']), " +
+        "dfn[data-cite]:not([data-cite='']):not([data-cite*='#'])"
+    );
+    /** @type {NodeListOf<HTMLElement>} */
+    const externalDFNs = document.querySelectorAll("dfn.externalDFN");
+    return [...links]
+      .filter(el => {
+        // ignore empties
+        if (el.textContent.trim() === "") return false;
+        /** @type {HTMLElement} */
+        const closest = el.closest("[data-cite]");
+        return !closest || closest.dataset.cite !== "";
+      })
+      .concat(...externalDFNs);
+  }
+
+  /**
+   * converts conf.xref to object with url and spec properties
+   */
+  function normalizeConfig(xref) {
+    const defaults = {
+      url: API_URL,
+      specs: null,
+    };
+
+    const config = Object.assign({}, defaults);
+
+    const type = Array.isArray(xref) ? "array" : typeof xref;
+    switch (type) {
+      case "boolean":
+        // using defaults already, as above
+        break;
+      case "string":
+        if (xref.toLowerCase() in profiles) {
+          Object.assign(config, { specs: profiles[xref.toLowerCase()] });
+        } else {
+          invalidProfileError(xref);
+        }
+        break;
+      case "array":
+        Object.assign(config, { specs: xref });
+        break;
+      case "object":
+        Object.assign(config, xref);
+        if (xref.profile) {
+          const profile = xref.profile.toLowerCase();
+          if (profile in profiles) {
+            const specs = (xref.specs || []).concat(profiles[profile]);
+            Object.assign(config, { specs });
+          } else {
+            invalidProfileError(xref.profile);
+          }
+        }
+        break;
+      default:
+        pub(
+          "error",
+          `Invalid value for \`xref\` configuration option. Received: "${xref}".`
+        );
+    }
+    return config;
+
+    function invalidProfileError(profile) {
+      const supportedProfiles = Object.keys(profiles)
+        .map(p => `"${p}"`)
+        .join(", ");
+      const msg =
+        `Invalid profile "${profile}" in \`respecConfig.xref\`. ` +
+        `Please use one of the supported profiles: ${supportedProfiles}.`;
+      pub("error", msg);
+    }
+  }
+
+  /**
+   * get xref API request entry (term and context) for given xref element
+   * @param {HTMLElement} elem
+   */
+  function getRequestEntry(elem) {
+    const isIDL = "xrefType" in elem.dataset;
+
+    let term = getTermFromElement(elem);
+    if (!isIDL) term = term.toLowerCase();
+
+    const specs = getSpecContext(elem);
+    const types = getTypeContext(elem, isIDL);
+    const forContext = getForContext(elem, isIDL);
+
+    return {
+      term,
+      types,
+      ...(specs.length && { specs }),
+      ...(typeof forContext === "string" && { for: forContext }),
+    };
+  }
+
+  /** @param {HTMLElement} elem */
+  function getTermFromElement(elem) {
+    const { lt: linkingText } = elem.dataset;
+    let term = linkingText ? linkingText.split("|", 1)[0] : elem.textContent;
+    term = norm(term);
+    return term === "the-empty-string" ? "" : term;
+  }
+
+  /**
+   * Get spec context as a fallback chain, where each level (sub-array) represents
+   * decreasing priority.
+   * @param {HTMLElement} elem
+   */
+  function getSpecContext(elem) {
+    /** @type {string[][]} */
+    const specs = [];
+
+    /** @type {HTMLElement} */
+    let dataciteElem = elem.closest("[data-cite]");
+
+    // Traverse up towards the root element, adding levels of lower priority specs
+    while (dataciteElem) {
+      const cite = dataciteElem.dataset.cite.toLowerCase().replace(/[!?]/g, "");
+      const cites = cite.split(/\s+/).filter(s => s);
+      if (cites.length) {
+        specs.push(cites);
+      }
+      if (dataciteElem === elem) break;
+      dataciteElem = dataciteElem.parentElement.closest("[data-cite]");
+    }
+
+    // If element itself contains data-cite, we don't take inline context into
+    // account. The inline bibref context has lowest priority, if available.
+    if (dataciteElem !== elem) {
+      const closestSection = elem.closest("section");
+      /** @type {Iterable<HTMLElement>} */
+      const bibrefs = closestSection
+        ? closestSection.querySelectorAll("a.bibref")
+        : [];
+      const inlineRefs = [...bibrefs].map(el => el.textContent.toLowerCase());
+      if (inlineRefs.length) {
+        specs.push(inlineRefs);
+      }
+    }
+
+    const uniqueSpecContext = dedupeSpecContext(specs);
+    return uniqueSpecContext;
+  }
+
+  /**
+   * If we already have a spec in a higher priority level (closer to element) of
+   * fallback chain, skip it from low priority levels, to prevent duplication.
+   * @param {string[][]} specs
+   * */
+  function dedupeSpecContext(specs) {
+    /** @type {string[][]} */
+    const unique = [];
+    for (const level of specs) {
+      const higherPriority = unique[unique.length - 1] || [];
+      const uniqueSpecs = [...new Set(level)].filter(
+        spec => !higherPriority.includes(spec)
+      );
+      unique.push(uniqueSpecs.sort());
+    }
+    return unique;
+  }
+
+  /**
+   * @param {HTMLElement} elem
+   * @param {boolean} isIDL
+   */
+  function getForContext(elem, isIDL) {
+    if (elem.dataset.xrefFor) {
+      return norm(elem.dataset.xrefFor);
+    }
+
+    if (isIDL) {
+      /** @type {HTMLElement} */
+      const dataXrefForElem = elem.closest("[data-xref-for]");
+      if (dataXrefForElem) {
+        return norm(dataXrefForElem.dataset.xrefFor);
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * @param {HTMLElement} elem
+   * @param {boolean} isIDL
+   */
+  function getTypeContext(elem, isIDL) {
+    if (isIDL) {
+      if (elem.dataset.xrefType) {
+        return elem.dataset.xrefType.split("|");
+      }
+      return ["_IDL_"];
+    }
+
+    return ["_CONCEPT_"];
+  }
+
+  /**
+   * @param {RequestEntry[]} queryKeys
+   * @param {string} apiUrl
+   * @returns {Promise<Map<string, SearchResultEntry[]>>}
+   */
+  async function getData(queryKeys, apiUrl) {
+    const uniqueIds = new Set();
+    const uniqueQueryKeys = queryKeys.filter(key => {
+      return uniqueIds.has(key.id) ? false : uniqueIds.add(key.id) && true;
+    });
+
+    const resultsFromCache = await resolveXrefCache(uniqueQueryKeys);
+
+    const termsToLook = uniqueQueryKeys.filter(
+      key => !resultsFromCache.get(key.id)
+    );
+    const fetchedResults = await fetchFromNetwork(termsToLook, apiUrl);
+    if (fetchedResults.size) {
+      // add data to cache
+      await cacheXrefData(fetchedResults);
+    }
+
+    return new Map([...resultsFromCache, ...fetchedResults]);
+  }
+
+  /**
+   * @param {RequestEntry[]} keys
+   * @param {string} url
+   * @returns {Promise<Map<string, SearchResultEntry[]>>}
+   */
+  async function fetchFromNetwork(keys, url) {
+    if (!keys.length) return new Map();
+
+    const query = { keys };
+    const options = {
+      method: "POST",
+      body: JSON.stringify(query),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+    const response = await fetch(url, options);
+    const json = await response.json();
+    return new Map(json.result);
+  }
+
+  /**
+   * Figures out from the tree structure if the reference is
+   * normative (true) or informative (false).
+   * @param {HTMLElement} elem
+   */
+  function isNormative(elem) {
+    const closestNormative = elem.closest(".normative");
+    const closestInform = elem.closest(nonNormativeSelector);
+    if (!closestInform || elem === closestNormative) {
+      return true;
+    }
+    return (
+      closestNormative &&
+      closestInform &&
+      closestInform.contains(closestNormative)
+    );
+  }
+
+  /**
+   * adds data-cite attributes to elems for each term for which results are found.
+   * adds citations to references section.
+   * collects and shows linking errors if any.
+   * @param {HTMLElement[]} elems
+   * @param {RequestEntry[]} queryKeys
+   * @param {Map<string, SearchResultEntry[]>} data
+   * @param {any} conf
+   */
+  function addDataCiteToTerms(elems, queryKeys, data, conf) {
+    /** @type {Errors} */
+    const errors = { ambiguous: new Map(), notFound: new Map() };
+
+    for (let i = 0, l = elems.length; i < l; i++) {
+      if (elems[i].closest("[data-no-xref]")) continue;
+
+      const elem = elems[i];
+      const query = queryKeys[i];
+
+      const { id } = query;
+      const results = data.get(id);
+      if (results.length === 1) {
+        addDataCite(elem, query, results[0], conf);
+      } else {
+        const collector = errors[results.length === 0 ? "notFound" : "ambiguous"];
+        if (!collector.has(id)) {
+          collector.set(id, { elems: [], results, query });
+        }
+        collector.get(id).elems.push(elem);
+      }
+    }
+
+    showErrors(errors);
+  }
+
+  /**
+   * @param {HTMLElement} elem
+   * @param {RequestEntry} query
+   * @param {SearchResultEntry} result
+   * @param {any} conf
+   */
+  function addDataCite(elem, query, result, conf) {
+    const { term, specs = [] } = query;
+    const { uri, shortname, spec, normative, type, for: forContext } = result;
+    // if authored spec context had `result.spec`, use it instead of shortname
+    const cite = specs.flat().includes(spec) ? spec : shortname;
+    const url = new URL(uri, "https://example.org");
+    const { pathname: citePath } = url;
+    const citeFrag = url.hash.slice(1);
+    const dataset = { cite, citePath, citeFrag, type };
+    if (forContext) dataset.linkFor = forContext[0];
+    Object.assign(elem.dataset, dataset);
+
+    addToReferences(elem, cite, normative, term, conf);
+  }
+
+  /**
+   * add specs for citation (references section)
+   * @param {HTMLElement} elem
+   * @param {string} cite
+   * @param {boolean} normative
+   * @param {string} term
+   * @param {any} conf
+   */
+  function addToReferences(elem, cite, normative, term, conf) {
+    const isNormRef = isNormative(elem);
+    if (!isNormRef) {
+      // Only add it if not already normative...
+      if (!conf.normativeReferences.has(cite)) {
+        conf.informativeReferences.add(cite);
+      }
+      return;
+    }
+    if (normative) {
+      // If it was originally informative, we move the existing
+      // key to be normative.
+      const existingKey = conf.informativeReferences.has(cite)
+        ? conf.informativeReferences.getCanonicalKey(cite)
+        : cite;
+      conf.normativeReferences.add(existingKey);
+      conf.informativeReferences.delete(existingKey);
+      return;
+    }
+
+    const msg =
+      `Adding an informative reference to "${term}" from "${cite}" ` +
+      "in a normative section";
+    const title = "Error: Informative reference in normative section";
+    showInlineWarning(elem, msg, title);
+  }
+
+  /** @param {Errors} errors */
+  function showErrors({ ambiguous, notFound }) {
+    const getPrefilledFormURL = (term, query, specs = []) => {
+      const url = new URL(API_URL);
+      url.searchParams.set("term", term);
+      if (query.for) url.searchParams.set("for", query.for);
+      url.searchParams.set("types", query.types.join(","));
+      if (specs.length) url.searchParams.set("specs", specs.join(","));
+      return url;
+    };
+
+    const howToFix = howToCiteURL =>
+      "[Learn more about this error](https://respec.org/docs/#error-term-not-found)" +
+      ` or see [how to cite to resolve the error](${howToCiteURL})`;
+
+    for (const { query, elems } of notFound.values()) {
+      const specs = query.specs ? [...new Set(query.specs.flat())].sort() : [];
+      const originalTerm = getTermFromElement(elems[0]);
+      const formUrl = getPrefilledFormURL(originalTerm, query);
+      const specsString = specs.map(spec => `\`${spec}\``).join(", ");
+      const hint = howToFix(formUrl);
+      const msg = `Couldn't match "**${originalTerm}**" to anything in the document or in any other document cited in this specification: ${specsString}. ${hint}`;
+      showInlineError(elems, msg, "Error: No matching dfn found.");
+    }
+
+    for (const { query, elems, results } of ambiguous.values()) {
+      const specs = [...new Set(results.map(entry => entry.shortname))].sort();
+      const specsString = specs.map(s => `**${s}**`).join(", ");
+      const originalTerm = getTermFromElement(elems[0]);
+      const formUrl = getPrefilledFormURL(originalTerm, query, specs);
+      const hint = howToFix(formUrl);
+      const msg = `The term "**${originalTerm}**" is defined in ${specsString} in multiple ways, so it's ambiguous. ${hint}`;
+      showInlineError(elems, msg, "Error: Linking an ambiguous dfn.");
+    }
+  }
+
+  function objectHash(obj) {
+    const str = JSON.stringify(obj, Object.keys(obj).sort());
+    const buffer = new TextEncoder().encode(str);
+    return crypto.subtle.digest("SHA-1", buffer).then(bufferToHexString);
+  }
+
+  /** @param {ArrayBuffer} buffer */
+  function bufferToHexString(buffer) {
+    const byteArray = new Uint8Array(buffer);
+    return [...byteArray].map(v => v.toString(16).padStart(2, "0")).join("");
+  }
+
+  function cleanup$1(doc) {
+    const elems = doc.querySelectorAll(
+      "a[data-xref-for], a[data-xref-type], a[data-link-for]"
+    );
+    const attrToRemove = ["data-xref-for", "data-xref-type", "data-link-for"];
+    elems.forEach(el => {
+      attrToRemove.forEach(attr => el.removeAttribute(attr));
+    });
+  }
+
+  var xref = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    name: name$J,
+    API_URL: API_URL,
+    run: run$v,
+    getTermFromElement: getTermFromElement
+  });
+
+  // @ts-check
+  /**
+   * Module: core/webidl-index
+   * constructs a summary of WebIDL in the document by
+   * cloning all the generated WebIDL nodes and
+   * appending them to pre element.
+   *
+   * Usage
+   * Add a <section id="idl-index"> to the document.
+   * It also supports title elements to generate a header.
+   * Or if a header element is an immediate child, then
+   * that is preferred.
+   */
+  const name$K = "core/webidl-index";
+
+  function run$w() {
+    /** @type {HTMLElement | null} */
+    const idlIndexSec = document.querySelector("section#idl-index");
+    if (!idlIndexSec) {
+      return;
+    }
+    // Query for decedents headings, e.g., "h2:first-child, etc.."
+    const query = [2, 3, 4, 5, 6].map(level => `h${level}:first-child`).join(",");
+    if (!idlIndexSec.querySelector(query)) {
+      const header = document.createElement("h2");
+      if (idlIndexSec.title) {
+        header.textContent = idlIndexSec.title;
+        idlIndexSec.removeAttribute("title");
+      } else {
+        header.textContent = "IDL Index";
+      }
+      idlIndexSec.prepend(header);
+    }
+
+    // filter out the IDL marked with class="exclude" and the IDL in non-normative sections
+    const idlIndex = Array.from(
+      document.querySelectorAll("pre.def.idl:not(.exclude)")
+    ).filter(idl => !idl.closest(nonNormativeSelector));
+
+    if (idlIndex.length === 0) {
+      const text = "This specification doesn't declare any Web IDL.";
+      idlIndexSec.append(text);
+      return;
+    }
+
+    const pre = document.createElement("pre");
+    pre.classList.add("idl", "def");
+    pre.id = "actual-idl-index";
+    idlIndex
+      .map(elem => {
+        const fragment = document.createDocumentFragment();
+        for (const child of elem.children) {
+          fragment.appendChild(child.cloneNode(true));
+        }
+        return fragment;
+      })
+      .forEach(elem => {
+        if (pre.lastChild) {
+          pre.append("\n\n");
+        }
+        pre.appendChild(elem);
+      });
+    // Remove duplicate IDs
+    pre.querySelectorAll("*[id]").forEach(elem => elem.removeAttribute("id"));
+    // Remove IDL headers
+    pre.querySelectorAll(".idlHeader").forEach(elem => elem.remove());
+    // Add our own IDL header
+    idlIndexSec.appendChild(pre);
+    addIDLHeader(pre);
+  }
+
+  var webidlIndex = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    name: name$K,
+    run: run$w
+  });
+
+  // @ts-check
+
+  const name$L = "core/dfn-index";
+
+  const localizationStrings$d = {
+    en: {
+      heading: "Index",
+      headingExternal: "Terms defined by reference",
+      headlingLocal: "Terms defined by this specification",
+      dfnOf: "definition of",
+    },
+  };
+  const l10n$f = getIntlData(localizationStrings$d);
+
+  // Terms of these _types_ are wrapped in `<code>`.
+  const CODE_TYPES = new Set([
+    "attribute",
+    "callback",
+    "dict-member",
+    "dictionary",
+    "element-attr",
+    "element",
+    "enum-value",
+    "enum",
+    "exception",
+    "extended-attribute",
+    "interface",
+    "method",
+    "typedef",
+  ]);
+
+  /**
+   * @typedef {{ term: string, type: string, linkFor: string, elem: HTMLAnchorElement }} Entry
+   */
+
+  async function run$x() {
+    const index = document.querySelector("section#index");
+    if (!index) {
+      return;
+    }
+
+    const styleEl = document.createElement("style");
+    styleEl.textContent = await loadStyle$6();
+    document.head.appendChild(styleEl);
+
+    index.classList.add("appendix");
+    if (!index.querySelector("h2")) {
+      index.prepend(html$1`<h2>${l10n$f.heading}</h2>`);
+    }
+
+    const localTermIndex = html$1`<section id="index-defined-here">
+    <h3>${l10n$f.headlingLocal}</h3>
+    ${createLocalTermIndex()}
+  </section>`;
+    index.append(localTermIndex);
+
+    const externalTermIndex = html$1`<section id="index-defined-elsewhere">
+    <h3>${l10n$f.headingExternal}</h3>
+    ${createExternalTermIndex()}
+  </section>`;
+    index.append(externalTermIndex);
+    for (const el of externalTermIndex.querySelectorAll(".index-term")) {
+      addId(el, "index-term");
+    }
+
+    // XXX: This event is used to overcome an edge case with core/structure,
+    // related to a circular dependency in plugin run order. We want
+    // core/structure to run after dfn-index so the #index can be listed in the
+    // TOC, but we also want section numbers in dfn-index. So, we "split"
+    // core/dfn-index in two parts, one that runs before core/structure (using
+    // plugin order in profile) and the other (following) after section numbers
+    // are generated in core/structure (this event).
+    sub("toc", appendSectionNumbers, { once: true });
+
+    sub("beforesave", cleanup$2);
+  }
+
+  function createLocalTermIndex() {
+    const dataSortedByTerm = collectLocalTerms();
+    return html$1`<ul class="index">
+    ${dataSortedByTerm.map(([term, dfns]) => renderLocalTerm(term, dfns))}
+  </ul>`;
+  }
+
+  function collectLocalTerms() {
+    /** @type {Map<string, HTMLElement[]>} */
+    const data = new Map();
+    /** @type {NodeListOf<HTMLElement>} */
+    const elems = document.querySelectorAll("dfn:not([data-cite])");
+    for (const elem of elems) {
+      if (!elem.id) continue;
+      const text = norm(elem.textContent);
+      const elemsByTerm = data.get(text) || data.set(text, []).get(text);
+      elemsByTerm.push(elem);
+    }
+
+    const dataSortedByTerm = [...data].sort(([a], [b]) =>
+      a.slice(a.search(/\w/)).localeCompare(b.slice(b.search(/\w/)))
+    );
+
+    return dataSortedByTerm;
+  }
+
+  /**
+   * @param {string} term
+   * @param {HTMLElement[]} dfns
+   * @returns {HTMLLIElement}
+   */
+  function renderLocalTerm(term, dfns) {
+    const renderItem = (dfn, text, suffix) => {
+      const href = `#${dfn.id}`;
+      return html$1`<li data-id=${dfn.id}>
+      <a class="index-term" href="${href}">${{ html: text }}</a> ${suffix
+        ? { html: suffix }
+        : ""}
+    </li>`;
+    };
+
+    if (dfns.length === 1) {
+      const dfn = dfns[0];
+      const type = getLocalTermType(dfn);
+      const text = getLocalTermText(dfn, type, term);
+      const suffix = getLocalTermSuffix(dfn, type, term);
+      return renderItem(dfn, text, suffix);
+    }
+    return html$1`<li>
+    ${term}
+    <ul>
+      ${dfns.map(dfn => {
+        const type = getLocalTermType(dfn);
+        const text = getLocalTermSuffix(dfn, type, term) || l10n$f.dfnOf;
+        return renderItem(dfn, text);
+      })}
+    </ul>
+  </li>`;
+  }
+
+  /** @param {HTMLElement} dfn */
+  function getLocalTermType(dfn) {
+    const ds = dfn.dataset;
+    const type = ds.dfnType || ds.idl || ds.linkType || "";
+    switch (type) {
+      case "":
+      case "dfn":
+        return "";
+      default:
+        return type;
+    }
+  }
+
+  /** @param {HTMLElement} dfn */
+  function getLocalTermParentContext(dfn) {
+    /** @type {HTMLElement} */
+    const dfnFor = dfn.closest("[data-dfn-for]:not([data-dfn-for=''])");
+    return dfnFor ? dfnFor.dataset.dfnFor : "";
+  }
+
+  /**
+   * @param {HTMLElement} dfn
+   * @param {string} type
+   * @param {string} term
+   */
+  function getLocalTermText(dfn, type, term) {
+    let text = term;
+    if (type === "enum-value") {
+      text = `"${text}"`;
+    }
+    if (CODE_TYPES.has(type) || dfn.dataset.idl || dfn.closest("code")) {
+      text = `<code>${text}</code>`;
+    }
+    return text;
+  }
+
+  /**
+   * @param {HTMLElement} dfn
+   * @param {string} type
+   * @param {string} [term=""]
+   */
+  function getLocalTermSuffix(dfn, type, term = "") {
+    if (term.startsWith("[[")) {
+      const parent = getLocalTermParentContext(dfn);
+      return `internal slot for <code>${parent}</code>`;
+    }
+
+    switch (type) {
+      case "dict-member":
+      case "method":
+      case "attribute":
+      case "enum-value": {
+        const typeText =
+          type === "dict-member" ? "member" : type.replace("-", " ");
+        const parent = getLocalTermParentContext(dfn);
+        return `${typeText} for <code>${parent}</code>`;
+      }
+      case "interface":
+      case "dictionary":
+      case "enum": {
+        return type;
+      }
+      case "constructor": {
+        const parent = getLocalTermParentContext(dfn);
+        return `for <code>${parent}</code>`;
+      }
+      default:
+        return "";
+    }
+  }
+
+  function appendSectionNumbers() {
+    const getSectionNumber = id => {
+      const dfn = document.getElementById(id);
+      const sectionNumberEl = dfn.closest("section").querySelector(".secno");
+      const secNum = `§${sectionNumberEl.textContent.trim()}`;
+      return html$1`<span class="print-only">${secNum}</span>`;
+    };
+
+    /** @type {NodeListOf<HTMLElement>} */
+    const elems = document.querySelectorAll("#index-defined-here li[data-id]");
+    elems.forEach(el => el.append(getSectionNumber(el.dataset.id)));
+  }
+
+  function createExternalTermIndex() {
+    const data = collectExternalTerms();
+    const dataSortedBySpec = [...data.entries()].sort(([specA], [specB]) =>
+      specA.localeCompare(specB)
+    );
+    return html$1`<ul class="index">
+    ${dataSortedBySpec.map(
+      ([spec, entries]) => html$1`<li data-spec="${spec}">
+        ${renderInlineCitation(spec)} defines the following:
+        <ul>
+          ${entries
+            .sort((a, b) => a.term.localeCompare(b.term))
+            .map(renderExternalTermEntry)}
+        </ul>
+      </li>`
+    )}
+  </ul>`;
+  }
+
+  function collectExternalTerms() {
+    /** @type {Set<string>} */
+    const uniqueReferences = new Set();
+    /** @type {Map<string, Entry[]>} spec => entry[] */
+    const data = new Map();
+
+    /** @type {NodeListOf<HTMLAnchorElement>} */
+    const elements = document.querySelectorAll(`a[data-cite]`);
+    for (const elem of elements) {
+      if (!elem.dataset.cite) {
+        continue;
+      }
+      const uniqueID = elem.href;
+      if (uniqueReferences.has(uniqueID)) {
+        continue;
+      }
+
+      const { type, linkFor } = elem.dataset;
+      const term = getTermFromElement(elem);
+      if (!term) {
+        continue; // <a data-cite="SPEC"></a>
+      }
+      const spec = toCiteDetails(elem).key.toUpperCase();
+
+      const entriesBySpec = data.get(spec) || data.set(spec, []).get(spec);
+      entriesBySpec.push({ term, type, linkFor, elem });
+      uniqueReferences.add(uniqueID);
+    }
+
+    return data;
+  }
+
+  /**
+   * @param {Entry} entry
+   * @returns {HTMLLIElement}
+   */
+  function renderExternalTermEntry(entry) {
+    const { elem } = entry;
+    const text = getTermText(entry);
+    const el = html$1`<li>
+    <span class="index-term" data-href="${elem.href}">${{ html: text }}</span>
+  </li>`;
+    return el;
+  }
+
+  // Terms of these _types_ are suffixed with their type info.
+  const TYPED_TYPES = new Map([
+    ["attribute", "attribute"],
+    ["element-attr", "attribute"],
+    ["element", "element"],
+    ["enum", "enum"],
+    ["exception", "exception"],
+    ["extended-attribute", "extended attribute"],
+    ["interface", "interface"],
+  ]);
+
+  // These _terms_ have type suffix "type".
+  const TYPE_TERMS = new Set([
+    // Following are primitive types as per WebIDL spec:
+    "boolean",
+    "byte",
+    "octet",
+    "short",
+    "unsigned short",
+    "long",
+    "unsigned long",
+    "long long",
+    "unsigned long long",
+    "float",
+    "unrestricted float",
+    "double",
+    "unrestricted double",
+    // Following are not primitive types, but aren't interfaces either.
+    "undefined",
+    "any",
+    "object",
+    "symbol",
+  ]);
+
+  /** @param {Entry} entry */
+  function getTermText(entry) {
+    const { term, type, linkFor } = entry;
+    let text = term;
+
+    if (CODE_TYPES.has(type)) {
+      if (type === "extended-attribute") {
+        text = `[${text}]`;
+      }
+      text = `<code>${text}</code>`;
+    }
+
+    const typeSuffix = TYPE_TERMS.has(term) ? "type" : TYPED_TYPES.get(type);
+    if (typeSuffix) {
+      text += ` ${typeSuffix}`;
+    }
+
+    if (linkFor) {
+      let linkForText = linkFor;
+      if (!/\s/.test(linkFor)) {
+        // If linkFor is a single word, highlight it.
+        linkForText = `<code>${linkForText}</code>`;
+      }
+      if (type === "element-attr") {
+        linkForText += " element";
+      }
+      text += ` (for ${linkForText})`;
+    }
+
+    return text;
+  }
+
+  async function loadStyle$6() {
+    try {
+      return (await Promise.resolve().then(function () { return dfnIndex$2; })).default;
+    } catch {
+      return fetchAsset("dfn-index.css");
+    }
+  }
+
+  /** @param {Document} doc */
+  function cleanup$2(doc) {
+    doc
+      .querySelectorAll("#index-defined-elsewhere li[data-spec]")
+      .forEach(el => el.removeAttribute("data-spec"));
+
+    doc
+      .querySelectorAll("#index-defined-here li[data-id]")
+      .forEach(el => el.removeAttribute("data-id"));
+  }
+
+  var dfnIndex = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    name: name$L,
+    run: run$x
+  });
+
+  // @ts-check
+  const name$M = "core/contrib";
+
+  async function run$y(conf) {
     const ghContributors = document.getElementById("gh-contributors");
     if (!ghContributors) {
       return;
@@ -24529,15 +28337,15 @@ window.respecVersion = "25.16.5";
 
   var contrib = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$K,
-    run: run$w
+    name: name$M,
+    run: run$y
   });
 
   // @ts-check
 
-  const name$L = "core/fix-headers";
+  const name$N = "core/fix-headers";
 
-  function run$x() {
+  function run$z() {
     [...document.querySelectorAll("section:not(.introductory)")]
       .map(sec => sec.querySelector("h1, h2, h3, h4, h5, h6"))
       .filter(h => h)
@@ -24558,8 +28366,8 @@ window.respecVersion = "25.16.5";
 
   var fixHeaders = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$L,
-    run: run$x
+    name: name$N,
+    run: run$z
   });
 
   // @ts-check
@@ -24567,7 +28375,7 @@ window.respecVersion = "25.16.5";
   const lowerHeaderTags = ["h2", "h3", "h4", "h5", "h6"];
   const headerTags = ["h1", ...lowerHeaderTags];
 
-  const name$M = "core/structure";
+  const name$O = "core/structure";
 
   const localizationStrings$e = {
     en: {
@@ -24755,7 +28563,7 @@ window.respecVersion = "25.16.5";
     );
   }
 
-  function run$y(conf) {
+  function run$A(conf) {
     if ("tocIntroductory" in conf === false) {
       conf.tocIntroductory = false;
     }
@@ -24874,8 +28682,8 @@ window.respecVersion = "25.16.5";
 
   var structure$1 = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$M,
-    run: run$y
+    name: name$O,
+    run: run$A
   });
 
   // Module pcisig/fig-tbl-eqn-numbering
@@ -24885,7 +28693,7 @@ window.respecVersion = "25.16.5";
   // 1. core/figures runs before core/structure and thus doesn't know Chapter and Appendix numbers
   // 2. A second pass means that this plugin is not part of the src/core.
 
-  const name$N = "pcisig/fig-tbl-eqn-numbering";
+  const name$P = "pcisig/fig-tbl-eqn-numbering";
 
   function numberItems(sec, chapter, map, selector) {
     // Process Figure Captions, populating figNumMap
@@ -24907,7 +28715,7 @@ window.respecVersion = "25.16.5";
     });
   }
 
-  function run$z(conf) {
+  function run$B(conf) {
     if (conf.numberByChapter) {
       const chapterSecnos = document.querySelectorAll(
         "body > section:not(.introductory) h2:first-child bdi.secno"
@@ -24936,13 +28744,13 @@ window.respecVersion = "25.16.5";
 
   var figTblEqnNumbering = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$N,
-    run: run$z
+    name: name$P,
+    run: run$B
   });
 
   // @ts-check
 
-  const name$O = "core/informative";
+  const name$Q = "core/informative";
 
   const localizationStrings$f = {
     en: {
@@ -24967,7 +28775,7 @@ window.respecVersion = "25.16.5";
 
   const l10n$h = getIntlData(localizationStrings$f);
 
-  function run$A() {
+  function run$C() {
     Array.from(document.querySelectorAll("section.informative"))
       .map(informative => informative.querySelector("h2, h3, h4, h5, h6"))
       .filter(heading => heading)
@@ -24978,8 +28786,8 @@ window.respecVersion = "25.16.5";
 
   var informative = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$O,
-    run: run$A
+    name: name$Q,
+    run: run$C
   });
 
   // @ts-check
@@ -24987,9 +28795,9 @@ window.respecVersion = "25.16.5";
   // All headings are expected to have an ID, unless their immediate container has one.
   // This is currently in core though it comes from a W3C rule. It may move in the future.
 
-  const name$P = "core/id-headers";
+  const name$R = "core/id-headers";
 
-  function run$B(conf) {
+  function run$D(conf) {
     /** @type {NodeListOf<HTMLElement>} */
     const headings = document.querySelectorAll(
       `section:not(.head):not(.introductory) h2, h3, h4, h5, h6, figcaption, caption, div.impnote-title, div.note-title`
@@ -25010,15 +28818,15 @@ window.respecVersion = "25.16.5";
 
   var idHeaders = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$P,
-    run: run$B
+    name: name$R,
+    run: run$D
   });
 
   // @ts-check
 
-  const name$Q = "core/caniuse";
+  const name$S = "core/caniuse";
 
-  const API_URL = "https://respec.org/caniuse/";
+  const API_URL$1 = "https://respec.org/caniuse/";
 
   const BROWSERS = new Set([
     "and_chr",
@@ -25048,9 +28856,9 @@ window.respecVersion = "25.16.5";
     document.head.appendChild(link);
   }
 
-  const caniuseCssPromise = loadStyle$5();
+  const caniuseCssPromise = loadStyle$7();
 
-  async function loadStyle$5() {
+  async function loadStyle$7() {
     try {
       return (await Promise.resolve().then(function () { return caniuse$2; })).default;
     } catch {
@@ -25058,7 +28866,7 @@ window.respecVersion = "25.16.5";
     }
   }
 
-  async function run$C(conf) {
+  async function run$E(conf) {
     if (!conf.caniuse) {
       return; // nothing to do.
     }
@@ -25077,7 +28885,7 @@ window.respecVersion = "25.16.5";
     const headDlElem = document.querySelector(".head dl");
     const contentPromise = (async () => {
       try {
-        const apiUrl = options.apiURL || API_URL;
+        const apiUrl = options.apiURL || API_URL$1;
         const stats = await fetchStats(apiUrl, options);
         return html$1`${{ html: stats }}`;
       } catch (err) {
@@ -25158,13 +28966,13 @@ window.respecVersion = "25.16.5";
 
   var caniuse = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$Q,
-    run: run$C
+    name: name$S,
+    run: run$E
   });
 
   // @ts-check
 
-  const name$R = "core/mdn-annotation";
+  const name$T = "core/mdn-annotation";
 
   const BASE_JSON_PATH = "https://w3c.github.io/mdn-spec-links/";
   const MDN_URL_BASE = "https://developer.mozilla.org/en-US/docs/Web/";
@@ -25203,7 +29011,7 @@ window.respecVersion = "25.16.5";
   };
   const l10n$i = getIntlData(localizationStrings$g);
 
-  async function loadStyle$6() {
+  async function loadStyle$8() {
     try {
       return (await Promise.resolve().then(function () { return mdnAnnotation$2; })).default;
     } catch {
@@ -25294,7 +29102,7 @@ window.respecVersion = "25.16.5";
   </table>`;
   }
 
-  async function run$D(conf) {
+  async function run$F(conf) {
     const mdnKey = getMdnKey(conf);
     if (!mdnKey) return;
 
@@ -25302,7 +29110,7 @@ window.respecVersion = "25.16.5";
     if (!mdnSpecJson) return;
 
     const style = document.createElement("style");
-    style.textContent = await loadStyle$6();
+    style.textContent = await loadStyle$8();
     document.head.append(style);
 
     for (const elem of findElements(mdnSpecJson)) {
@@ -25391,8 +29199,8 @@ window.respecVersion = "25.16.5";
 
   var mdnAnnotation = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$R,
-    run: run$D
+    name: name$T,
+    run: run$F
   });
 
   // @ts-check
@@ -25424,7 +29232,7 @@ window.respecVersion = "25.16.5";
 
   function serialize(format, doc) {
     const cloneDoc = doc.cloneNode(true);
-    cleanup$1(cloneDoc);
+    cleanup$3(cloneDoc);
     let result = "";
     switch (format) {
       case "xml":
@@ -25441,7 +29249,7 @@ window.respecVersion = "25.16.5";
     return result;
   }
 
-  function cleanup$1(cloneDoc) {
+  function cleanup$3(cloneDoc) {
     const { head, body, documentElement } = cloneDoc;
     removeCommentNodes(cloneDoc);
 
@@ -25493,7 +29301,7 @@ window.respecVersion = "25.16.5";
 
   // @ts-check
 
-  const name$S = "ui/save-html";
+  const name$U = "ui/save-html";
 
   const localizationStrings$h = {
     en: {
@@ -25599,7 +29407,7 @@ window.respecVersion = "25.16.5";
 
   var saveHtml = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$S,
+    name: name$U,
     exportDocument: exportDocument
   });
 
@@ -25701,9 +29509,9 @@ window.respecVersion = "25.16.5";
    * first paragraph of the abstract.
    */
 
-  const name$T = "core/seo";
+  const name$V = "core/seo";
 
-  function run$E() {
+  function run$G() {
     const firstParagraph = document.querySelector("#abstract p:first-of-type");
     if (!firstParagraph) {
       return; // no abstract, so nothing to do
@@ -25718,8 +29526,8 @@ window.respecVersion = "25.16.5";
 
   var seo = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$T,
-    run: run$E
+    name: name$V,
+    run: run$G
   });
 
   // @ts-check
@@ -25756,7 +29564,7 @@ window.respecVersion = "25.16.5";
 
   const l10n$l = getIntlData(localizationStrings$j);
 
-  const name$U = "core/data-tests";
+  const name$W = "core/data-tests";
 
   function toListItem(href) {
     const emojiList = [];
@@ -25803,7 +29611,7 @@ window.respecVersion = "25.16.5";
     return testList;
   }
 
-  function run$F(conf) {
+  function run$H(conf) {
     /** @type {NodeListOf<HTMLElement>} */
     const elems = document.querySelectorAll("[data-tests]");
     const testables = [...elems].filter(elem => elem.dataset.tests);
@@ -25878,12 +29686,12 @@ window.respecVersion = "25.16.5";
 
   var dataTests = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$U,
-    run: run$F
+    name: name$W,
+    run: run$H
   });
 
   // @ts-check
-  const name$V = "core/list-sorter";
+  const name$X = "core/list-sorter";
 
   function makeSorter(direction) {
     const order = direction === "ascending" ? 1 : -1;
@@ -25937,7 +29745,7 @@ window.respecVersion = "25.16.5";
     return sortedElements;
   }
 
-  function run$G() {
+  function run$I() {
     /** @type {NodeListOf<HTMLElement>} */
     const sortables = document.querySelectorAll("[data-sort]");
     for (const elem of sortables) {
@@ -25969,18 +29777,18 @@ window.respecVersion = "25.16.5";
 
   var listSorter = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$V,
+    name: name$X,
     sortListItems: sortListItems,
     sortDefinitionTerms: sortDefinitionTerms,
-    run: run$G
+    run: run$I
   });
 
   // @ts-check
 
-  const name$W = "core/dfn-panel";
+  const name$Y = "core/dfn-panel";
 
-  async function run$H() {
-    const css = await loadStyle$7();
+  async function run$J() {
+    const css = await loadStyle$9();
     document.head.insertBefore(
       html$1`<style>
       ${css}
@@ -26096,7 +29904,7 @@ window.respecVersion = "25.16.5";
     return norm(heading.textContent);
   }
 
-  async function loadStyle$7() {
+  async function loadStyle$9() {
     try {
       return (await Promise.resolve().then(function () { return dfnPanel$2; })).default;
     } catch {
@@ -26114,17 +29922,17 @@ window.respecVersion = "25.16.5";
 
   var dfnPanel = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$W,
-    run: run$H
+    name: name$Y,
+    run: run$J
   });
 
   // @ts-check
 
-  const name$X = "core/data-type";
+  const name$Z = "core/data-type";
 
-  const tooltipStylePromise = loadStyle$8();
+  const tooltipStylePromise = loadStyle$a();
 
-  async function loadStyle$8() {
+  async function loadStyle$a() {
     try {
       return (await Promise.resolve().then(function () { return datatype$1; })).default;
     } catch {
@@ -26132,7 +29940,7 @@ window.respecVersion = "25.16.5";
     }
   }
 
-  async function run$I(conf) {
+  async function run$K(conf) {
     if (!conf.highlightVars) {
       return;
     }
@@ -26162,17 +29970,17 @@ window.respecVersion = "25.16.5";
 
   var dataType = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$X,
-    run: run$I
+    name: name$Z,
+    run: run$K
   });
 
   // @ts-check
 
-  const name$Y = "core/algorithms";
+  const name$_ = "core/algorithms";
 
-  const cssPromise$3 = loadStyle$9();
+  const cssPromise$4 = loadStyle$b();
 
-  async function loadStyle$9() {
+  async function loadStyle$b() {
     try {
       return (await Promise.resolve().then(function () { return algorithms$2; })).default;
     } catch {
@@ -26180,31 +29988,31 @@ window.respecVersion = "25.16.5";
     }
   }
 
-  async function run$J() {
+  async function run$L() {
     const elements = Array.from(document.querySelectorAll("ol.algorithm li"));
     elements
       .filter(li => li.textContent.trim().startsWith("Assert: "))
       .forEach(li => li.classList.add("assert"));
     if (document.querySelector(".assert")) {
       const style = document.createElement("style");
-      style.textContent = await cssPromise$3;
+      style.textContent = await cssPromise$4;
       document.head.appendChild(style);
     }
   }
 
   var algorithms = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$Y,
-    run: run$J
+    name: name$_,
+    run: run$L
   });
 
   // @ts-check
 
-  const name$Z = "core/anchor-expander";
+  const name$$ = "core/anchor-expander";
 
   let sectionRefsByNumber = false;
 
-  function run$K(conf) {
+  function run$M(conf) {
     if (conf.hasOwnProperty("sectionRefsByNumber")) {
       sectionRefsByNumber = conf.sectionRefsByNumber;
     }
@@ -26409,15 +30217,15 @@ window.respecVersion = "25.16.5";
 
   var anchorExpander = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$Z,
-    run: run$K
+    name: name$$,
+    run: run$M
   });
 
   // @ts-check
 
-  const name$_ = "pcisig/include-final-config";
+  const name$10 = "pcisig/include-final-config";
 
-  function run$L(conf) {
+  function run$N(conf) {
     const script = document.createElement("script");
     script.id = "finalUserConfig";
     script.type = "application/json";
@@ -26427,13 +30235,54 @@ window.respecVersion = "25.16.5";
 
   var includeFinalConfig = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$_,
-    run: run$L
+    name: name$10,
+    run: run$N
   });
 
   // @ts-check
+  /** @type {Promise<{ apiBase: string, fullName: string, branch: string, repoURL: string } | null>} */
+  const github = new Promise((resolve, reject) => {
+  });
 
-  const name$$ = "rs-changelog";
+  const localizationStrings$k = {
+    en: {
+      file_a_bug: "File a bug",
+      participate: "Participate",
+      commit_history: "Commit history",
+    },
+    ko: {
+      participate: "참여",
+    },
+    zh: {
+      participate: "参与：",
+      file_a_bug: "反馈错误",
+    },
+    ja: {
+      file_a_bug: "問題報告",
+      participate: "参加方法：",
+      commit_history: "変更履歴",
+    },
+    nl: {
+      commit_history: "Revisiehistorie",
+      file_a_bug: "Dien een melding in",
+      participate: "Doe mee",
+    },
+    es: {
+      commit_history: "Historia de cambios",
+      file_a_bug: "Nota un bug",
+      participate: "Participe",
+    },
+    de: {
+      file_a_bug: "Fehler melden",
+      participate: "Mitmachen",
+      commit_history: "Revisionen",
+    },
+  };
+  const l10n$m = getIntlData(localizationStrings$k);
+
+  // @ts-check
+
+  const name$11 = "rs-changelog";
 
   const element = class ChangelogElement extends HTMLElement {
     constructor() {
@@ -26511,7 +30360,7 @@ window.respecVersion = "25.16.5";
 
   var changelog = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$$,
+    name: name$11,
     element: element
   });
 
@@ -26519,9 +30368,9 @@ window.respecVersion = "25.16.5";
   /** @type {CustomElementDfn[]} */
   const CUSTOM_ELEMENTS = [changelog];
 
-  const name$10 = "core/custom-elements/index";
+  const name$12 = "core/custom-elements/index";
 
-  async function run$M() {
+  async function run$O() {
     // prepare and register elements
     CUSTOM_ELEMENTS.forEach(el => {
       customElements.define(el.name, el.element);
@@ -26538,19 +30387,19 @@ window.respecVersion = "25.16.5";
 
   var index = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$10,
-    run: run$M
+    name: name$12,
+    run: run$O
   });
 
   // import { html } from "../core/import-maps.js";
 
-  const name$11 = "pcisig/railroad";
+  const name$13 = "pcisig/railroad";
   // const funcs = {};
   // export default funcs;
 
-  const cssPromise$4 = loadStyle$a();
+  const cssPromise$5 = loadStyle$c();
 
-  async function loadStyle$a() {
+  async function loadStyle$c() {
     try {
       return (await Promise.resolve().then(function () { return railroad$2; })).default;
     } catch {
@@ -28271,7 +32120,7 @@ window.respecVersion = "25.16.5";
     return retval;
   }
 
-  async function run$N(conf) {
+  async function run$P(conf) {
     if (!("noRailroad" in conf)) {
       if ("railroad" in conf) {
         for (const opt in Options) {
@@ -28281,7 +32130,7 @@ window.respecVersion = "25.16.5";
         }
       }
 
-      let css = await cssPromise$4;
+      let css = await cssPromise$5;
       css = css.replace(/\bsvg\b/g, `svg.${Options.DIAGRAM_CLASS}`);
       css = `<style id="respec-railroad-style">${css}</style>`;
       // console.log(`railroad.css = ${css}`);
@@ -28328,8 +32177,118 @@ window.respecVersion = "25.16.5";
 
   var railroad = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$11,
-    run: run$N
+    name: name$13,
+    run: run$P
+  });
+
+  // @ts-check
+
+  const name$14 = "core/a11y";
+
+  const DISABLED_RULES = [
+    "color-contrast", // too slow 🐢
+    "landmark-one-main", // need to add a <main>, else it marks entire page as errored
+    "landmark-unique",
+    "region",
+  ];
+
+  async function run$Q(conf) {
+    if (!conf.a11y) {
+      return;
+    }
+
+    const options = conf.a11y === true ? {} : conf.a11y;
+    const violations = await getViolations(options);
+    for (const violation of violations) {
+      /**
+       * We're grouping by failureSummary as it contains hints to fix the issue.
+       * For example, with color-constrast rule, it tells about the present color
+       * contrast and how to fix it. If we don't group, errors will be repetitive.
+       * @type {Map<string, HTMLElement[]>}
+       */
+      const groupedBySummary = new Map();
+      for (const node of violation.nodes) {
+        const { failureSummary, element } = node;
+        const elements =
+          groupedBySummary.get(failureSummary) ||
+          groupedBySummary.set(failureSummary, []).get(failureSummary);
+        elements.push(element);
+      }
+
+      const { id, help, description, helpUrl } = violation;
+      const title = `a11y/${id}: ${help}`;
+      for (const [failureSummary, elements] of groupedBySummary) {
+        const hints = formatHintsAsMarkdown(failureSummary);
+        const details = `\n\n${description}.\n\n${hints}. ([Learn more](${helpUrl}))`;
+        showInlineWarning(elements, title, title, { details });
+      }
+    }
+  }
+
+  /**
+   * @param {object} opts Options as described at https://github.com/dequelabs/axe-core/blob/develop/doc/API.md#options-parameter
+   */
+  async function getViolations(opts) {
+    const { rules, ...otherOptions } = opts;
+    const options = {
+      rules: {
+        ...Object.fromEntries(DISABLED_RULES.map(id => [id, { enabled: false }])),
+        ...rules,
+      },
+      ...otherOptions,
+      elementRef: true,
+      resultTypes: ["violations"],
+      reporter: "v1", // v1 includes a `failureSummary`
+    };
+
+    let axe;
+    try {
+      axe = await importAxe();
+    } catch (error) {
+      const msg =
+        "Failed to load a11y linter. See developer console for details.";
+      pub("error", msg);
+      console.error(error);
+      return [];
+    }
+
+    try {
+      const result = await axe.run(document, options);
+      return result.violations;
+    } catch (error) {
+      pub("error", "Error while looking for a11y issues.");
+      console.error(error);
+      return [];
+    }
+  }
+
+  /** @returns {Promise<typeof window.axe>} */
+  function importAxe() {
+    const script = document.createElement("script");
+    script.classList.add("remove");
+    script.src = "https://unpkg.com/axe-core@3/axe.min.js";
+    document.head.appendChild(script);
+    return new Promise((resolve, reject) => {
+      script.onload = () => resolve(window.axe);
+      script.onerror = reject;
+    });
+  }
+
+  /** @param {string} text */
+  function formatHintsAsMarkdown(text) {
+    const results = [];
+    for (const group of text.split("\n\n")) {
+      const [msg, ...opts] = group.split(/^\s{2}/m);
+      const options = opts.map(opt => `- ${opt.trimEnd()}`).join("\n");
+      results.push(`${msg}${options}`);
+    }
+    return results.join("\n\n");
+  }
+
+  var a11y = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    name: name$14,
+    run: run$Q
   });
 
   var ui$2 = ".respec-modal .close-button{position:absolute;z-index:inherit;padding:.2em;font-weight:700;cursor:pointer;margin-left:5px;border:none;background:0 0}\n#respec-ui{position:fixed;display:flex;flex-direction:row-reverse;top:20px;right:20px;width:202px;text-align:right;z-index:9000}\n#respec-pill,.respec-info-button{background:#fff;height:2.5em;color:#787878;border:1px solid #ccc;box-shadow:1px 1px 8px 0 rgba(100,100,100,.5)}\n.respec-info-button{border:none;opacity:.75;border-radius:2em;margin-right:1em;min-width:3.5em}\n.respec-info-button:focus,.respec-info-button:hover{opacity:1;transition:opacity .2s}\n#respec-pill:disabled{font-size:2.8px;text-indent:-9999em;border-top:1.1em solid rgba(40,40,40,.2);border-right:1.1em solid rgba(40,40,40,.2);border-bottom:1.1em solid rgba(40,40,40,.2);border-left:1.1em solid #fff;transform:translateZ(0);animation:respec-spin .5s infinite linear;box-shadow:none}\n#respec-pill:disabled,#respec-pill:disabled:after{border-radius:50%;width:10em;height:10em}\n@keyframes respec-spin{\n0%{transform:rotate(0)}\n100%{transform:rotate(360deg)}\n}\n.respec-hidden{visibility:hidden;opacity:0;transition:visibility 0s .2s,opacity .2s linear}\n.respec-visible{visibility:visible;opacity:1;transition:opacity .2s linear}\n#respec-pill:focus,#respec-pill:hover{color:#000;background-color:#f5f5f5;transition:color .2s}\n#respec-menu{position:absolute;margin:0;padding:0;font-family:sans-serif;background:#fff;box-shadow:1px 1px 8px 0 rgba(100,100,100,.5);width:200px;display:none;text-align:left;margin-top:32px;font-size:.8em}\n#respec-menu:not([hidden]){display:block}\n#respec-menu li{list-style-type:none;margin:0;padding:0}\n.respec-save-buttons{display:grid;grid-template-columns:repeat(auto-fill,minmax(47%,2fr));grid-gap:.5cm;padding:.5cm}\n.respec-save-button:link{padding-top:16px;color:#f0f0f0;background:#2a5aa8;justify-self:stretch;height:1cm;text-decoration:none;text-align:center;font-size:inherit;border:none;border-radius:.2cm}\n.respec-save-button:link:hover{color:#fff;background:#2a5aa8;padding:0;margin:0;border:0;padding-top:16px}\n.respec-save-button:link:focus{background:#193766}\n#respec-pill:focus,#respec-ui button:focus,.respec-option:focus{outline:0;outline-style:none}\n#respec-pill-error{background-color:red;color:#fff}\n#respec-pill-warning{background-color:orange;color:#fff}\n.respec-error-list,.respec-warning-list{margin:0;padding:0;list-style:none;font-family:sans-serif;background-color:#fffbe6;font-size:.85em}\n.respec-error-list>li,.respec-warning-list>li{padding:.4em .7em}\n.respec-warning-list>li::before{content:\"⚠️\";padding-right:.5em}\n.respec-error-list p,.respec-warning-list p{padding:0;margin:0}\n.respec-warning-list li{color:#5c3b00;border-bottom:thin solid #fff5c2}\n.respec-error-list,.respec-error-list li{background-color:#fff0f0}\n.respec-error-list li::before{content:\"💥\";padding-right:.5em}\n.respec-error-list li{padding:.4em .7em;color:#5c3b00;border-bottom:thin solid #ffd7d7}\n.respec-error-list li>p{margin:0;padding:0;display:inline-block}\n.respec-error-list li>p:first-child,.respec-warning-list li>p:first-child{display:inline}\n.respec-error-list>li li,.respec-warning-list>li li{margin:0;list-style:disc}\n#respec-overlay{display:block;position:fixed;z-index:10000;top:0;left:0;height:100%;width:100%;background:#000}\n.respec-show-overlay{transition:opacity .2s linear;opacity:.5}\n.respec-hide-overlay{transition:opacity .2s linear;opacity:0}\n.respec-modal{display:block;position:fixed;z-index:11000;margin:auto;top:10%;background:#fff;border:5px solid #666;min-width:20%;width:79%;padding:0;max-height:80%;overflow-y:auto;margin:0 -.5cm}\n@media screen and (min-width:78em){\n.respec-modal{width:62%}\n}\n.respec-modal h3{margin:0;padding:.2em;text-align:center;color:#000;background:linear-gradient(to bottom,#eee 0,#eee 50%,#ccc 100%);font-size:1em}\n.respec-modal .inside div p{padding-left:1cm}\n#respec-menu button.respec-option{background:#fff;padding:0 .2cm;border:none;width:100%;text-align:left;font-size:inherit;padding:1.2em 1.2em}\n#respec-menu button.respec-option:hover,#respec-menu button:focus{background-color:#eee}\n.respec-cmd-icon{padding-right:.5em}\n#respec-ui button.respec-option:last-child{border:none;border-radius:inherit}\n.respec-button-copy-paste{position:absolute;height:28px;width:40px;cursor:pointer;background-image:linear-gradient(#fcfcfc,#eee);border:1px solid #90b8de;border-left:0;border-radius:0 0 3px 0;-webkit-user-select:none;user-select:none;-webkit-appearance:none;top:0;left:127px}\n#specref-ui{margin:0 2%;margin-bottom:.5cm}\n#specref-ui header{font-size:.7em;background-color:#eee;text-align:center;padding:.2cm;margin-bottom:.5cm;border-radius:0 0 .2cm .2cm}\n#specref-ui header h1{padding:0;margin:0;color:#000}\n#specref-ui p{padding:0;margin:0;font-size:.8em;text-align:center}\n#specref-ui p.state{margin:1cm}\n#specref-ui .searchcomponent{font-size:16px;display:grid;grid-template-columns:auto 2cm}\n#specref-ui button,#specref-ui input{border:0;padding:6px 12px}\n#specref-ui label{font-size:.6em;grid-column-end:3;text-align:right;grid-column-start:1}\n#specref-ui input[type=search]{-webkit-appearance:none;font-size:16px;border-radius:.1cm 0 0 .1cm;border:1px solid #ccc}\n#specref-ui button[type=submit]{color:#fff;border-radius:0 .1cm .1cm 0;background-color:#337ab7}\n#specref-ui button[type=submit]:hover{background-color:#286090;border-color:#204d74}\n#specref-ui .result-stats{margin:0;padding:0;color:grey;font-size:.7em;font-weight:700}\n#specref-ui .specref-results{font-size:.8em}\n#specref-ui .specref-results dd+dt{margin-top:.51cm}\n#specref-ui .specref-results a{text-transform:capitalize}\n#specref-ui .specref-results .authors{display:block;color:#006621}\n@media print{\n#respec-ui{display:none}\n}\n#xref-ui{width:100%;min-height:550px;height:100%;overflow:hidden;padding:0;margin:0;border:0}\n#xref-ui:not(.ready){background:url(https://respec.org/xref/loader.gif) no-repeat center}\n.respec-dfn-list .dfn-status{margin-left:.5em;padding:.1em;text-align:center;white-space:nowrap;font-size:90%;border-radius:.2em}\n.respec-dfn-list .exported{background:#d1edfd;color:#040b1c;box-shadow:0 0 0 .125em #1ca5f940}\n.respec-dfn-list .unused{background:#fde0e6;color:#9d0c29;box-shadow:0 0 0 .125em #f1466840}\n#xref-ui+a[href]{font-size:.9rem;float:right;margin:0 .5em .5em;border-bottom-width:1px}";
@@ -28346,6 +32305,13 @@ window.respecVersion = "25.16.5";
     'default': respec
   });
 
+  var regpict$1 = "text.regBitNumMiddle{text-anchor:middle;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:8pt}\ntext.regBitNumEnd{text-anchor:end;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:8pt}\ntext.regBitNumStart{text-anchor:start;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:8pt}\ntext.regBitWidth{text-anchor:middle;fill:none;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-weight:700;font-size:11pt}\ntext.regByteNumMiddle{text-anchor:middle;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:11pt}\ntext.regRowTagLeft{text-anchor:end;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:11pt}\ntext.regRowTagRight{text-anchor:start;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:11pt}\ng line.regBitNumLine{stroke:grey;stroke-width:1px}\ng line.regBitNumLine_Hide{stroke:none;stroke-width:1px}\ng path.regFieldBox,g rect.regFieldBox{fill:#fff;stroke:#000;stroke-width:1.5px}\ng.regAttr_reserved path.regFieldBox,g.regAttr_reserved rect.regFieldBox,g.regAttr_rsvd path.regFieldBox,g.regAttr_rsvd rect.regFieldBox,g.regAttr_rsvdp path.regFieldBox,g.regAttr_rsvdp rect.regFieldBox,g.regAttr_rsvdz path.regFieldBox,g.regAttr_rsvdz rect.regFieldBox,g.regAttr_unused path.regFieldBox,g.regAttr_unused rect.regFieldBox,g.regFieldUnused path.regFieldBox,g.regFieldUnused rect.regFieldBox{fill:#e8e8e8}\ng.regFieldExternal line.regFieldBox,g.regFieldInternal line.regFieldBox{stroke:#000}\ng.regFieldUnused line.regFieldBox,g.regFieldUnused path.regFieldBox,g.regFieldUnused rect.regFieldBox{stroke:grey}\ng.regFieldUnused text.regFieldName,g.regFieldUnused text.regFieldValue{fill:grey}\ng.regFieldHidden line.regBitNumLine,g.regFieldHidden line.regBitNumLine_Hide,g.regFieldHidden line.regFieldBox,g.regFieldHidden path.regBitBracket,g.regFieldHidden path.regBitLine,g.regFieldHidden path.regFieldBox,g.regFieldHidden rect.regFieldBox,g.regFieldHidden text.regBitNumEnd,g.regFieldHidden text.regBitNumMiddle,g.regFieldHidden text.regBitNumStart,g.regFieldHidden text.regFieldExtendsLeft,g.regFieldHidden text.regFieldExtendsRight,g.regFieldHidden text.regFieldName,g.regFieldHidden text.regFieldValue{fill:none;stroke:none}\ng text.regFieldValue,g.regFieldInternal text.regFieldName{text-anchor:middle}\ng text.regFieldExtendsRight,g.regFieldOverflowLSB text.regBitNumEnd{text-anchor:start}\ng text.regFieldExtendsLeft,g.regFieldOverflowMSB text.regBitNumStart{text-anchor:end}\ng text.regFieldName,g text.regFieldValue{font-size:11pt;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif}\ng.regFieldExternal1 path.regBitBracket,g.regFieldExternal1 path.regBitLine{stroke:#000;stroke-width:1px}\ng.regFieldExternal0 path.regBitLine{stroke:green;stroke-dasharray:4,2;stroke-width:1px}\ng.regFieldExternal0 path.regBitBracket{stroke:green;stroke-width:1px}\nsvg text.regFieldValue{fill:#0060a9;font-family:monospace}\nsvg.regpict{color:green}\nsvg .svg_error text:not(.regBitWidth):not(.regBitNumMiddle):not(.regBitNumEnd):not(.regBitNumStart){fill:red;font-size:12pt;font-weight:700;font-style:normal;font-family:monospace}\nfigure div.json,figure pre.json{color:#005a9c;display:inherit}\n@media screen{\ng.regLink:focus path.regFieldBox,g.regLink:focus rect.regFieldBox,g.regLink:hover path.regFieldBox,g.regLink:hover rect.regFieldBox{fill:#ffa;stroke:#00f;stroke-width:2.5px}\ng.regLink.regFieldExternal:focus path.regBitBracket,g.regLink.regFieldExternal:hover path.regBitBracket,g.regLink:focus line.regBitNumLine,g.regLink:focus line.regBitNumLine_Hide,g.regLink:focus line.regFieldBox,g.regLink:focus path.regBitLine,g.regLink:focus path.regFieldBox,g.regLink:hover line.regBitNumLine,g.regLink:hover line.regBitNumLine_Hide,g.regLink:hover line.regFieldBox,g.regLink:hover path.regBitLine,g.regLink:hover path.regFieldBox{stroke:#00f}\ng.regLink.regFieldExternal:focus text.regFieldValue,g.regLink.regFieldExternal:hover text.regFieldValue,g.regLink:focus text.regFieldName,g.regLink:hover text.regFieldName{fill:#00f;font-weight:700}\ng.regLink:focus text.regBitNumEnd,g.regLink:focus text.regBitNumMiddle,g.regLink:focus text.regBitNumStart,g.regLink:hover text.regBitNumEnd,g.regLink:hover text.regBitNumMiddle,g.regLink:hover text.regBitNumStart{fill:#00f;font-weight:700;font-size:9pt}\ng.regLink:focus text.regBitWidth,g.regLink:hover text.regBitWidth{fill:#00f}\n}";
+
+  var regpict$2 = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    'default': regpict$1
+  });
+
   var examples$1 = "span.example-title{text-transform:none}\naside.example,div.example,div.illegal-example{padding:.5em;margin:1em 0;position:relative;clear:both}\ndiv.illegal-example{color:red}\ndiv.illegal-example p{color:#000}\naside.example,div.example{padding:.5em;border-left-width:.5em;border-left-style:solid;border-color:#e0cb52;background:#fcfaee}\naside.example div.example{border-left-width:.1em;border-color:#999;background:#fff}\naside.example div.example span.example-title{color:#999}";
 
   var examples$2 = /*#__PURE__*/Object.freeze({
@@ -28360,11 +32326,18 @@ window.respecVersion = "25.16.5";
     'default': issuesNotes$1
   });
 
-  var regpict$1 = "text.regBitNumMiddle{text-anchor:middle;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:8pt}\ntext.regBitNumEnd{text-anchor:end;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:8pt}\ntext.regBitNumStart{text-anchor:start;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:8pt}\ntext.regBitWidth{text-anchor:middle;fill:none;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-weight:700;font-size:11pt}\ntext.regByteNumMiddle{text-anchor:middle;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:11pt}\ntext.regRowTagLeft{text-anchor:end;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:11pt}\ntext.regRowTagRight{text-anchor:start;fill:grey;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif;font-size:11pt}\ng line.regBitNumLine{stroke:grey;stroke-width:1px}\ng line.regBitNumLine_Hide{stroke:none;stroke-width:1px}\ng path.regFieldBox,g rect.regFieldBox{fill:#fff;stroke:#000;stroke-width:1.5px}\ng.regAttr_reserved path.regFieldBox,g.regAttr_reserved rect.regFieldBox,g.regAttr_rsvd path.regFieldBox,g.regAttr_rsvd rect.regFieldBox,g.regAttr_rsvdp path.regFieldBox,g.regAttr_rsvdp rect.regFieldBox,g.regAttr_rsvdz path.regFieldBox,g.regAttr_rsvdz rect.regFieldBox,g.regAttr_unused path.regFieldBox,g.regAttr_unused rect.regFieldBox,g.regFieldUnused path.regFieldBox,g.regFieldUnused rect.regFieldBox{fill:#e8e8e8}\ng.regFieldExternal line.regFieldBox,g.regFieldInternal line.regFieldBox{stroke:#000}\ng.regFieldUnused line.regFieldBox,g.regFieldUnused path.regFieldBox,g.regFieldUnused rect.regFieldBox{stroke:grey}\ng.regFieldUnused text.regFieldName,g.regFieldUnused text.regFieldValue{fill:grey}\ng.regFieldHidden line.regBitNumLine,g.regFieldHidden line.regBitNumLine_Hide,g.regFieldHidden line.regFieldBox,g.regFieldHidden path.regBitBracket,g.regFieldHidden path.regBitLine,g.regFieldHidden path.regFieldBox,g.regFieldHidden rect.regFieldBox,g.regFieldHidden text.regBitNumEnd,g.regFieldHidden text.regBitNumMiddle,g.regFieldHidden text.regBitNumStart,g.regFieldHidden text.regFieldExtendsLeft,g.regFieldHidden text.regFieldExtendsRight,g.regFieldHidden text.regFieldName,g.regFieldHidden text.regFieldValue{fill:none;stroke:none}\ng text.regFieldValue,g.regFieldInternal text.regFieldName{text-anchor:middle}\ng text.regFieldExtendsRight,g.regFieldOverflowLSB text.regBitNumEnd{text-anchor:start}\ng text.regFieldExtendsLeft,g.regFieldOverflowMSB text.regBitNumStart{text-anchor:end}\ng text.regFieldName,g text.regFieldValue{font-size:11pt;font-family:\"Source Sans Pro\",Calibri,Tahoma,\"Lucinda Grande\",Arial,Helvetica,sans-serif}\ng.regFieldExternal1 path.regBitBracket,g.regFieldExternal1 path.regBitLine{stroke:#000;stroke-width:1px}\ng.regFieldExternal0 path.regBitLine{stroke:green;stroke-dasharray:4,2;stroke-width:1px}\ng.regFieldExternal0 path.regBitBracket{stroke:green;stroke-width:1px}\nsvg text.regFieldValue{fill:#0060a9;font-family:monospace}\nsvg.regpict{color:green}\nsvg .svg_error text:not(.regBitWidth):not(.regBitNumMiddle):not(.regBitNumEnd):not(.regBitNumStart){fill:red;font-size:12pt;font-weight:700;font-style:normal;font-family:monospace}\nfigure div.json,figure pre.json{color:#005a9c;display:inherit}\n@media screen{\ng.regLink:focus path.regFieldBox,g.regLink:focus rect.regFieldBox,g.regLink:hover path.regFieldBox,g.regLink:hover rect.regFieldBox{fill:#ffa;stroke:#00f;stroke-width:2.5px}\ng.regLink.regFieldExternal:focus path.regBitBracket,g.regLink.regFieldExternal:hover path.regBitBracket,g.regLink:focus line.regBitNumLine,g.regLink:focus line.regBitNumLine_Hide,g.regLink:focus line.regFieldBox,g.regLink:focus path.regBitLine,g.regLink:focus path.regFieldBox,g.regLink:hover line.regBitNumLine,g.regLink:hover line.regBitNumLine_Hide,g.regLink:hover line.regFieldBox,g.regLink:hover path.regBitLine,g.regLink:hover path.regFieldBox{stroke:#00f}\ng.regLink.regFieldExternal:focus text.regFieldValue,g.regLink.regFieldExternal:hover text.regFieldValue,g.regLink:focus text.regFieldName,g.regLink:hover text.regFieldName{fill:#00f;font-weight:700}\ng.regLink:focus text.regBitNumEnd,g.regLink:focus text.regBitNumMiddle,g.regLink:focus text.regBitNumStart,g.regLink:hover text.regBitNumEnd,g.regLink:hover text.regBitNumMiddle,g.regLink:hover text.regBitNumStart{fill:#00f;font-weight:700;font-size:9pt}\ng.regLink:focus text.regBitWidth,g.regLink:hover text.regBitWidth{fill:#00f}\n}";
+  var webidl$1 = "pre.idl{padding:1em;position:relative}\n@media print{\npre.idl{white-space:pre-wrap}\n}\n.idlHeader{display:block;width:150px;background:#8ccbf2;color:#fff;font-family:sans-serif;font-weight:700;margin:-1em 0 1em -1em;height:28px;line-height:28px}\n.idlHeader a.self-link{margin-left:.3cm;text-decoration:none;border-bottom:none}\n.idlID{font-weight:700;color:#005a9c}\n.idlType{color:#005a9c}\n.idlName{color:#ff4500}\n.idlName a{color:#ff4500;border-bottom:1px dotted #ff4500;text-decoration:none}\na.idlEnumItem{color:#000;border-bottom:1px dotted #ccc;text-decoration:none}\n.idlSuperclass{font-style:italic;color:#005a9c}\n.idlDefaultValue,.idlParamName{font-style:italic}\n.extAttr{color:#666}\n.idlSectionComment{color:gray}\n.idlIncludes a{font-weight:700}\n.respec-button-copy-paste:focus{text-decoration:none;border-color:#51a7e8;outline:0;box-shadow:0 0 5px rgba(81,167,232,.5)}\n.respec-button-copy-paste.selected:focus,.respec-button-copy-paste:focus:hover{border-color:#51a7e8}\n.respec-button-copy-paste.zeroclipboard-is-active,.respec-button-copy-paste.zeroclipboard-is-hover,.respec-button-copy-paste:active,.respec-button-copy-paste:hover{text-decoration:none;background-color:#ddd;background-image:linear-gradient(#eee,#ddd);border-color:#ccc}\n.respec-button-copy-paste.selected,.respec-button-copy-paste.zeroclipboard-is-active,.respec-button-copy-paste:active{background-color:#dcdcdc;background-image:none;border-color:#b5b5b5;box-shadow:inset 0 2px 4px rgba(0,0,0,.15)}\n.respec-button-copy-paste.selected:hover{background-color:#cfcfcf}\n.respec-button-copy-paste.disabled,.respec-button-copy-paste.disabled:hover,.respec-button-copy-paste:disabled,.respec-button-copy-paste:disabled:hover{color:rgba(102,102,102,.5);cursor:default;background-color:rgba(229,229,229,.5);background-image:none;border-color:rgba(197,197,197,.5);box-shadow:none}\n@media print{\n.respec-button-copy-paste{visibility:hidden}\n}";
 
-  var regpict$2 = /*#__PURE__*/Object.freeze({
+  var webidl$2 = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    'default': regpict$1
+    'default': webidl$1
+  });
+
+  var dfnIndex$1 = "ul.index{columns:30ch;column-gap:1.5em}\nul.index li{list-style:inherit}\nul.index li span{color:inherit;cursor:pointer;white-space:normal}\n#index-defined-here ul.index li{font-size:.9rem}\nul.index code{color:inherit}\n#index-defined-here .print-only{display:none}\n@media print{\n#index-defined-here .print-only{display:initial}\n}";
+
+  var dfnIndex$2 = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    'default': dfnIndex$1
   });
 
   var caniuse$1 = ".caniuse-stats{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:baseline;cursor:pointer}\nbutton.caniuse-cell{margin:1px 1px 0 0;border:none}\n.caniuse-browser{position:relative}\n@media print{\n.caniuse-cell.y::before{content:\"✔️\";padding:.5em}\n.caniuse-cell.n::before{content:\"❌\";padding:.5em}\n.caniuse-cell.a::before,.caniuse-cell.d::before,.caniuse-cell.p::before,.caniuse-cell.x::before{content:\"⚠️\";padding:.5em}\n}\n.caniuse-browser ul{display:none;margin:0;padding:0;list-style:none;position:absolute;left:0;z-index:2;background:#fff;margin-top:1px}\n.caniuse-stats a{white-space:nowrap;align-self:center;margin-left:.5em}\n.caniuse-cell{display:flex;color:rgba(0,0,0,.8);font-size:90%;height:.8cm;margin-right:1px;margin-top:0;min-width:3cm;overflow:visible;justify-content:center;align-items:center}\nli.caniuse-cell{margin-bottom:1px}\n.caniuse-cell:focus{outline:0}\n.caniuse-cell:hover{color:#000}\n.caniuse-cell.y{background:#8bc34a}\n.caniuse-cell.n{background:#e53935}\n.caniuse-cell.a,.caniuse-cell.d,.caniuse-cell.p,.caniuse-cell.x{background:#ffc107}\n.caniuse-stats .caniuse-browser:hover>ul,.caniuse-stats button:focus+ul{display:block}";

@@ -26,15 +26,11 @@ export function run() {
     );
     footnote.insertAdjacentHTML(
       "afterbegin",
-      html`
-        <span class="footnote-online"> [</span>
-      `
+      html`<span class="footnote-online"> [</span>`
     );
     footnote.insertAdjacentHTML(
       "beforeend",
-      html`
-        <span class="footnote-online">] </span>
-      `
+      html`<span class="footnote-online">] </span>`
     );
   });
 }

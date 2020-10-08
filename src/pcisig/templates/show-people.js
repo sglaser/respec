@@ -43,11 +43,7 @@ export default (items = []) => {
         <a class="u-url url p-name fn" href="${p.url}">${personName}</a>
       `);
     } else {
-      contents.push(
-        html`
-          <span class="p-name fn">${personName}</span>
-        `
-      );
+      contents.push(html`<span class="p-name fn">${personName}</span>`);
     }
     if (p.orcid) {
       contents.push(
@@ -87,11 +83,7 @@ export default (items = []) => {
           `
         );
       } else {
-        contents.push(
-          html`
-            (${company})
-          `
-        );
+        contents.push(html`(${company})`);
       }
     }
     if (p.note) contents.push(document.createTextNode(` (${p.note})`));
@@ -120,11 +112,7 @@ export default (items = []) => {
         );
       }
       timeElem.dateTime = toShortIsoDate(retiredDate);
-      contents.push(
-        html`
-          - ${l10n.until.concat(" ")}${timeElem}
-        `
-      );
+      contents.push(html`- ${l10n.until.concat(" ")}${timeElem}`);
     }
 
     // @ts-ignore: html types only support Element but we use a DocumentFragment here
@@ -134,14 +122,10 @@ export default (items = []) => {
   }
 
   function getExtra(extra) {
-    const span = html`
-      <span class="${extra.class || null}"></span>
-    `;
+    const span = html`<span class="${extra.class || null}"></span>`;
     let textContainer = span;
     if (extra.href) {
-      textContainer = html`
-        <a href="${extra.href}"></a>
-      `;
+      textContainer = html`<a href="${extra.href}"></a>`;
       span.appendChild(textContainer);
     }
     textContainer.textContent = extra.name;

@@ -6,34 +6,42 @@ export const name = "pcisig/pre-dfn";
 export function run() {
   "use strict";
   const dfnClass = [
-    "dfn",
-    "pin",
-    "signal",
+    "term",
+    "argument",
+    "bit",
+    "command",
+    "data",
+    "data-block",
+    "encoding",
+    "enum",
+    "field",
+    "message",
+    "msg",
     "op",
     "opcode",
     "operation",
-    "request",
-    "response",
-    "bit",
-    "reply",
-    "message",
-    "msg",
-    "command",
-    "term",
-    "field",
+    "parameter",
+    "pin",
     "register",
     "regpict",
+    "reply",
+    "request",
+    "response",
+    "signal",
     "state",
     "value",
-    "parameter",
-    "argument",
   ];
 
   document.querySelectorAll("dfn:not([data-dfn-type])").forEach(dfn => {
-    let tag = dfnClass[0]; // default "dfn"
+    let tag = dfnClass[0]; // default "term"
     dfnClass.forEach(t => {
       if (dfn.classList && dfn.classList.contains(t)) tag = t;
     });
-    dfn.setAttribute("data-dfn-type", tag); // core/dfn will convert this to data-dfn-type
+    if (tag === "field") {
+      dfn.setAttribute("data-dfn-idl", tag);
+      dfn.setAttribute("data-dfn-type", "idl");
+    } else {
+      dfn.setAttribute("data-dfn-type", tag);
+    }
   });
 }

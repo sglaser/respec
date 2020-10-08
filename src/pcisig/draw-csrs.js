@@ -93,24 +93,28 @@ export function parse_table(tbl) {
   // console.log(`pcisig_reg: ${tbl.outerHTML} tbody="${tbl.querySelector("tbody:first-of-type").outerHTML}"`);
   if (tbl.hasAttribute("id")) {
     json.figName = tbl.getAttribute("id").replace(/^tbl-/, "");
-  } else if (tbl.hasAttribute("title")) {
-    json.figName = tbl.getAttribute("title");
-  } else if (tbl.querySelector("caption")) {
-    json.figName = tbl.querySelector("caption").textContent;
+    // console.log(`draw_csrs.parse_table 1 json.figName = ${json.figName}`);
   } else {
-    json.figName = "";
+    if (tbl.hasAttribute("title")) {
+      json.figName = tbl.getAttribute("title");
+    } else if (tbl.querySelector("caption")) {
+      json.figName = tbl.querySelector("caption").textContent;
+    } else {
+      json.figName = "";
+    }
+    json.figName = json.figName
+      .toLowerCase()
+      .replace(/^\s+/, "")
+      .replace(/\s+$/, "")
+      .replace(/[^\-.0-9a-z_]+/gi, "-")
+      .replace(/^-+/, "")
+      .replace(/-+$/, "")
+      .replace(/\.$/, ".x")
+      .replace(/^([^a-z])/i, "x$1")
+      .replace(/^$/, "generatedID");
+    tbl.setAttribute("id", `tbl-${json.figName}`);
+    // console.log(`draw_csrs.parse_table 2 json.figName = ${json.figName}`);
   }
-  json.figName = json.figName
-    .toLowerCase()
-    .replace(/^\s+/, "")
-    .replace(/\s+$/, "")
-    .replace(/[^\-.0-9a-z_]+/gi, "-")
-    .replace(/^-+/, "")
-    .replace(/-+$/, "")
-    .replace(/\.$/, ".x")
-    .replace(/^([^a-z])/i, "x$1")
-    .replace(/^$/, "generatedID");
-
   if (tbl.hasAttribute("data-json")) {
     try {
       mergeJSON(json, tbl.getAttribute("data-json"));
@@ -125,6 +129,7 @@ export function parse_table(tbl) {
   // console.log(`core/draw-csrs table id="${tbl.getAttribute("id")}"`);
   if (!tbl.hasAttribute("dfn-data-for")) {
     tbl.setAttribute("data-dfn-for", json.figName);
+    // console.log(`draw_csrs.parse_table 3 tbl.data-dfn-for = ${json.figName}`);
   }
 
   if (tbl.hasAttribute("data-width"))
@@ -179,7 +184,9 @@ export function parse_table(tbl) {
         if (!dfn.hasAttribute("class")) dfn.classList.add("field");
         // dfn.setAttribute("data-dfn-for", lt);
         dfn.setAttribute("data-dfn-type", "field");
-        addId(dfn, "field", `${tblName}-${fieldName.toLowerCase()}`);
+        // console.log(`draw_csrs.parse_table 4 addID = ${dfn.outerHTML}`);
+        addId(dfn, "field", `${json.figName}-${fieldName.toLowerCase()}`);
+        // console.log(`draw_csrs.parse_table 5 addID = ${dfn.outerHTML}`);
         decorateDfn(
           // @ts-ignore
           dfn,
@@ -187,7 +194,7 @@ export function parse_table(tbl) {
           tblName,
           fieldName
         );
-        // console.log(`decorateDfn(${dfn.outerHTML})`);
+        // console.log(`draw_csrs.decorateDfn(${dfn.outerHTML})`);
         const val = desc.querySelector("span.value:first-of-type");
         let value = "";
         if (val) {
@@ -260,7 +267,7 @@ export async function run() {
     tbl.insertAdjacentHTML(
       "beforebegin",
       `<figure class="regpict-generated register"
-                id="fig-${tbl.getAttribute("id").replace(/^#tbl-/, "")}">
+                id="fig-${tbl.getAttribute("id").replace(/^tbl-/, "")}">
                 <pre class="json">
                 ${JSON.stringify(json, null, 2)}
                 </pre>

@@ -94,10 +94,10 @@ function decorateFigure(figure, caption, i) {
   const title = caption.textContent;
   addId(figure, "fig", title);
   // set proper caption title
-  wrapInner(caption, html`<span class='fig-title'></span>`);
+  wrapInner(caption, html`<span class="fig-title"></span>`);
   caption.prepend(
-    html`<span class='fighdr'>${l10n.fig}</span>`,
-    html`<bdi class='figno'>${i + 1}</bdi>`,
+    html`<span class="fighdr">${l10n.fig}</span>`,
+    html`<bdi class="figno">${i + 1}</bdi>`,
     " "
   );
 }
@@ -126,8 +126,8 @@ function getTableOfFiguresListItem(figureId, caption) {
       // footnotes, issues, errors, and text explicitly marked noToC are not in a ToC
       anchor.remove();
     });
-  return html`<li class='tofline'>
-    <a class='tocxref' href='${`#${figureId}`}'>${tofCaption.childNodes}</a>
+  return html`<li class="tofline">
+    <a class="tocxref" href="${`#${figureId}`}">${tofCaption.childNodes}</a>
   </li>`;
 }
 
