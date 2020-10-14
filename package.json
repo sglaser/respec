@@ -23,6 +23,7 @@
     "Robin Berjon"
   ],
   "devDependencies": {
+    "@svgdotjs/svg.js": "^3.0.16",
     "@types/marked": "^1.1.0",
     "@types/pluralize": "0.0.29",
     "boxen": "^4.2.0",

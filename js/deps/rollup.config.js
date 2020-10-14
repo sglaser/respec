@@ -17,5 +17,9 @@ export default [
   {
     input: "js/deps/pluralize.js",
     ...template
+  },
+  {
+    input: "js/deps/svg.js",
+    ...template
   }
 ]
