@@ -43,7 +43,7 @@ export const ISODate = new Intl.DateTimeFormat(["en-ca-iso8601"], {
 
 // CSS selector for matching elements that are non-normative
 export const nonNormativeSelector =
-  ".informative, .note, .issue, .example, .ednote, .practice, .introductory";
+  ".informative, .note, .issue, .impnote, .example, .ednote, .practice, .introductory";
 
 /**
  * Creates a link element that represents a resource hint.
@@ -845,6 +845,10 @@ export function makeSafeCopy(node) {
   const clone = node.cloneNode(true);
   clone.querySelectorAll("[id]").forEach(elem => elem.removeAttribute("id"));
   clone.querySelectorAll("dfn").forEach(dfn => renameElement(dfn, "span"));
+  clone
+    .querySelectorAll("span.footnote")
+    .forEach(footnote => footnote.remove());
+  clone.querySelectorAll("span.issue").forEach(issue => issue.remove());
   if (clone.hasAttribute("id")) clone.removeAttribute("id");
   removeCommentNodes(clone);
   return clone;

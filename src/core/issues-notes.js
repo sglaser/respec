@@ -24,6 +24,7 @@ const localizationStrings = {
     feature_at_risk: "(Feature at Risk) Issue",
     issue: "Issue",
     issue_summary: "Issue Summary",
+    implementation_note: "Implementation Note",
     no_issues_in_spec: "There are no issues listed in this specification.",
     note: "Note",
     warning: "Warning",
@@ -121,7 +122,7 @@ function handleIssues(ins, ghIssues, conf) {
     // wrap
     if (!isInline) {
       const cssClass = isFeatureAtRisk ? `${type} atrisk` : type;
-      const ariaRole = type === "note" ? "note" : null;
+      const ariaRole = type === "note" || type === "impnote" ? "note" : null;
       const div = html`<div class="${cssClass}" role="${ariaRole}"></div>`;
       const title = document.createElement("span");
       const className = `${type}-title marker`;
@@ -224,6 +225,7 @@ function getIssueType(inno) {
   const isIssue = inno.classList.contains("issue");
   const isWarning = inno.classList.contains("warning");
   const isEdNote = inno.classList.contains("ednote");
+  const isImpNote = inno.classList.contains("impnote");
   const isFeatureAtRisk = inno.classList.contains("atrisk");
   const type = isIssue
     ? "issue"
@@ -231,6 +233,8 @@ function getIssueType(inno) {
     ? "warning"
     : isEdNote
     ? "ednote"
+    : isImpNote
+    ? "impnote"
     : "note";
   const displayType = isIssue
     ? isFeatureAtRisk
@@ -240,6 +244,8 @@ function getIssueType(inno) {
     ? l10n.warning
     : isEdNote
     ? l10n.editors_note
+    : isImpNote
+    ? l10n.implementation_note
     : l10n.note;
   return { type, displayType, isFeatureAtRisk };
 }
@@ -370,7 +376,7 @@ async function fetchAndStoreGithubIssues(github) {
 }
 
 export async function run(conf) {
-  const query = ".issue, .note, .warning, .ednote";
+  const query = ".issue, .note, .warning, .ednote, .impnote";
   /** @type {NodeListOf<HTMLElement>} */
   const issuesAndNotes = document.querySelectorAll(query);
   if (!issuesAndNotes.length) {
