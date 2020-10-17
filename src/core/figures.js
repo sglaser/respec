@@ -72,7 +72,7 @@ export function run() {
 function collectFigures() {
   /** @type {HTMLElement[]} */
   const tof = [];
-  document.querySelectorAll("figure").forEach((fig, i) => {
+  document.querySelectorAll("figure:not(.equation)").forEach((fig, i) => {
     const caption = fig.querySelector("figcaption");
 
     if (caption) {
