@@ -404,7 +404,7 @@ export function run(conf) {
   } else {
     if (
       !/NOTE$/.test(conf.specStatus) &&
-      !conf.prevStatus === "none" &&
+      conf.prevStatus !== "none" &&
       !conf.noSpecTrack &&
       !conf.isNoTrack &&
       !conf.isSubmission
@@ -495,7 +495,7 @@ export function run(conf) {
   }
   conf.showThisVersion = !conf.isNoTrack;
   conf.showPreviousVersion =
-    !conf.previousStatus === "none" && !conf.isNoTrack && !conf.isSubmission;
+    conf.previousStatus !== "none" && !conf.isNoTrack && !conf.isSubmission;
   if (conf.specStatus.endsWith("NOTE") && !conf.prevVersion)
     conf.showPreviousVersion = false;
   conf.notYetFinal =

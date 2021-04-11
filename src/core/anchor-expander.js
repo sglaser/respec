@@ -1,6 +1,6 @@
 // @ts-check
 // expands empty anchors based on their context
-import { makeSafeCopy, norm, showInlineError } from "./utils.js";
+import { makeSafeCopy, norm, renameElement, showError } from "./utils.js";
 
 export const name = "core/anchor-expander";
 
@@ -21,7 +21,8 @@ export function run(conf) {
     if (!matchingElement) {
       a.textContent = a.getAttribute("href");
       const msg = `Couldn't expand inline reference. The id "${id}" is not in the document.`;
-      showInlineError(a, msg, `No matching id in document: ${id}.`);
+      const title = `No matching id in document: ${id}.`;
+      showError(msg, name, { title, elements: [a] });
       continue;
     }
     switch (matchingElement.localName) {
@@ -56,7 +57,8 @@ export function run(conf) {
       default: {
         a.textContent = a.getAttribute("href");
         const msg = "ReSpec doesn't support expanding this kind of reference.";
-        showInlineError(a, msg, `Can't expand "#${id}".`);
+        const title = `Can't expand "#${id}".`;
+        showError(msg, name, { title, elements: [a] });
       }
     }
     localize(matchingElement, a);
@@ -83,7 +85,8 @@ function processBox(matchingElement, id, a) {
     if (!selfLink) {
       a.textContent = a.getAttribute("href");
       const msg = `Found matching element "${id}", but it has no title or marker.`;
-      showInlineError(a, msg, "Missing title.");
+      const title = "Missing title.";
+      showError(msg, name, { title, elements: [a] });
       return;
     }
     const copy = makeSafeCopy(selfLink);
@@ -101,7 +104,8 @@ function processFigure(matchingElement, id, a) {
   if (!figcaption) {
     a.textContent = a.getAttribute("href");
     const msg = `Found matching figure "${id}", but figure is lacking a \`<figcaption>\`.`;
-    showInlineError(a, msg, "Missing figcaption in referenced figure.");
+    const title = "Missing figcaption in referenced figure.";
+    showError(msg, name, { title, elements: [a] });
     return;
   }
   const hadSelfLink = figcaption.querySelector(".self-link");
@@ -129,8 +133,8 @@ function processTable(matchingElement, id, a) {
   const caption = matchingElement.querySelector("caption");
   if (!caption) {
     a.textContent = a.getAttribute("href");
-    const msg = `Found matching table "${id}", but table is lacking a \`<caption>\`.`;
-    showInlineError(a, msg, "Missing caption in referenced table.");
+    const msg = `Found matching table "${id}", but table is lacking a \`<caption>\` ${a}.`;
+    showError(msg, name);
     return;
   }
   const hadSelfLink = caption.querySelector(".self-link");
@@ -160,7 +164,8 @@ function processSection(matchingElement, id, a) {
     a.textContent = a.getAttribute("href");
     const msg =
       "Found matching section, but the section was lacking a heading element.";
-    showInlineError(a, msg, `No matching id in document: "${id}".`);
+    const title = `No matching id in document: "${id}".`;
+    showError(msg, name, { title, elements: [a] });
     return;
   }
   processHeading(heading, a);
@@ -183,6 +188,15 @@ function processHeading(heading, a) {
   a.append(...children);
   if (hadSelfLink) a.prepend("§\u00A0");
   a.classList.add("sec-ref");
+  if (a.lastChild.nodeType === Node.TEXT_NODE) {
+    a.lastChild.textContent = a.lastChild.textContent.trimEnd();
+  }
+  a.querySelectorAll("a").forEach(a => {
+    const span = renameElement(a, "span");
+    for (const attr of [...span.attributes]) {
+      span.removeAttributeNode(attr);
+    }
+  });
 }
 
 function localize(matchingElement, newElement) {

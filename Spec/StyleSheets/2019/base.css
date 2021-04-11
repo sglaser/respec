@@ -1742,6 +1742,23 @@ table.data td.interleave-c {
   color: white
 }
 
+/* TODO: Find a better place for this */
+dl.dd-list-items dd:not(.no-bullet),
+dd.list-item {
+  display: list-item; 
+}
+
+dl.dd-mb-0 dd, 
+dd.mb-0 {
+  margin-bottom: 0;
+}
+
+dd.li-mx-0 li {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+/* END: Find a better place for this */
+
 table.data td.ecc,
 table.data td.crc,
 table.data td.dlp {

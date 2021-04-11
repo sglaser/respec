@@ -2,7 +2,7 @@
 // Module pcisig/draw-csrs
 // Create <figure> for csr registers by extracting information from <table class="register"> elements.
 
-import { addId, makeSafeCopy, showInlineError } from "../core/utils.js";
+import { addId, makeSafeCopy, showError } from "../core/utils.js";
 import { decorateDfn } from "../core/dfn-finder.js";
 import { html } from "../core/import-maps.js";
 
@@ -119,7 +119,7 @@ export function parse_table(tbl) {
     try {
       mergeJSON(json, tbl.getAttribute("data-json"));
     } catch {
-      showInlineError(tbl, "Invalid data-json attribute on <table>", "");
+      showError("Invalid data-json attribute on <table>", name);
     }
   }
 
@@ -167,6 +167,7 @@ export function parse_table(tbl) {
           }
         }
         let fieldName;
+        /** @type {HTMLElement} */
         let dfn = desc.querySelector("dfn:first-of-type");
         if (!dfn) {
           fieldName = /^\s*([-_\w]+)/.exec(desc.textContent);

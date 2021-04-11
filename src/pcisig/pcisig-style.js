@@ -50,7 +50,8 @@ function selectStyleVersion(styleVersion) {
 }
 
 function createResourceHints(conf) {
-  const resourceHints = [
+  /** @type ResourceHintOption[]  */
+  const opts = [
     {
       hint: "preconnect", // for PCISIG styles and scripts.
       href: "https://sglaser.github.io/respec/Spec",
@@ -66,15 +67,12 @@ function createResourceHints(conf) {
         "https://sglaser.github.io/respec/Spec/StyleSheets/2019/logos/pci_express_PMS.svg",
       as: "image",
     },
-  ]
-    .filter(item => {
-      conf.cssOverride || item.as != "style";
-    })
-    .map(createResourceHint)
-    .reduce((frag, link) => {
-      frag.appendChild(link);
-      return frag;
-    }, document.createDocumentFragment());
+  ];
+
+  const resourceHints = document.createDocumentFragment();
+  for (const link of opts.map(createResourceHint)) {
+    resourceHints.appendChild(link);
+  }
   return conf.cssOverride ? document.createDocumentFragment() : resourceHints;
 }
 

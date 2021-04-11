@@ -1,11 +1,9 @@
 // @ts-check
-import {
-  humanDate,
-  showInlineError,
-  toShortIsoDate,
-} from "../../core/utils.js";
+import { humanDate, showError, toShortIsoDate } from "../../core/utils.js";
 import { lang as defaultLang } from "../../core/l10n.js";
 import { html } from "../../core/import-maps.js";
+
+const name = "pcisig/templates/show-people";
 
 const localizationStrings = {
   en: {
@@ -105,10 +103,10 @@ export default (items = []) => {
         ? humanDate(retiredDate)
         : "Invalid Date"; // todo: Localise invalid date
       if (!isValidDate) {
-        showInlineError(
-          timeElem,
+        showError(
           "The date is invalid. The expected format is YYYY-MM-DD.",
-          "Invalid date"
+          name,
+          { title: "Invalid date" }
         );
       }
       timeElem.dateTime = toShortIsoDate(retiredDate);

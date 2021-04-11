@@ -54,10 +54,11 @@ interface Window {
 }
 
 interface Document {
+  /** @deprecated in favour of `document.respec.ready` */
   respecIsReady: Promise<void>;
   respec: {
     readonly version: string;
-    readonly ready: Document["respecIsReady"];
+    readonly ready: Promise<void>;
   };
   createNodeIterator<T>(
     root: Node,
@@ -71,8 +72,8 @@ interface Document {
   ): TreeWalker<T>;
 }
 
-interface NodeIterator<T extends Node> { }
-interface TreeWalker<T extends Node> { }
+interface NodeIterator<T extends Node> {}
+interface TreeWalker<T extends Node> {}
 
 interface Node {
   cloneNode<T extends Node = this>(deep?: boolean): T;
@@ -143,9 +144,11 @@ type ResourceHintOption = {
    * If the hint should remain in the spec after processing.
    */
   dontRemove?: boolean;
-}
+};
 
 module "core/xref" {
+  import { IDBPDatabase, DBSchema } from "idb";
+
   export interface RequestEntry {
     term: string;
     id: string;
@@ -169,4 +172,21 @@ module "core/xref" {
     };
     query?: RequestEntry[];
   }
+
+  interface XrefDBScheme extends DBSchema {
+    xrefs: {
+      key: string;
+      value: { query: RequestEntry; result: SearchResultEntry[] };
+      indexes: { byTerm: string };
+    };
+  }
+
+  export type XrefDatabase = IDBPDatabase<XrefDBScheme>;
+}
+
+enum W3CGroupType {
+  "bg",
+  "cg",
+  "ig",
+  "wg",
 }

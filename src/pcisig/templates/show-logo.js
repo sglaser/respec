@@ -1,12 +1,14 @@
 // @ts-check
 import { html } from "../../core/import-maps.js";
-import { showInlineWarning } from "../../core/utils.js";
+import { showWarning } from "../../core/utils.js";
+
+export const name = "pcisig/templates.show-logo";
 
 export default obj => {
   /** @type {HTMLAnchorElement} */
   const a = html`<a href="${obj.url || ""}" class="logo"></a>`;
   if (!obj.alt) {
-    showInlineWarning(a, "Found spec logo without an `alt` attribute");
+    showWarning(`Found spec logo ${obj.url} without an alt attribute`, name);
   }
   /** @type {HTMLImageElement} */
   const img = html`

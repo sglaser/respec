@@ -6,8 +6,9 @@
 //  - don't use generated content in the CSS!
 import {
   addHashId,
-  showInlineError,
-  showInlineWarning,
+  showError,
+  showWarning,
+  wrapInner,
   xmlEscape,
 } from "./utils.js";
 import { decorateDfn, findDfn } from "./dfn-finder.js";
@@ -17,6 +18,7 @@ import { fetchAsset } from "./text-loader.js";
 import { registerDefinition } from "./dfn-map.js";
 
 export const name = "core/webidl";
+const pluginName = name;
 
 const operationNames = {};
 const idlPartials = {};
@@ -88,6 +90,7 @@ const templates = {
   },
   nameless(escaped, { data, parent }) {
     switch (data.type) {
+      case "operation":
       case "constructor":
         return defineIdlName(escaped, data, parent);
       default:
@@ -184,7 +187,7 @@ function defineIdlName(escaped, data, parent) {
     const styledName = data.type === "operation" ? `${name}()` : name;
     const ofParent = parentName ? ` \`${parentName}\`'s` : "";
     const msg = `Missing \`<dfn>\` for${ofParent} \`${styledName}\` ${data.type}. [More info](https://github.com/w3c/respec/wiki/WebIDL-thing-is-not-defined).`;
-    showInlineWarning(unlinkedAnchor, msg, "");
+    showWarning(msg, pluginName, { elements: [unlinkedAnchor] });
   }
   return unlinkedAnchor;
 }
@@ -235,7 +238,9 @@ function getNameAndId(defn, parent = "") {
 
 function resolveNameAndId(defn, parent) {
   let name = getDefnName(defn);
-  let idlId = getIdlId(name, parent);
+  // For getters, setters, etc. "anonymous-getter",
+  const prefix = defn.special && defn.name === "" ? "anonymous-" : "";
+  let idlId = getIdlId(prefix + name, parent);
   switch (defn.type) {
     // Top-level entities with linkable members.
     case "callback interface":
@@ -302,7 +307,7 @@ function getDefnName(defn) {
     case "enum-value":
       return defn.value;
     case "operation":
-      return defn.name;
+      return defn.name || defn.special;
     default:
       return defn.name || defn.type;
   }
@@ -319,12 +324,12 @@ function renderWebIDL(idlElement, index) {
       sourceName: String(index),
     });
   } catch (e) {
-    showInlineError(
-      idlElement,
-      `Failed to parse WebIDL: ${e.bareMessage}.`,
-      e.bareMessage,
-      { details: `<pre>${e.context}</pre>` }
-    );
+    const msg = `Failed to parse WebIDL: ${e.bareMessage}.`;
+    showError(msg, pluginName, {
+      title: e.bareMessage,
+      details: `<pre>${e.context}</pre>`,
+      elements: [idlElement],
+    });
     // Skip this <pre> and move on to the next one.
     return [];
   }
@@ -332,6 +337,7 @@ function renderWebIDL(idlElement, index) {
   idlElement.classList.add("def", "idl");
   const highlights = webidl2.write(parse, { templates });
   html.bind(idlElement)`${highlights}`;
+  wrapInner(idlElement, document.createElement("code"));
   idlElement.querySelectorAll("[data-idl]").forEach(elem => {
     if (elem.dataset.dfnFor) {
       return;
@@ -382,7 +388,6 @@ async function loadStyle() {
 }
 
 let _hasWebIdl = undefined; // unknown
-
 export function hasWebIdl() {
   if (_hasWebIdl == undefined) {
     const idls = document.querySelectorAll("pre.idl, pre.webidl");
@@ -390,7 +395,6 @@ export function hasWebIdl() {
   }
   return _hasWebIdl;
 }
-
 export async function run() {
   const idls = document.querySelectorAll("pre.idl, pre.webidl");
   if (!idls.length) {
@@ -417,12 +421,12 @@ export async function run() {
       details += `Try fixing as:
       <pre>${escaped}</pre>`;
     }
-    showInlineError(
-      idls[validation.sourceName],
-      `WebIDL validation error: ${validation.bareMessage}`,
-      validation.bareMessage,
-      { details }
-    );
+    const msg = `WebIDL validation error: ${validation.bareMessage}`;
+    showError(msg, pluginName, {
+      details,
+      elements: [idls[validation.sourceName]],
+      title: validation.bareMessage,
+    });
   }
   document.normalize();
 }

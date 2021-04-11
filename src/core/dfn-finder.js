@@ -1,6 +1,6 @@
 // @ts-check
 import { definitionMap, registerDefinition } from "./dfn-map.js";
-import { showInlineError, wrapInner } from "./utils.js";
+import { showError, wrapInner } from "./utils.js";
 
 const topLevelEntities = new Set([
   "callback interface",
@@ -36,7 +36,7 @@ export function findDfn(defn, name, { parent = "" } = {}) {
 }
 
 /**
- * @param {string} type
+ * @param {Object} idlAst
  * @param {string} parent
  * @param {string} name
  */
@@ -164,7 +164,8 @@ function findNormalDfn(defn, parent, ...names) {
       const msg = `WebIDL identifier \`${name}\` ${
         parent ? `for \`${parent}\`` : ""
       } is defined multiple times`;
-      showInlineError(dfns, msg, "Duplicate definition.");
+      const title = "Duplicate definition.";
+      showError(msg, name, { title, elements: dfns });
     }
     if (dfns.length) {
       return dfns[0];
@@ -260,8 +261,9 @@ function getDfns(name, parent, originalName, type) {
 /**
  * @return {string}
  */
-function getDataType(idlStruct) {
+function getDataType(idlStruct = {}) {
   const { idlType, generic, union } = idlStruct;
+  if (idlType === undefined) return "";
   if (typeof idlType === "string") return idlType;
   if (generic) return generic;
   // join on "|" handles for "unsigned short" etc.

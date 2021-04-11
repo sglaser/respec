@@ -8,7 +8,7 @@ import {
   addId,
   getIntlData,
   renameElement,
-  showInlineWarning,
+  showWarning,
   wrapInner,
 } from "./utils.js";
 import { html } from "./import-maps.js";
@@ -50,22 +50,24 @@ export function run() {
 function collectEquations() {
   /** @type {HTMLElement[]} */
   const toe = [];
-  document.querySelectorAll("figure.equation").forEach((eqn, i) => {
+  /** @type {NodeListOf<HTMLElement>} */
+  const eqns = document.querySelectorAll("figure.equation");
+  eqns.forEach((eqn, i) => {
     const caption = eqn.querySelector("figcaption");
 
     if (caption) {
       decorateEquation(eqn, caption, i);
       toe.push(getTableOfEquationsListItem(eqn.id, caption));
     } else {
-      // @ts-ignore
-      showInlineWarning(eqn, "Found a `<figure>` without a `<figcaption>`");
+      const msg = "Found a '<figure>' without a `<figcaption>`";
+      showWarning(msg, name);
     }
   });
   return toe;
 }
 
 /**
- * @param {Element} equation
+ * @param {HTMLElement} equation
  * @param {HTMLElement} caption
  * @param {number} i
  */

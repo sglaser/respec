@@ -16,6 +16,7 @@ export function run() {
   const note_list = document.querySelectorAll("table span.tablenote");
   note_list.forEach(note => {
     // console.log(`tablenotes: note = ${note.outerHTML}`);
+    /** @type {HTMLElement} */
     const table = note.closest("table");
     if (table) {
       addId(table, "tbl");

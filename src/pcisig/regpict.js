@@ -4,8 +4,8 @@
 // extracting register information from a variety of table styles. The other is inventing an
 // svg diagram that represents the fields in the table.
 
-import { addId, showInlineError } from "../core/utils.js";
-import { SVG } from "../../js/deps/svg.esm.js";
+import { addId, showError } from "../core/utils.js";
+import { SVG } from "../../js/deps/builds/svg.js";
 import { fetchAsset } from "../core/text-loader.js";
 import { html } from "../core/import-maps.js";
 // import { parse_table } from "./draw-csrs.js";
@@ -261,7 +261,8 @@ function mergeElementJSON(result, me) {
           `mergeElementJSON(${cnt}) error: me.textContent ${me.textContent}`
         );
       }
-      showInlineError(me, `Invalid JSON in element ${e.toString()}`, "");
+      const title = `Invalid JSON in element ${me} ${e.toString()}`;
+      showError(title, name);
     }
   }
   return result;
@@ -1286,134 +1287,132 @@ export async function run(conf) {
       document.querySelector("link")
     );
   }
+  /** @type {NodeListOf<HTMLElement>} */
+  const figs = document.querySelectorAll(
+    "figure.register, figure.message, figure.capability"
+  );
+  figs.forEach(fig => {
+    // let isRegister = $fig.classList.contains("register");
+    let isMessage = fig.classList.contains("message");
+    let isCapability = fig.classList.contains("capability");
+    let isMemoryBlock = fig.classList.contains("memoryBlock");
+    // isMessage, isMemoryBlock, and isRegister are mutually exclusive.
+    // 1. isMessage has highest priority
+    // 2. isMemoryBlock and isCapability have middle priority, isCapability implies isMemoryBlock
+    // 3. isRegister has lowest priority and is the default
+    if (isMessage) {
+      // isRegister = false;
+      isMemoryBlock = false;
+      isCapability = false;
+    } else if (isMemoryBlock || isCapability) {
+      // isRegister = false;
+      isMessage = false;
+      isMemoryBlock = true; // implied by isCapability
+    } else {
+      // isRegister = true;
+      isMessage = false;
+      isMemoryBlock = false;
+      isCapability = false;
+    }
 
-  document
-    .querySelectorAll("figure.register, figure.message, figure.capability")
-    .forEach(fig => {
-      // let isRegister = $fig.classList.contains("register");
-      let isMessage = fig.classList.contains("message");
-      let isCapability = fig.classList.contains("capability");
-      let isMemoryBlock = fig.classList.contains("memoryBlock");
-      // isMessage, isMemoryBlock, and isRegister are mutually exclusive.
-      // 1. isMessage has highest priority
-      // 2. isMemoryBlock and isCapability have middle priority, isCapability implies isMemoryBlock
-      // 3. isRegister has lowest priority and is the default
-      if (isMessage) {
-        // isRegister = false;
-        isMemoryBlock = false;
-        isCapability = false;
-      } else if (isMemoryBlock || isCapability) {
-        // isRegister = false;
-        isMessage = false;
-        isMemoryBlock = true; // implied by isCapability
-      } else {
-        // isRegister = true;
-        isMessage = false;
-        isMemoryBlock = false;
-        isCapability = false;
-      }
+    const debug = debugOverride;
 
-      const debug = debugOverride;
+    let json = { fields: {}, debug };
 
-      let json = { fields: {}, debug };
+    let figNum = 0;
+    if (fig.getAttribute("id")) {
+      json.figName = fig.getAttribute("id").replace(/^fig-/, "");
+    } else {
+      json.figName =
+        fig.getAttribute("title") ||
+        fig.querySelector("figcaption").textContent ||
+        `unnamed-${++figNum}`;
+    }
+    addId(fig, "fig", json.figName);
+    if (debug) {
+      console.log(
+        `core/regpict begin: figure.register id="${fig.getAttribute("id")}"`
+      );
+    }
 
-      let figNum = 0;
-      if (fig.getAttribute("id")) {
-        json.figName = fig.getAttribute("id").replace(/^fig-/, "");
-      } else {
-        json.figName =
-          fig.getAttribute("title") ||
-          fig.querySelector("figcaption").textContent ||
-          `unnamed-${++figNum}`;
-      }
-      addId(fig, "fig", json.figName);
-      if (debug) {
-        console.log(
-          `core/regpict begin: figure.register id="${fig.getAttribute("id")}"`
-        );
-      }
-
-      if (fig.hasAttribute("data-json")) {
-        try {
-          mergeJSON(json, fig.getAttribute("data-json"));
-        } catch (e) {
-          console.log(`error: ${e.toString()}`);
-          // @ts-ignore
-          showInlineError(fig, "Invalid data-json attribute", "");
-        }
-      }
-
-      copyAttribute(json, fig, "data-width", "width");
-      copyAttribute(json, fig, "data-wordWidth", "wordWidth");
-      copyAttribute(json, fig, "data-unused", "defaultUnused");
-      // copyAttribute(json, fig, "data-href", "href");
-      copyAttribute(json, fig, "data-table", "table");
-      // copyAttribute(json, fig, "data-register", "register");
-
-      fig.querySelectorAll("pre.json,div.json,span.json").forEach(pre => {
-        if (debug) {
-          console.log(
-            `run: found <${pre.nodeName.toLowerCase()}.${pre.className}>`
-          );
-          console.log(
-            `run: before: figure json=${JSON.stringify(json, null, 2)}`
-          );
-          console.log(`run: before pre=${pre.outerHTML}`);
-        }
-        try {
-          json = mergeElementJSON(json, pre);
-          pre.classList.add("hide");
-        } catch (e) {
-          showInlineError(
-            // @ts-ignore
-            pre,
-            `Invalid JSON in pre.json, div.json, or span.json ${e.toString()}`,
-            ""
-          );
-        }
-        if (debug) {
-          console.log(`after merging <pre> ${JSON.stringify(json, null, 2)}`);
-        }
-      });
-
-      // if (json.hasOwnProperty("table")) {
-      //   const tbl = document.querySelector(json.table, document);
-      //   json = mergeJSON(parse_table(tbl), json);
-      // }
-
-      // invent a div to hold the svg
-      const cap = fig.querySelector("figcaption");
-      function create_divsvg() {
-        if (cap) {
-          if (debug) {
-            console.log("inserting div.svg before <figcaption>");
-          }
-          cap.insertAdjacentHTML("beforebegin", `<div class="svg"></div>`);
-        } else {
-          if (debug) {
-            console.log("inserting div.svg at end of <figure>");
-          }
-          fig.insertAdjacentHTML("beforeend", `<div class="svg"></div>`);
-        }
-        return fig.querySelector("div.svg:last-of-type");
-      }
-
-      const render = fig.querySelectorAll("pre.render,div.render,span.render");
-      if (render.length > 0) {
-        render.forEach(node => {
-          const temp = mergeElementJSON(mergeJSON({}, json), node);
-          const divsvg = create_divsvg();
-          // @ts-ignore
-          draw_regpict(divsvg, temp);
-        });
-      } else {
+    if (fig.hasAttribute("data-json")) {
+      try {
+        mergeJSON(json, fig.getAttribute("data-json"));
+      } catch (e) {
+        console.log(`error: ${e.toString()}`);
         // @ts-ignore
-        draw_regpict(create_divsvg(), json);
+        const err = `Invalid data-json attribute ${fig} ${e.toString()}`;
+        showError(err, name);
       }
+    }
+
+    copyAttribute(json, fig, "data-width", "width");
+    copyAttribute(json, fig, "data-wordWidth", "wordWidth");
+    copyAttribute(json, fig, "data-unused", "defaultUnused");
+    // copyAttribute(json, fig, "data-href", "href");
+    copyAttribute(json, fig, "data-table", "table");
+    // copyAttribute(json, fig, "data-register", "register");
+
+    fig.querySelectorAll("pre.json,div.json,span.json").forEach(pre => {
       if (debug) {
         console.log(
-          `core/regpict end: figure.register id="${fig.getAttribute("id")}"`
+          `run: found <${pre.nodeName.toLowerCase()}.${pre.className}>`
         );
+        console.log(
+          `run: before: figure json=${JSON.stringify(json, null, 2)}`
+        );
+        console.log(`run: before pre=${pre.outerHTML}`);
+      }
+      try {
+        json = mergeElementJSON(json, pre);
+        pre.classList.add("hide");
+      } catch (e) {
+        const err = `Invalid JSON in pre.json, div.json, or span.json $${pre} ${e.toString()}`;
+        showError(err, name);
+      }
+      if (debug) {
+        console.log(`after merging <pre> ${JSON.stringify(json, null, 2)}`);
       }
     });
+
+    // if (json.hasOwnProperty("table")) {
+    //   const tbl = document.querySelector(json.table, document);
+    //   json = mergeJSON(parse_table(tbl), json);
+    // }
+
+    // invent a div to hold the svg
+    const cap = fig.querySelector("figcaption");
+    function create_divsvg() {
+      if (cap) {
+        if (debug) {
+          console.log("inserting div.svg before <figcaption>");
+        }
+        cap.insertAdjacentHTML("beforebegin", `<div class="svg"></div>`);
+      } else {
+        if (debug) {
+          console.log("inserting div.svg at end of <figure>");
+        }
+        fig.insertAdjacentHTML("beforeend", `<div class="svg"></div>`);
+      }
+      return fig.querySelector("div.svg:last-of-type");
+    }
+
+    const render = fig.querySelectorAll("pre.render,div.render,span.render");
+    if (render.length > 0) {
+      render.forEach(node => {
+        const temp = mergeElementJSON(mergeJSON({}, json), node);
+        const divsvg = create_divsvg();
+        // @ts-ignore
+        draw_regpict(divsvg, temp);
+      });
+    } else {
+      // @ts-ignore
+      draw_regpict(create_divsvg(), json);
+    }
+    if (debug) {
+      console.log(
+        `core/regpict end: figure.register id="${fig.getAttribute("id")}"`
+      );
+    }
+  });
 }

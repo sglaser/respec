@@ -8,7 +8,7 @@ import {
   addId,
   getIntlData,
   renameElement,
-  showInlineWarning,
+  showWarning,
   wrapInner,
 } from "./utils.js";
 import { html } from "./import-maps.js";
@@ -72,14 +72,17 @@ export function run() {
 function collectFigures() {
   /** @type {HTMLElement[]} */
   const tof = [];
-  document.querySelectorAll("figure:not(.equation)").forEach((fig, i) => {
+  /** @type {NodeListOf<HTMLElement>} */
+  const figs = document.querySelectorAll("figure:not(.equation)");
+  figs.forEach((fig, i) => {
     const caption = fig.querySelector("figcaption");
 
     if (caption) {
       decorateFigure(fig, caption, i);
       tof.push(getTableOfFiguresListItem(fig.id, caption));
     } else {
-      showInlineWarning(fig, "Found a `<figure>` without a `<figcaption>`");
+      const msg = "Found a '<figure>' without a `<figcaption>`";
+      showWarning(msg, name);
     }
   });
   return tof;

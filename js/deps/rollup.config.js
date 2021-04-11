@@ -1,6 +1,7 @@
 // rollup.config.js
 import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
+import cleanup from 'rollup-plugin-cleanup';
 
 const template = {
   output: {
@@ -9,7 +10,8 @@ const template = {
   },
   plugins: [
     resolve(),
-    commonjs()
+    commonjs(),
+    cleanup()
   ]
 };
 
@@ -19,7 +21,7 @@ export default [
     ...template
   },
   {
-    input: "js/deps/svg.esm.js",
+    input: "js/deps/svg.js",
     ...template
   }
 ]

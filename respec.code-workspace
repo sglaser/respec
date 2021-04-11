@@ -55,7 +55,8 @@
 		"tidyHtml.stopOnWarning": true,
 		"tidyHtml.formatOnSave": true,
 		"tidyHtml.warningNotification": "message",
-		"tidyHtml.errorNotification": "message"
+		"tidyHtml.errorNotification": "message",
+		"jshint.enable": false
 	},
 	"extensions": {
 		"recommendations": ["anweber.vscode-tidyhtml", "eamodio.gitlens"]
