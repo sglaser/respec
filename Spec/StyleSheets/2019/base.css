@@ -1943,6 +1943,12 @@ span.respec-error {
 /******************************************************************************/
 
 @media print {
+
+  /* PrinceXML doesn't seem to obey hidden */
+  [hidden] {
+    display: none;
+  }
+
   /* Pages have their own margins. */
   html {
     margin: 0;
