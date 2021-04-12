@@ -1508,13 +1508,7 @@ table.data tbody td[rowspan].solid-right {
 :not(li) > .tof,
 :not(li) > .tot,
 :not(li) > .toe {
-  margin-left: 6em;
-}
-
-.tof .fig-figno-decoration,
-.toe .eqn-eqnno-decoration,
-.tot .tbl-tblno-decoration {
-  float: left;
+  margin-left: 7em;
 }
 
 .toc .secno {
@@ -1568,18 +1562,15 @@ table.data tbody td[rowspan].solid-right {
 
 .tof .figno,
 .tot .tblno,
-.toe .eqnno  {
+.toe .eqnno {
   float: left;
-  width: 6em;
-  margin-left: -6em;
+  width: 7em;
+  margin-left: -7em;
 }
 
-.tof .fig-figno-decoration,
-.toe .eqn-eqnno-decoration,
-.tot .tbl-tblno-decoration,
-.tof .fig-title-decoration,
-.toe .eqn-title-decoration,
-.tot .tbl-title-decoration {
+.tof .fighdr,
+.tot .tblhdr,
+.toe .eqnhdr {
   display: none;
 }
 
