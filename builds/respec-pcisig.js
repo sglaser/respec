@@ -39,6 +39,7 @@ window.respecVersion = "26.2.0";
     Promise.resolve().then(function () { return examples$2; }),
     Promise.resolve().then(function () { return issuesNotes$2; }),
     Promise.resolve().then(function () { return bestPractices; }),
+    Promise.resolve().then(function () { return mathmlPolyfill; }),
     Promise.resolve().then(function () { return figures; }),
     Promise.resolve().then(function () { return equations; }),
     Promise.resolve().then(function () { return tables; }),
@@ -143,7 +144,7 @@ window.respecVersion = "26.2.0";
    * localize their text.
    */
 
-  const name$19 = "core/l10n";
+  const name$1a = "core/l10n";
 
   const html$1 = document.documentElement;
   if (html$1 && !html$1.hasAttribute("lang")) {
@@ -157,16 +158,16 @@ window.respecVersion = "26.2.0";
 
   const lang$b = html$1.lang;
 
-  function run$U(config) {
+  function run$V(config) {
     config.l10n = l10n$j[lang$b] || l10n$j.en;
   }
 
   var l10n$k = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$19,
+    name: name$1a,
     l10n: l10n$j,
     lang: lang$b,
-    run: run$U
+    run: run$V
   });
 
   const instanceOfAny = (object, constructors) => constructors.some((c) => object instanceof c);
@@ -6873,7 +6874,7 @@ for more information.`;
    * Returns a singleton that can be used for message broadcasting
    * and message receiving. Replaces legacy "msg" code in ReSpec.
    */
-  const name$18 = "core/pubsubhub";
+  const name$19 = "core/pubsubhub";
 
   const subscriptions = new Map();
 
@@ -6887,7 +6888,7 @@ for more information.`;
       } catch (err) {
         const msg = `Error when calling function ${cb.name}.`;
         const hint = "See developer console.";
-        showError(msg, name$18, { hint });
+        showError(msg, name$19, { hint });
         console.error(err);
       }
     });
@@ -6939,13 +6940,13 @@ for more information.`;
     return callbacks.delete(cb);
   }
 
-  expose(name$18, { sub });
+  expose(name$19, { sub });
 
   // @ts-check
 
   const removeList = ["githubToken", "githubUser"];
 
-  function run$T(config) {
+  function run$U(config) {
     const userConfig = {};
     const amendConfig = newValues => Object.assign(userConfig, newValues);
 
@@ -6966,7 +6967,7 @@ for more information.`;
 
   // @ts-check
 
-  const name$17 = "core/respec-global";
+  const name$18 = "core/respec-global";
 
   class ReSpec {
     constructor() {
@@ -7008,7 +7009,7 @@ for more information.`;
           const msg =
             "`document.respecIsReady` is deprecated and will be removed in a future release.";
           const hint = "Use `document.respec.ready` instead.";
-          showWarning(msg, name$17, { hint });
+          showWarning(msg, name$18, { hint });
           respecIsReadyWarningShown = true;
         }
         return document.respec.ready;
@@ -7018,7 +7019,7 @@ for more information.`;
 
   // @ts-check
 
-  function run$S(config) {
+  function run$T(config) {
     const params = new URLSearchParams(document.location.search);
     const overrideEntries = Array.from(params)
       .filter(([key, value]) => !!key && !!value)
@@ -7040,16 +7041,16 @@ for more information.`;
 
   // @ts-check
 
-  const name$16 = "core/post-process";
+  const name$17 = "core/post-process";
 
-  async function run$R(config) {
+  async function run$S(config) {
     if (Array.isArray(config.postProcess)) {
       const promises = config.postProcess
         .filter(f => {
           const isFunction = typeof f === "function";
           if (!isFunction) {
             const msg = "Every item in `postProcess` must be a JS function.";
-            showError(msg, name$16);
+            showError(msg, name$17);
           }
           return isFunction;
         })
@@ -7059,7 +7060,7 @@ for more information.`;
           } catch (err) {
             const msg = `Function ${f.name} threw an error during \`postProcess\`.`;
             const hint = "See developer console.";
-            showError(msg, name$16, { hint });
+            showError(msg, name$17, { hint });
             console.error(err);
           }
         });
@@ -7072,16 +7073,16 @@ for more information.`;
 
   // @ts-check
 
-  const name$15 = "core/pre-process";
+  const name$16 = "core/pre-process";
 
-  async function run$Q(config) {
+  async function run$R(config) {
     if (Array.isArray(config.preProcess)) {
       const promises = config.preProcess
         .filter(f => {
           const isFunction = typeof f === "function";
           if (!isFunction) {
             const msg = "Every item in `preProcess` must be a JS function.";
-            showError(msg, name$15);
+            showError(msg, name$16);
           }
           return isFunction;
         })
@@ -7091,7 +7092,7 @@ for more information.`;
           } catch (err) {
             const msg = `Function ${f.name} threw an error during \`preProcess\`.`;
             const hint = "See developer console.";
-            showError(msg, name$15, { hint });
+            showError(msg, name$16, { hint });
             console.error(err);
           }
         });
@@ -7101,16 +7102,16 @@ for more information.`;
 
   // @ts-check
 
-  const name$14 = "core/base-runner";
+  const name$15 = "core/base-runner";
 
   async function runAll(plugs) {
     init();
 
     pub("start-all", respecConfig);
+    run$U(respecConfig);
     run$T(respecConfig);
-    run$S(respecConfig);
-    performance.mark(`${name$14}-start`);
-    await run$Q(respecConfig);
+    performance.mark(`${name$15}-start`);
+    await run$R(respecConfig);
 
     const runnables = plugs.filter(p => isRunnableModule(p));
     runnables.forEach(
@@ -7122,11 +7123,11 @@ for more information.`;
     respecConfig.state = {};
     pub("plugins-done", respecConfig);
 
-    await run$R(respecConfig);
+    await run$S(respecConfig);
     pub("end-all");
     removeReSpec(document);
-    performance.mark(`${name$14}-end`);
-    performance.measure(name$14, `${name$14}-start`, `${name$14}-end`);
+    performance.mark(`${name$15}-end`);
+    performance.measure(name$15, `${name$15}-start`, `${name$15}-end`);
   }
 
   function isRunnableModule(plug) {
@@ -7181,7 +7182,7 @@ for more information.`;
 
   var baseRunner = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$14,
+    name: name$15,
     runAll: runAll
   });
 
@@ -7208,7 +7209,7 @@ for more information.`;
    * so that indentation inside <pre> won't affect the rendered result.
    */
 
-  const name$13 = "core/reindent";
+  const name$14 = "core/reindent";
 
   /**
    * @param {string} text
@@ -7226,7 +7227,7 @@ for more information.`;
     return lines.map(s => s.slice(leastIndent)).join("\n");
   }
 
-  function run$P() {
+  function run$Q() {
     for (const pre of document.getElementsByTagName("pre")) {
       pre.innerHTML = reindent(pre.innerHTML);
     }
@@ -7234,13 +7235,13 @@ for more information.`;
 
   var reindent$1 = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$13,
+    name: name$14,
     reindent: reindent,
-    run: run$P
+    run: run$Q
   });
 
   // @ts-check
-  const name$12 = "core/markdown";
+  const name$13 = "core/markdown";
 
   const gtEntity = /&gt;/gm;
   const ampEntity = /&amp;/gm;
@@ -7498,7 +7499,7 @@ for more information.`;
   const blockLevelElements =
     "[data-format=markdown], section, div, address, article, aside, figure, header, main";
 
-  function run$O(conf) {
+  function run$P(conf) {
     const hasMDSections = !!document.querySelector(
       "[data-format=markdown]:not(body)"
     );
@@ -7534,14 +7535,14 @@ for more information.`;
 
   var markdown = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$12,
+    name: name$13,
     markdownToHtml: markdownToHtml,
     restructure: restructure,
-    run: run$O
+    run: run$P
   });
 
   // @ts-check
-  const name$11 = "core/ui";
+  const name$12 = "core/ui";
 
   // Opportunistically inserts the style, with the chance to reduce some FOUC
   insertStyle$1();
@@ -7823,7 +7824,7 @@ for more information.`;
 
   var ui$3 = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$11,
+    name: name$12,
     ui: ui$2
   });
 
@@ -7831,9 +7832,9 @@ for more information.`;
   // Module core/location-hash
   // Resets window.location.hash to jump to the right point in the document
 
-  const name$10 = "core/location-hash";
+  const name$11 = "core/location-hash";
 
-  function run$N() {
+  function run$O() {
     if (!location.hash) {
       return;
     }
@@ -7858,8 +7859,8 @@ for more information.`;
 
   var locationHash = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$10,
-    run: run$N
+    name: name$11,
+    run: run$O
   });
 
   // @ts-check
@@ -7919,7 +7920,7 @@ for more information.`;
 
   // @ts-check
 
-  const name$$ = "check-charset";
+  const name$10 = "check-charset";
   const meta$8 = {
     en: {
       description: `Document must only contain one \`<meta>\` tag with charset set to 'utf-8'`,
@@ -7956,16 +7957,16 @@ for more information.`;
     // or
     // no meta[charset] present in the document
     return {
-      name: name$$,
+      name: name$10,
       occurrences: metas.length,
       ...meta$8[lang$a],
     };
   }
-  const rule$8 = new LinterRule(name$$, linterFunction$5);
+  const rule$8 = new LinterRule(name$10, linterFunction$5);
 
   // @ts-check
 
-  const name$_ = "check-internal-slots";
+  const name$$ = "check-internal-slots";
 
   const meta$7 = {
     en: {
@@ -7997,18 +7998,18 @@ for more information.`;
     }
 
     return {
-      name: name$_,
+      name: name$$,
       offendingElements,
       occurrences: offendingElements.length,
       ...meta$7[lang$9],
     };
   }
 
-  const rule$7 = new LinterRule(name$_, linterFunction$4);
+  const rule$7 = new LinterRule(name$$, linterFunction$4);
 
   // @ts-check
 
-  const name$Z = "check-punctuation";
+  const name$_ = "check-punctuation";
   const punctuationMarks = [".", ":", "!", "?"];
   const humanMarks = punctuationMarks.map(mark => `"${mark}"`).join(", ");
   const meta$6 = {
@@ -8040,16 +8041,16 @@ for more information.`;
       return;
     }
     return {
-      name: name$Z,
+      name: name$_,
       offendingElements,
       occurrences: offendingElements.length,
       ...meta$6[lang$8],
     };
   }
-  const rule$6 = new LinterRule(name$Z, lintingFunction$2);
+  const rule$6 = new LinterRule(name$_, lintingFunction$2);
 
   // @ts-check
-  const name$Y = "core/linter";
+  const name$Z = "core/linter";
 
   /** @type {WeakMap<Linter, { rules: Set<import("./LinterRule").default> }>} */
   const privates = new WeakMap();
@@ -8109,12 +8110,12 @@ for more information.`;
     const msg = offendingElements.length
       ? description
       : `${description} (Count: ${occurrences})`;
-    const plugin = `${name$Y}/${linterName}`;
+    const plugin = `${name$Z}/${linterName}`;
     const hint = `${howToFix} ${help}`;
     showWarning(msg, plugin, { hint, elements: offendingElements });
   }
 
-  function run$M(conf) {
+  function run$N(conf) {
     if (conf.lint === false) {
       return; // nothing to do
     }
@@ -8131,14 +8132,14 @@ for more information.`;
 
   var linter$1 = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$Y,
+    name: name$Z,
     'default': linter,
-    run: run$M
+    run: run$N
   });
 
   // @ts-check
 
-  const name$X = "local-refs-exist";
+  const name$Y = "local-refs-exist";
 
   const meta$5 = {
     en: {
@@ -8165,14 +8166,14 @@ for more information.`;
       return;
     }
     return {
-      name: name$X,
+      name: name$Y,
       offendingElements,
       occurrences: offendingElements.length,
       ...meta$5[lang$7],
     };
   }
 
-  const rule$5 = new LinterRule(name$X, linterFunction$3);
+  const rule$5 = new LinterRule(name$Y, linterFunction$3);
 
   function isBrokenHyperlink(elem) {
     const id = elem.getAttribute("href").substring(1);
@@ -8181,7 +8182,7 @@ for more information.`;
   }
 
   // @ts-check
-  const name$W = "no-headingless-sections";
+  const name$X = "no-headingless-sections";
   const meta$4 = {
     en: {
       description: "All sections must start with a `h2-6` element.",
@@ -8219,17 +8220,17 @@ for more information.`;
       return;
     }
     return {
-      name: name$W,
+      name: name$X,
       offendingElements,
       occurrences: offendingElements.length,
       ...meta$4[lang$6],
     };
   }
-  const rule$4 = new LinterRule(name$W, linterFunction$2);
+  const rule$4 = new LinterRule(name$X, linterFunction$2);
 
   // @ts-check
 
-  const name$V = "no-http-props";
+  const name$W = "no-http-props";
 
   const meta$3 = {
     en: {
@@ -8268,7 +8269,7 @@ for more information.`;
     }
     /** @type {import("../../core/LinterRule").LinterResult} */
     const result = {
-      name: name$V,
+      name: name$W,
       occurrences: offendingMembers.length,
       ...meta$3[lang$5],
     };
@@ -8278,11 +8279,11 @@ for more information.`;
     return result;
   }
 
-  const rule$3 = new LinterRule(name$V, lintingFunction$1);
+  const rule$3 = new LinterRule(name$W, lintingFunction$1);
 
   // @ts-check
 
-  const name$U = "no-unused-vars";
+  const name$V = "no-unused-vars";
 
   const meta$2 = {
     en: {
@@ -8350,16 +8351,16 @@ for more information.`;
       return;
     }
     return {
-      name: name$U,
+      name: name$V,
       offendingElements,
       occurrences: offendingElements.length,
       ...meta$2[lang$4],
     };
   }
-  const rule$2 = new LinterRule(name$U, linterFunction$1);
+  const rule$2 = new LinterRule(name$V, linterFunction$1);
 
   // @ts-check
-  const name$T = "privsec-section";
+  const name$U = "privsec-section";
   const meta$1 = {
     en: {
       description:
@@ -8390,11 +8391,11 @@ for more information.`;
    */
   function lintingFunction(conf, doc) {
     if (conf.isRecTrack && !hasPriSecConsiderations(doc)) {
-      return { name: name$T, occurrences: 1, ...meta$1[lang$3] };
+      return { name: name$U, occurrences: 1, ...meta$1[lang$3] };
     }
   }
 
-  const rule$1 = new LinterRule(name$T, lintingFunction);
+  const rule$1 = new LinterRule(name$U, lintingFunction);
 
   // @ts-check
 
@@ -8446,7 +8447,7 @@ for more information.`;
 
   // @ts-check
 
-  const name$S = "wpt-tests-exist";
+  const name$T = "wpt-tests-exist";
 
   const meta = {
     en: {
@@ -8496,7 +8497,7 @@ for more information.`;
 
     const missingTests = [...offendingTests].map(test => `\`${test}\``);
     return {
-      name: name$S,
+      name: name$T,
       offendingElements,
       occurrences: offendingElements.length,
       ...meta[lang$2],
@@ -8504,7 +8505,7 @@ for more information.`;
     };
   }
 
-  const rule = new LinterRule(name$S, linterFunction);
+  const rule = new LinterRule(name$T, linterFunction);
 
   /**
    * @param {string} testSuiteURI
@@ -8524,7 +8525,7 @@ for more information.`;
       }
     } catch (error) {
       const msg = "Failed to parse WPT directory from testSuiteURI";
-      showWarning(msg, `linter/${name$S}`);
+      showWarning(msg, `linter/${name$T}`);
       console.error(error);
       return null;
     }
@@ -8538,7 +8539,7 @@ for more information.`;
       const msg =
         "Failed to fetch files from WPT repository. " +
         `Request failed with error: ${error} (${response.status})`;
-      showWarning(msg, `linter/${name$S}`);
+      showWarning(msg, `linter/${name$T}`);
       return null;
     }
     /** @type {{ entries: string[] }} */
@@ -8550,7 +8551,7 @@ for more information.`;
   /**
    * Sets the defaults for pcisig specs
    */
-  const name$R = "pcisig/pcisig-defaults";
+  const name$S = "pcisig/pcisig-defaults";
 
   linter.register(rule$1, rule);
 
@@ -8577,7 +8578,7 @@ for more information.`;
     xref: false,
   };
 
-  function run$L(conf) {
+  function run$M(conf) {
     conf.respecRFC2119Keywords = conf.respecRFC2119Keywords || [
       "\\bMUST(?:\\s+NOT)?(?:@FLIT|@64|@32|@16|@8)?\\b",
       "\\bSHOULD(?:\\s+NOT)?(?:@FLIT|@64|@32|@16|@8)?\\b",
@@ -8613,12 +8614,12 @@ for more information.`;
 
   var pcisigDefaults$1 = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$R,
-    run: run$L
+    name: name$S,
+    run: run$M
   });
 
   // @ts-check
-  const name$Q = "core/style";
+  const name$R = "core/style";
 
   // Opportunistically inserts the style, with the chance to reduce some FOUC
   const styleElement = insertStyle();
@@ -8639,7 +8640,7 @@ for more information.`;
     return styleElement;
   }
 
-  async function run$K(conf) {
+  async function run$L(conf) {
     if (conf.noReSpecCSS) {
       (await styleElement).remove();
     }
@@ -8647,13 +8648,13 @@ for more information.`;
 
   var style = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$Q,
-    run: run$K
+    name: name$R,
+    run: run$L
   });
 
   // @ts-check
 
-  const name$P = "pcisig/style";
+  const name$Q = "pcisig/style";
 
   // Make a best effort to attach meta viewport at the top of the head.
   // Other plugins might subsequently push it down, but at least we start
@@ -8736,7 +8737,7 @@ for more information.`;
     document.head.insertBefore(elements, document.head.firstChild);
   }
 
-  function run$J(conf) {
+  function run$K(conf) {
     if (!conf.specStatus) {
       const warn = "`respecConfig.specStatus` missing. Defaulting to 'base'.";
       conf.specStatus = "base";
@@ -8821,12 +8822,12 @@ for more information.`;
 
   var pcisigStyle = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$P,
-    run: run$J
+    name: name$Q,
+    run: run$K
   });
 
   // Module pcisig/l10n
-  const name$O = "pcisig/l10n";
+  const name$P = "pcisig/l10n";
   const additions = {
     en: {
       sotd: "Status of this Document",
@@ -8842,12 +8843,12 @@ for more information.`;
 
   var l10n$h = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$O
+    name: name$P
   });
 
   // @ts-check
 
-  const name$N = "core/data-include";
+  const name$O = "core/data-include";
 
   /**
    * @param {HTMLElement} el
@@ -8908,7 +8909,7 @@ for more information.`;
     ].forEach(attr => el.removeAttribute(attr));
   }
 
-  async function run$I() {
+  async function run$J() {
     /** @type {NodeListOf<HTMLElement>} */
     const includables = document.querySelectorAll("[data-include]");
 
@@ -8926,7 +8927,7 @@ for more information.`;
       } catch (err) {
         const msg = `\`data-include\` failed: \`${url}\` (${err.message}).`;
         console.error(msg, el, err);
-        showError(msg, name$N, { elements: [el] });
+        showError(msg, name$O, { elements: [el] });
       }
     });
     await Promise.all(promisesToInclude);
@@ -8934,8 +8935,8 @@ for more information.`;
 
   var dataInclude = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$N,
-    run: run$I
+    name: name$O,
+    run: run$J
   });
 
   /**
@@ -8949,7 +8950,7 @@ for more information.`;
    * any mismatch.
    *
    */
-  const name$M = "core/title";
+  const name$N = "core/title";
 
   const localizationStrings$j = {
     en: {
@@ -8965,7 +8966,7 @@ for more information.`;
 
   const l10n$g = getIntlData(localizationStrings$j);
 
-  function run$H(conf) {
+  function run$I(conf) {
     /** @type {HTMLElement} */
     const h1Elem =
       document.querySelector("h1#title") || html`<h1 id="title"></h1>`;
@@ -8978,7 +8979,7 @@ for more information.`;
         "If you need special markup in the document's title, " +
         'please use a `<h1 id="title">`.';
       const title = "Document is missing a title";
-      showError(msg, name$M, { title, elements: [h1Elem] });
+      showError(msg, name$N, { title, elements: [h1Elem] });
     }
 
     // Decorate the spec title
@@ -9019,8 +9020,8 @@ for more information.`;
 
   var title = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$M,
-    run: run$H
+    name: name$N,
+    run: run$I
   });
 
   // @ts-check
@@ -9051,13 +9052,13 @@ for more information.`;
 
   // @ts-check
 
-  const name$L = "pcisig/templates.show-logo";
+  const name$M = "pcisig/templates.show-logo";
 
   var showLogo = obj => {
     /** @type {HTMLAnchorElement} */
     const a = html`<a href="${obj.url || ""}" class="logo"></a>`;
     if (!obj.alt) {
-      showWarning(`Found spec logo ${obj.url} without an alt attribute`, name$L);
+      showWarning(`Found spec logo ${obj.url} without an alt attribute`, name$M);
     }
     /** @type {HTMLImageElement} */
     const img = html`
@@ -9077,7 +9078,7 @@ for more information.`;
 
   // @ts-check
 
-  const name$K = "pcisig/templates/show-people";
+  const name$L = "pcisig/templates/show-people";
 
   const localizationStrings$i = {
     en: {
@@ -9179,7 +9180,7 @@ for more information.`;
         if (!isValidDate) {
           showError(
             "The date is invalid. The expected format is YYYY-MM-DD.",
-            name$K,
+            name$L,
             { title: "Invalid date" }
           );
         }
@@ -9903,7 +9904,7 @@ for more information.`;
 
   // @ts-check
 
-  const name$J = "pcisig/pcisig-headers";
+  const name$K = "pcisig/pcisig-headers";
 
   const PCISIGDate = new Intl.DateTimeFormat(["en-AU"], {
     timeZone: "UTC",
@@ -10105,7 +10106,7 @@ for more information.`;
     return new Date(ISODate.format(new Date()));
   }
 
-  function run$G(conf) {
+  function run$H(conf) {
     conf.isUnofficial = conf.specStatus === "unofficial";
     if (conf.isUnofficial && !Array.isArray(conf.logos)) {
       conf.logos = [];
@@ -10532,36 +10533,30 @@ for more information.`;
 
   var pcisigHeaders = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$J,
-    run: run$G
+    name: name$K,
+    run: run$H
   });
 
   // @ts-check
 
-  const name$I = "pcisig/footnotes";
+  const name$J = "pcisig/footnotes";
 
-  function run$F() {
+  function run$G() {
     /** @type {NodeListOf<HTMLElement>} */
     const footnotes = document.querySelectorAll("span.footnote");
     footnotes.forEach((footnote, index) => {
       const id = addId(footnote, "footnote", `${index + 1}`);
       footnote.insertAdjacentHTML(
         "beforebegin",
-        `<label class="footnote-online">
-          Footnote:
-          <input
-            class="footnote-checkbox"
-            type="checkbox"
-            name="${id}"
-            value="checked"
-        /></label>`
+        `<span class="footnote-online"> [</span>
+       <label class="footnote-online for="${id}">Footnote:</label>
+       <input class="footnote-checkbox footnote-online"
+              type="checkbox"
+              name="${id}"
+              value="checked"/>`
       );
       footnote.insertAdjacentHTML(
-        "afterbegin",
-        `<span class="footnote-online"> [</span>`
-      );
-      footnote.insertAdjacentHTML(
-        "beforeend",
+        "afterend",
         `<span class="footnote-online">] </span>`
       );
     });
@@ -10569,15 +10564,15 @@ for more information.`;
 
   var footnotes = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$I,
-    run: run$F
+    name: name$J,
+    run: run$G
   });
 
   // @ts-check
 
-  const name$H = "pcisig/tablenotes";
+  const name$I = "pcisig/tablenotes";
 
-  function run$E() {
+  function run$F() {
     // console.log("in tablenotes");
     const tableid_to_notes_entries = new Map();
     //
@@ -10648,15 +10643,15 @@ for more information.`;
 
   var tablenotes = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$H,
-    run: run$E
+    name: name$I,
+    run: run$F
   });
 
   // @ts-check
 
-  const name$G = "core/data-transform";
+  const name$H = "core/data-transform";
 
-  function run$D() {
+  function run$E() {
     /** @type {NodeListOf<HTMLElement>} */
     const transformables = document.querySelectorAll("[data-transform]");
     transformables.forEach(el => {
@@ -10667,14 +10662,14 @@ for more information.`;
 
   var dataTransform = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$G,
-    run: run$D
+    name: name$H,
+    run: run$E
   });
 
   // @ts-check
-  const name$F = "core/dfn-abbr";
+  const name$G = "core/dfn-abbr";
 
-  function run$C() {
+  function run$D() {
     /** @type {NodeListOf<HTMLElement>} */
     const elements = document.querySelectorAll("[data-abbr]");
     for (const elem of elements) {
@@ -10685,7 +10680,7 @@ for more information.`;
           break;
         default: {
           const msg = `\`data-abbr\` attribute not supported on \`${localName}\` elements.`;
-          showError(msg, name$F, {
+          showError(msg, name$G, {
             elements: [elem],
             title: "Error: unsupported.",
           });
@@ -10724,8 +10719,8 @@ for more information.`;
 
   var dataAbbr = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$F,
-    run: run$C
+    name: name$G,
+    run: run$D
   });
 
   // @ts-check
@@ -11353,7 +11348,7 @@ for more information.`;
 
   // @ts-check
 
-  const name$E = "core/inlines";
+  const name$F = "core/inlines";
   const rfc2119Usage = {};
 
   const localizationStrings$f = {
@@ -11451,7 +11446,7 @@ for more information.`;
     const badReference = html`<span>${matched}</span>`;
     const msg = `Wasn't able to expand ${matched} as it didn't match any id in the document.`;
     const hint = `Please make sure there is element with id ${ref} in the document.`;
-    showError(msg, name$E, { hint, elements: [badReference] });
+    showError(msg, name$F, { hint, elements: [badReference] });
     return badReference;
   }
 
@@ -11487,7 +11482,7 @@ for more information.`;
       const citeElem = cite.childNodes[1] || cite;
       const msg = `Normative references in informative sections are not allowed. `;
       const hint = `Remove '!' from the start of the reference \`[[${ref}]]\``;
-      showWarning(msg, name$E, { elements: [citeElem], hint });
+      showWarning(msg, name$F, { elements: [citeElem], hint });
     }
 
     if (type === "informative" && !illegal) {
@@ -11563,7 +11558,7 @@ for more information.`;
     return document.createTextNode(text);
   }
 
-  function run$B(conf) {
+  function run$C(conf) {
     const abbrMap = new Map();
     document.normalize();
     if (!document.querySelector("section#conformance")) {
@@ -11667,13 +11662,13 @@ for more information.`;
 
   var inlines = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$E,
+    name: name$F,
     rfc2119Usage: rfc2119Usage,
-    run: run$B
+    run: run$C
   });
 
   // @ts-check
-  const name$D = "pcisig/pcisig-conformance";
+  const name$E = "pcisig/pcisig-conformance";
 
   /**
    * @param {Element} conformance
@@ -11707,7 +11702,7 @@ for more information.`;
     conformance.prepend(...content.childNodes);
   }
 
-  function run$A() {
+  function run$B() {
     const conformance = document.querySelector("section#conformance");
     if (conformance) {
       processConformance(conformance);
@@ -11716,16 +11711,16 @@ for more information.`;
 
   var pcisigConformance = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$D,
-    run: run$A
+    name: name$E,
+    run: run$B
   });
 
   // Module pcisig/pre-dfn
   // Finds all <dfn> elements and adjust dfn-type attribute.
 
-  const name$C = "pcisig/pre-dfn";
+  const name$D = "pcisig/pre-dfn";
 
-  function run$z() {
+  function run$A() {
     const dfnClass = [
       "term",
       "argument",
@@ -11769,8 +11764,8 @@ for more information.`;
 
   var preDfn = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$C,
-    run: run$z
+    name: name$D,
+    run: run$A
   });
 
   // @ts-check
@@ -12046,7 +12041,7 @@ for more information.`;
 
   // @ts-check
 
-  const name$B = "pcisig/draw-csrs";
+  const name$C = "pcisig/draw-csrs";
 
   /**
    * insert_unused_table_rows inserts "reserved" rows into a tables for
@@ -12159,7 +12154,7 @@ for more information.`;
       try {
         mergeJSON$1(json, tbl.getAttribute("data-json"));
       } catch {
-        showError("Invalid data-json attribute on <table>", name$B);
+        showError("Invalid data-json attribute on <table>", name$C);
       }
     }
 
@@ -12293,7 +12288,7 @@ for more information.`;
    * representing the table.
    * @returns {Promise<void>}
    */
-  async function run$y() {
+  async function run$z() {
     document
       .querySelectorAll("figure.regipct-generated")
       .forEach(item => item.remove());
@@ -12323,10 +12318,10 @@ for more information.`;
 
   var drawCsrs = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$B,
+    name: name$C,
     insert_unused_table_rows: insert_unused_table_rows,
     parse_table: parse_table,
-    run: run$y
+    run: run$z
   });
 
   const methods$1 = {};
@@ -17350,7 +17345,7 @@ for more information.`;
   // @ts-check
   // import css from "text!../../src/pcisig/css/regpict.css";
 
-  const name$A = "pcisig/regpict";
+  const name$B = "pcisig/regpict";
 
   const cssPromise$5 = loadStyle$a();
 
@@ -17515,7 +17510,7 @@ for more information.`;
         if (debug2) ;
       } catch (e) {
         const title = `Invalid JSON in element ${me} ${e.toString()}`;
-        showError(title, name$A);
+        showError(title, name$B);
       }
     }
     return result;
@@ -18527,7 +18522,7 @@ for more information.`;
     if (src.hasAttribute(attribute)) dest[property] = src.getAttribute(attribute);
   }
 
-  async function run$x(conf) {
+  async function run$y(conf) {
     pub("start", "core/regpict");
     if (!conf.noRegpictCSS) {
       const css = await cssPromise$5;
@@ -18572,7 +18567,7 @@ for more information.`;
           console.log(`error: ${e.toString()}`);
           // @ts-ignore
           const err = `Invalid data-json attribute ${fig} ${e.toString()}`;
-          showError(err, name$A);
+          showError(err, name$B);
         }
       }
 
@@ -18589,7 +18584,7 @@ for more information.`;
           pre.classList.add("hide");
         } catch (e) {
           const err = `Invalid JSON in pre.json, div.json, or span.json $${pre} ${e.toString()}`;
-          showError(err, name$A);
+          showError(err, name$B);
         }
       });
 
@@ -18626,16 +18621,16 @@ for more information.`;
 
   var regpict$2 = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$A,
+    name: name$B,
     draw_regpict: draw_regpict,
-    run: run$x
+    run: run$y
   });
 
   // @ts-check
 
-  const name$z = "core/dfn";
+  const name$A = "core/dfn";
 
-  function run$w() {
+  function run$x() {
     document.querySelectorAll("dfn").forEach(dfn => {
       const titles = getDfnTitles(dfn);
       registerDefinition(dfn, titles);
@@ -18663,15 +18658,15 @@ for more information.`;
 
   var dfn = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$z,
-    run: run$w
+    name: name$A,
+    run: run$x
   });
 
   // @ts-check
 
-  const name$y = "core/pluralize";
+  const name$z = "core/pluralize";
 
-  function run$v(conf) {
+  function run$w(conf) {
     if (!conf.pluralize) return;
 
     const pluralizeDfn = getPluralizer();
@@ -18740,13 +18735,13 @@ for more information.`;
 
   var pluralize = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$y,
-    run: run$v
+    name: name$z,
+    run: run$w
   });
 
   // @ts-check
 
-  const name$x = "core/examples";
+  const name$y = "core/examples";
 
   const localizationStrings$e = {
     en: {
@@ -18808,7 +18803,7 @@ for more information.`;
   </div>`;
   }
 
-  async function run$u() {
+  async function run$v() {
     /** @type {NodeListOf<HTMLElement>} */
     const examples = document.querySelectorAll(
       "pre.example, pre.illegal-example, aside.example"
@@ -18875,13 +18870,13 @@ for more information.`;
 
   var examples$2 = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$x,
-    run: run$u
+    name: name$y,
+    run: run$v
   });
 
   // @ts-check
 
-  const name$w = "core/issues-notes";
+  const name$x = "core/issues-notes";
 
   const localizationStrings$d = {
     en: {
@@ -19240,7 +19235,7 @@ for more information.`;
     return new Map(Object.entries(issues));
   }
 
-  async function run$t(conf) {
+  async function run$u(conf) {
     const query = ".issue, .note, .warning, .ednote, .impnote";
     /** @type {NodeListOf<HTMLElement>} */
     const issuesAndNotes = document.querySelectorAll(query);
@@ -19266,13 +19261,13 @@ for more information.`;
 
   var issuesNotes$2 = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    name: name$w,
-    run: run$t
+    name: name$x,
+    run: run$u
   });
 
   // @ts-check
 
-  const name$v = "core/best-practices";
+  const name$w = "core/best-practices";
 
   const localizationStrings$c = {
     en: {
@@ -19291,7 +19286,7 @@ for more information.`;
   const l10n$b = getIntlData(localizationStrings$c);
   const lang = lang$b in localizationStrings$c ? lang$b : "en";
 
-  function run$s() {
+  function run$t() {
     /** @type {NodeListOf<HTMLElement>} */
     const bps = document.querySelectorAll(".practicelab");
     const bpSummary = document.getElementById("bp-summary");
@@ -19327,14 +19322,268 @@ for more information.`;
       }
     } else if (bpSummary) {
       const msg = `Using best practices summary (#bp-summary) but no best practices found.`;
-      showWarning(msg, name$v);
+      showWarning(msg, name$w);
       bpSummary.remove();
     }
   }
 
   var bestPractices = /*#__PURE__*/Object.freeze({
     __proto__: null,
+    name: name$w,
+    run: run$t
+  });
+
+  // @ts-check
+  // fixes mathml <mfenched>
+
+  const name$v = "core/mathml-polyfill";
+
+  // @ts-check
+  /* -*- Mode: Java; tab-width: 4; indent-tabs-mode:nil; c-basic-offset: 4 -*- */
+  /* vim: set ts=4 et sw=4 tw=80: */
+
+  const MATHML_NS = "http://www.w3.org/1998/Math/MathML";
+
+  /*
+      A really basic implementation, this will be a module.
+   */
+  const _MathTransforms = {
+    _plugins: new Map(),
+    _css: "",
+    _createStyleSheet: str => {
+      if (str.length !== _MathTransforms.cssKey) {
+        // always true the first time because _MathTransforms.cssKey is undefined
+        _MathTransforms.cssKey = str.length;
+        const style = document.createElement("style");
+        style.textContent = str;
+        document.head.appendChild(style);
+        _MathTransforms.styleSheet = style; // cached stylesheet
+        document.head.removeChild(style);
+      }
+      return _MathTransforms.styleSheet;
+    },
+
+    getCSSStyleSheet: () => {
+      const foo = _MathTransforms
+        ._createStyleSheet(_MathTransforms._css)
+        .cloneNode(true);
+      return foo;
+    },
+
+    transform: root => {
+      for (const selector of _MathTransforms._plugins.keys()) {
+        const transformer = _MathTransforms._plugins.get(selector);
+
+        // find the matching elements..
+        // this is problematic since you could add some
+        const matches = Array.from(root.querySelectorAll(selector));
+
+        // Since these are in tree-order, if we process them in reverse order (child first)
+        // we should side-step the gnarliest of potential nesting issues
+        matches.reverse().forEach(el => {
+          const transformed = transformer(el);
+          if (transformed && transformed !== el) {
+            el.parentElement.replaceChild(transformed, el);
+          }
+        });
+      }
+    },
+
+    add: (selector, cb, css = "") => {
+      _MathTransforms._plugins.set(selector, cb);
+      _MathTransforms._css += css;
+    },
+  };
+
+  /**
+   * Same as cloneNode(true) except that shadow roots are copied
+   * If you are using the transforms and you need to clone a node that potentially has a shadowRoot, use this so the shadowRoot is copied
+   * As of November, 2020, Elementary Math and Linebreaking transforms are the only transforms that have shadowRoots.
+   * @param {Element} el
+   * @param {Element} [clone]
+   * @returns {Element} -- the clone (only useful if function is called with one arg)
+   */
+  function cloneElementWithShadowRoot(el, clone) {
+    if (clone === undefined) {
+      clone = el.cloneNode(true);
+    }
+
+    // rather than clone each element and then the children, we're assuming cloning the whole tree is most efficient
+    // however, we still need to search 'el' to check for a shadowRoot.
+    if (el.shadowRoot) {
+      clone.attachShadow({ mode: "open" });
+      for (let i = 0; i < el.shadowRoot.childElementCount; i++) {
+        clone.shadowRoot.appendChild(
+          cloneElementWithShadowRoot(el.shadowRoot.children[i])
+        );
+      }
+    }
+
+    for (let i = 0; i < el.childElementCount; i++) {
+      cloneElementWithShadowRoot(el.children[i], clone.children[i]);
+    }
+
+    return clone;
+  }
+
+  /**
+   * Converts a CSS length unit to pixels and returns that as a number
+   * @param{Element} element
+   * @param {string} length
+   * @returns {number}
+   */
+  /* export function convertToPx(element, length) {
+    // quick check to see if we have common case of 'px'
+    if (/px/.test(length)) {
+      return parseFloat(length);
+    }
+
+    // add a temp element with desired length; set it as the width; record the width, then delete the temp element.
+    // In Safari (Aug 2020), unknown elements in MathML are thrown out, so adding a 'div' results in 0 width. For some reason, 'img' is ok.
+    const img = document.createElement("img"); // create temporary element
+    const leafWrapper = document.createElementNS(MATHML_NS, "mtext"); // mtext is integration point for HTML
+    leafWrapper.appendChild(img);
+    leafWrapper.style.overflow = "hidden";
+    leafWrapper.style.visibility = "hidden";
+    img.style.width = length;
+    element.appendChild(leafWrapper);
+    const result = leafWrapper.getBoundingClientRect().width;
+    leafWrapper.remove();
+
+    return result;
+  }
+  */
+
+  /* -*- Mode: Java; tab-width: 4; indent-tabs-mode:nil; c-basic-offset: 4 -*- */
+  /* vim: set ts=4 et sw=4 tw=80: */
+  /*
+    Copyright (c) 2016-2019 Igalia S.L.
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+    THE SOFTWARE.
+  */
+
+  const namespaceURI = "http://www.w3.org/1998/Math/MathML";
+
+  function collapseWhiteSpace(text) {
+    // Collapse the whitespace as specified by the MathML specification.
+    // https://mathml-refresh.github.io/mathml/chapter2.html#fund.collapse
+    return text.replace(/^[\s]+|[\s]+$/g, "").replace(/[\s]+/g, " ");
+  }
+
+  function newOperator(text, separator) {
+    // Create <mo fence="true">text</mo> or <mo separator="true">text</mo>.
+    const operator = document.createElementNS(namespaceURI, "mo");
+    operator.appendChild(document.createTextNode(text));
+    operator.setAttribute(separator ? "separator" : "fence", "true");
+    return operator;
+  }
+
+  function newMrow() {
+    // Create an empty <mrow>.
+    return document.createElementNS(namespaceURI, "mrow");
+  }
+
+  function getSeparatorList(text) {
+    // Split the separators attribute into a list of characters.
+    // We ignore whitespace and handle surrogate pairs.
+    if (text === null) {
+      return [","];
+    }
+    const separatorList = [];
+    for (let i = 0; i < text.length; i++) {
+      if (!/\s/g.test(text.charAt(i))) {
+        const c = text.charCodeAt(i);
+        if (c >= 0xd800 && c < 0xdc00 && i + 1 < text.length) {
+          separatorList.push(text.substr(i, 2));
+          i++;
+        } else {
+          separatorList.push(text.charAt(i));
+        }
+      }
+    }
+    return separatorList;
+  }
+
+  function shouldCopyAttribute(attribute) {
+    // The <mfenced> and <mrow> elements have the same attributes except
+    // that dir is only accepted on <mrow> and open/close/separators are
+    // only accepted on <mfenced>.
+    // https://mathml-refresh.github.io/mathml/appendixa.html#parsing.rnc.pres
+    const excludedAttributes = ["dir", "open", "close", "separators"];
+    return (
+      attribute.namespaceURI || !excludedAttributes.includes(attribute.localName)
+    );
+  }
+
+  const expandFencedElement = mfenced => {
+    // Return an <mrow> element representing the expanded <mfenced>.
+    // https://mathml-refresh.github.io/mathml/chapter3.html#presm.mfenced
+    const outerMrow = newMrow();
+    outerMrow.appendChild(
+      newOperator(collapseWhiteSpace(mfenced.getAttribute("open") || "("))
+    );
+    if (mfenced.childElementCount === 1) {
+      outerMrow.appendChild(
+        cloneElementWithShadowRoot(mfenced.firstElementChild)
+      );
+    } else if (mfenced.childElementCount > 1) {
+      const separatorList = getSeparatorList(mfenced.getAttribute("separators"));
+      const innerMrow = newMrow();
+      let child = mfenced.firstElementChild;
+      while (child) {
+        innerMrow.appendChild(cloneElementWithShadowRoot(child));
+        child = child.nextElementSibling;
+        if (child && separatorList.length) {
+          innerMrow.appendChild(
+            newOperator(
+              separatorList.length > 1 ? separatorList.shift() : separatorList[0]
+            )
+          );
+        }
+      }
+      outerMrow.appendChild(innerMrow);
+    }
+    outerMrow.appendChild(
+      newOperator(collapseWhiteSpace(mfenced.getAttribute("close") || ")"))
+    );
+    for (let i = 0; i < mfenced.attributes.length; i++) {
+      const attribute = mfenced.attributes[i];
+      if (shouldCopyAttribute(attribute)) {
+        outerMrow.setAttributeNS(
+          attribute.namespaceURI,
+          attribute.localName,
+          attribute.value
+        );
+      }
+    }
+    return outerMrow;
+  };
+
+  function run$s() {
+    _MathTransforms.add("mfenced", expandFencedElement);
+    _MathTransforms.transform(document);
+  }
+
+  var mathmlPolyfill = /*#__PURE__*/Object.freeze({
+    __proto__: null,
     name: name$v,
+    MATHML_NS: MATHML_NS,
     run: run$s
   });
 

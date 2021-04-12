@@ -1988,25 +1988,21 @@ span.respec-error {
 /*                                    PrinceXML                               */
 /******************************************************************************/
 @media not print {
-  span.footnote-contents {
-    display: none;
+  span.footnote,
+  span.footnote-online,
+  label.footnote-online,
+  input.footnote-online {
     font-style: italic;
     font-size: smaller;
     color: #0060A9;
   }
 
-  span.footnote > input {
-    vertical-align: super;
-    color: #0060A9;
-  }
-
-  input#show-all-footnotes + label {
-    color: #0060A9;
-  }
-
-  input:checked + span.footnote-contents,
-  input#show-all-footnotes:checked  ~ section span.footnote-contents {
+  input.footnote-online:checked + span.footnote {
     display: inline;
+  }
+
+  input.footnote-online:not(:checked) + span.footnote {
+    display: none;
   }
 }
 
@@ -2354,17 +2350,15 @@ span.respec-error {
     }
   }
 
-  span.footnote > input {
-    display: none;
-  }
-
-  span.footnote-online {
+  span.footnote-online,
+  input.footnote-online,
+  label.footnote-online {
     display: none;
   }
 
   section[id], figure[id], table[id], dfn[id],
-  span.footnote-contents[id], span[id^="bib-"],
-  div[id^="impnote"], div[id^="note"] {
+  span.footnote[id], span[id^="bib-"],
+  div[id^="impnote"], div[id^="note"], div[id^="example"] {
     /*noinspection CssUnknownProperty*/
     prince-pdf-destination: attr(id, string)
   }

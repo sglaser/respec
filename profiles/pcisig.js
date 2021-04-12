@@ -35,6 +35,7 @@ const modules = [
   import("../src/core/examples.js"),
   import("../src/core/issues-notes.js"),
   import("../src/core/best-practices.js"),
+  import("../src/core/mathml-polyfill.js"),
   import("../src/core/figures.js"),
   import("../src/core/equations.js"),
   import("../src/core/tables.js"),

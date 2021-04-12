@@ -14,21 +14,15 @@ export function run() {
     const id = addId(footnote, "footnote", `${index + 1}`);
     footnote.insertAdjacentHTML(
       "beforebegin",
-      `<label class="footnote-online">
-          Footnote:
-          <input
-            class="footnote-checkbox"
-            type="checkbox"
-            name="${id}"
-            value="checked"
-        /></label>`
+      `<span class="footnote-online"> [</span>
+       <label class="footnote-online for="${id}">Footnote:</label>
+       <input class="footnote-checkbox footnote-online"
+              type="checkbox"
+              name="${id}"
+              value="checked"/>`
     );
     footnote.insertAdjacentHTML(
-      "afterbegin",
-      `<span class="footnote-online"> [</span>`
-    );
-    footnote.insertAdjacentHTML(
-      "beforeend",
+      "afterend",
       `<span class="footnote-online">] </span>`
     );
   });
