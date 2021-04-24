@@ -15,7 +15,7 @@ export function run() {
     footnote.insertAdjacentHTML(
       "beforebegin",
       `<span class="footnote-online"> [</span>
-       <label class="footnote-online for="${id}">Footnote:</label>
+       <label class="footnote-online" for="${id}">Footnote:</label>
        <input class="footnote-checkbox footnote-online"
               type="checkbox"
               name="${id}"
