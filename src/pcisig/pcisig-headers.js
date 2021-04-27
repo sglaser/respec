@@ -67,7 +67,7 @@
 //      - "pcisig", the default pcisig license for published specifications
 //      - "cc0", an extremely permissive license. Only recommended for documents intended for use
 //            outside of PCISIG.
-import { ISODate, concatDate, joinAnd } from "../core/utils.js";
+import { ISODate, concatDate, htmlJoinAnd, showError } from "../core/utils.js";
 import headersTmpl from "./templates/headers.js";
 import { html } from "../core/import-maps.js";
 import { pub } from "../core/pubsubhub.js";
@@ -76,7 +76,7 @@ import sotdTmpl from "./templates/sotd.js";
 export const name = "pcisig/pcisig-headers";
 
 const PCISIGDate = new Intl.DateTimeFormat(["en-AU"], {
-  timeZone: "UTC",
+  timeZone: "America/Los_Angeles",
   year: "numeric",
   month: "long",
   day: "2-digit",
@@ -221,40 +221,58 @@ const noTrackStatus = [
 // specStatus values that should grammatically be preceded by an instead of a.
 const precededByAn = ["ED", "ED-CWG", "ED-MEM", "ED-FINAL", "unofficial"];
 
-const licenses = {
-  "pcisig-draft": {
-    name: "PCISIG Specification License",
-    short: "PCISIG Spec",
-    url:
-      "https://sglaser.github.io/respec/Spec/Legal/2017/copyright-draft-specification",
-  },
-  "pcisig-final": {
-    name: "PCISIG Specification License",
-    short: "PCISIG Spec",
-    url:
-      "https://sglaser.github.io/respec/Spec/Legal/2017/copyright-final-specification",
-  },
-  "pcisig-note": {
-    name: "PCISIG Note, Whitepaper, or Presentation License",
-    short: "PCISIG Spec",
-    url: "https://sglaser.github.io/respec/Spec/Legal/2017/copyright-note",
-  },
-  nda: {
-    name: "PCISIG Document under Non-Disclosure Agreement",
-    short: "PCISIG NDA",
-    url: "https://sglaser.github.io/respec/Spec/Legal/2017/copyright-nda",
-  },
-  "cc-by": {
-    name: "Creative Commons Attribution 4.0 International Public License",
-    short: "CC-BY",
-    url: "https://creativecommons.org/licenses/by/4.0/legalcode",
-  },
-  cc0: {
-    name: "Creative Commons 0 Public Domain Dedication",
-    short: "CC0",
-    url: "https://creativecommons.org/publicdomain/zero/1.0/",
-  },
-};
+const licenses = new Map([
+  [
+    "cc0",
+    {
+      name: "Creative Commons 0 Public Domain Dedication",
+      short: "CC0",
+      url: "https://creativecommons.org/publicdomain/zero/1.0/",
+    },
+  ],
+  [
+    "pcisig-draft",
+    {
+      name: "PCISIG Specification License",
+      short: "PCISIG Spec",
+      url:
+        "https://sglaser.github.io/respec/Spec/Legal/2017/copyright-draft-specification",
+    },
+  ],
+  [
+    "pcisig-final",
+    {
+      name: "PCISIG Specification License",
+      short: "PCISIG Spec",
+      url:
+        "https://sglaser.github.io/respec/Spec/Legal/2021/copyright-final-specification",
+    },
+  ],
+  [
+    "pcisig-note",
+    {
+      name: "PCISIG Note, Whitepaper, or Presentation License",
+      short: "PCISIG Spec",
+      url: "https://sglaser.github.io/respec/Spec/Legal/2021/copyright-note",
+    },
+  ],
+  [
+    "nda",
+    {
+      name: "PCISIG Document under Non-Disclosure Agreement",
+      short: "PCISIG NDA",
+      url: "https://sglaser.github.io/respec/Spec/Legal/2021/copyright-nda",
+    },
+  ],
+  [
+    "cc-by",
+    {
+      name: "Creative Commons Attribution 4.0 International Public License",
+      short: "CC-BY",
+      url: "https://creativecommons.org/licenses/by/4.0/legalcode",
+    },
+  ],
+]);
 
 /**
  * @param {*} conf
@@ -271,16 +289,35 @@ function validateDateAndRecover(conf, prop, fallbackDate = new Date()) {
   const msg =
     `[\`${prop}\`](https://github.com/pcisig/respec/wiki/${prop}) ` +
     `is not a valid date: "${conf[prop]}". Expected format 'YYYY-MM-DD'.`;
-  pub("error", msg);
+  showError(msg, name);
   return new Date(ISODate.format(new Date()));
 }
 
+/**
+ * Creates a quick markdown link to a property in the docs.
+ *
+ * @param {string} prop ReSpec configuration property to link to in PCI-SIG respec docs.
+ */
+function pcisig_docLink(prop) {
+  return `[\`${prop}\`](https://pcisig.com/respec-docs/#${prop})`;
+}
+
 export function run(conf) {
+  if (!conf.specStatus) {
+    const msg = `Missing required configuration: ${pcisig_docLink(
+      "specStatus"
+    )}.`;
+    const hint = `Please select an appropriate status from ${pcisig_docLink(
+      "specstatus"
+    )}. If in doubt, use \`"unofficial"\`.`;
+    showError(msg, name, { hint });
+  }
   conf.isUnofficial = conf.specStatus === "unofficial";
   if (conf.isUnofficial && !Array.isArray(conf.logos)) {
     conf.logos = [];
   }
 
+  // Chapters are always drafts, never final
   if (
     conf.specStatus &&
     conf.specChapter &&
@@ -288,31 +325,61 @@ export function run(conf) {
   ) {
     conf.specStatus = specFinal2Draft[conf.specStatus];
   }
-  // Default include RDFa document metadata
-  if (conf.doRDFa === undefined) conf.doRDFa = true;
-  // validate configuration and derive new configuration values
-  if (!conf.license) {
+
+  if (conf.isUnofficial) {
+    if (conf.license && !licenses.has(conf.license)) {
+      const msg = `The ${pcisig_docLink(
+        "license"
+      )} configuration option has an invalid value: "\`${
+        conf.license
+      }\`". Defaulting to "cc-by".`;
+      const licensesKeys = [...licenses.keys()]
+        .map(key => `\`"${key}"\``)
+        .join(", ");
+      const hint = `Please explicitly set ${pcisig_docLink(
+        "license"
+      )} to one of: ${licensesKeys}.`;
+      showError(msg, name, { hint });
+      conf.license = "cc-by";
+    }
+  }
+
+  if (conf.license === undefined) {
     conf.license = "pcisig-draft";
   }
-  if (["cc0", "cc-by"].includes(conf.license)) {
-    let msg = `You cannot use license "${conf.license}" with PCISIG Specs. `;
-    const non_cc0 = licenses.keys.remove("cc0").remove("cc-by").toString();
-    msg += `Please set 'respecConfig.license:' to one of ${non_cc0} instead.`;
-    pub("error", msg);
+
+  conf.isCCBY = conf.license === "cc-by";
+
+  if (!conf.isUnofficial && ["cc0", "cc-by"].includes(conf.license)) {
+    const msg = `You cannot use license "${conf.license}" with PCISIG Specs.`;
+
+    const non_cc = [...licenses.keys()]
+      .remove("cc0")
+      .remove("cc-by")
+      .map(key => `\`"${key}"\``)
+      .join(", ");
+
+    const hint = `Please set ${pcisig_docLink(
+      "license"
+    )} to one of ${non_cc} instead.`;
+    showError(msg, name, { hint });
   }
-  conf.licenseInfo = licenses[conf.license];
+  conf.licenseInfo = licenses.get(conf.license);
   if (["final"].includes(conf.license)) {
     if (conf.specChapter) {
       conf.license = conf.license.sub("final", "draft");
     }
   }
+
+  // Default include RDFa document metadata
+  if (conf.doRDFa === undefined) conf.doRDFa = true;
+
   conf.isBasic = conf.specStatus === "base";
   conf.isRegular = !conf.isBasic;
-  if (!conf.specStatus) {
-    pub("error", "Missing required configuration: `specStatus`");
-  }
+
   if (conf.isRegular && !conf.shortName) {
-    pub("error", "Missing required configuration: `shortName`");
+    const msg = "Missing required configuration: `shortName`";
+    showError(msg, name);
   }
   conf.title = document.title || "No Title";
   if (!conf.subtitle) conf.subtitle = "";
@@ -328,10 +395,12 @@ export function run(conf) {
     ? false
     : specTrackStatus.includes(conf.specStatus);
   if (conf.isSpecTrack && !conf.specRevision) {
-    pub("error", "Missing required configuration: `specRevision`");
+    const msg = "Missing required configuration: `specRevision`";
+    showError(msg, name);
   }
   if (conf.isSpecTrack && !conf.specDraftLevel) {
-    pub("error", "Missing required configuration: `specDraftLevel`");
+    const msg = "Missing required configuration: `specDraftLevel`";
+    showError(msg, name);
   }
   conf.isMemberSubmission = conf.specStatus === "member-submission";
   conf.isSubmission = conf.isMemberSubmission || conf.isTeamSubmission;
@@ -357,24 +426,24 @@ export function run(conf) {
   else if (conf.specStatus === "team-submission")
     publishSpace = "Spec/TeamSubmission";
   if (conf.isRegular)
-    conf.thisVersion = `https://sglaser.github.io/respec/${publishSpace}/${conf.publishDate.getUTCFullYear()}/${
+    conf.thisVersion = `https://pcisig.com/${publishSpace}/${conf.publishDate.getUTCFullYear()}/${
       conf.shortName
     }-${conf.maturity}-${concatDate(conf.publishDate)}/`;
   if (conf.isRegular)
-    conf.latestVersion = `https://sglaser.github.io/respec/${publishSpace}/${conf.shortName}/`;
+    conf.latestVersion = `https://pcisig.com/${publishSpace}/${conf.shortName}/`;
 
   if (conf.previousPublishDate) {
     if (!conf.previousStatus) {
-      pub("error", "`previousPublishDate` is set, but not `previousStatus`.");
+      const msg = "`previousPublishDate` is set, but not `previousStatus`.";
+      showError(msg, name);
     }
     if (!conf.previousRevision) {
-      pub("error", "`previousPublishDate` is set, but not `previousRevision`.");
+      const msg = "`previousPublishDate` is set, but not `previousRevision`.";
+      showError(msg, name);
     }
     if (!conf.previousDraftLevel) {
-      pub(
-        "error",
-        "`previousPublishDate` is set, but not `previousDraftLevel`."
-      );
+      const msg = "`previousPublishDate` is set, but not `previousDraftLevel`.";
+      showError(msg, name);
     }
 
     conf.previousPublishDate = validateDateAndRecover(
@@ -397,7 +466,7 @@ export function run(conf) {
     if (conf.isBasic) {
       conf.prevVersion = "";
     } else {
-      conf.prevVersion = `https://sglaser.github.io/respec/Spec/${conf.previousPublishDate.getUTCFullYear()}/${
+      conf.prevVersion = `https://pcisig.com/Spec/${conf.previousPublishDate.getUTCFullYear()}/${
         conf.shortName
       }-${pmat}-${concatDate(conf.previousPublishDate)}/`;
     }
@@ -408,26 +477,36 @@ export function run(conf) {
       !conf.noSpecTrack &&
       !conf.isNoTrack &&
       !conf.isSubmission
-    )
-      pub(
-        "error",
-        "Document on specification track but has no previous version:" +
-          " Add `previousStatus`, `previousRevision`, `previousDraftLevel`, and `previousPublishDate` to ReSpec's config."
-      );
+    ) {
+      const msg = "Document on track but no previous version.";
+      const hint = `Add ${pcisig_docLink("previousStatus")},
+      ${pcisig_docLink("previousRevision")}, and
+      ${pcisig_docLink("previousDraftLevel")}, and
+      ${pcisig_docLink("previousPublishDate")} to ReSpec's config.`;
+      showError(msg, name, { hint });
+    }
     if (!conf.prevVersion) conf.prevVersion = "";
   }
+
   if (!conf.wg) {
     if (!conf.editors || conf.editors.length === 0)
-      pub("error", "At least one editor is required");
+      showError("At least one editor is required", name);
   }
 
   const peopCheck = function (it) {
-    if (!it.name) pub("error", "All authors and editors must have a name.");
+    if (!it.name) {
+      const msg = "All authors and editors must have a `name` property.";
+      const hint = `See ${pcisig_docLink(
+        "person"
+      )} configuration for available options.`;
+      showError(msg, name, { hint });
+    }
     if (it.orcid) {
       try {
         it.orcid = normalizeOrcid(it.orcid);
       } catch (e) {
-        pub("error", `"${it.orcid}" is not an ORCID. ${e.message}`);
+        const msg = `"${it.orcid}" is not an ORCID. ${e.message}`;
+        showError(msg, name);
         // A failed orcid link could link to something outside of orcid,
         // which would be misleading.
         delete it.orcid;
@@ -435,7 +514,6 @@ export function run(conf) {
     }
   };
   if (!conf.formerEditors) conf.formerEditors = [];
-
   if (conf.editors) {
     conf.editors.forEach(peopCheck);
     for (let i = 0; i < conf.editors.length; i++) {
@@ -446,8 +524,10 @@ export function run(conf) {
       }
     }
   }
-  if (!conf.editors || conf.editors.length === 0)
-    pub("error", "At least one editor is required");
+  if (!conf.editors || conf.editors.length === 0) {
+    const msg = "At least one editor is required";
+    showError(msg, name);
+  }
   if (conf.formerEditors.length) {
     conf.formerEditors.forEach(peopCheck);
   }
@@ -457,31 +537,12 @@ export function run(conf) {
   conf.multipleEditors = conf.editors && conf.editors.length > 1;
   conf.multipleFormerEditors = conf.formerEditors.length > 1;
   conf.multipleAuthors = conf.authors && conf.authors.length > 1;
-  // eslint-disable-next-line no-unused-vars
-  (conf.alternateFormats || []).forEach((i, it) => {
-    if (!it.uri || !it.label)
-      pub("error", "All alternate formats must have a uri and a label.");
-  });
-  conf.multipleAlternates =
-    conf.alternateFormats && conf.alternateFormats.length > 1;
-  conf.alternatesHTML =
-    conf.alternateFormats &&
-    joinAnd(conf.alternateFormats, alt => {
-      let optional =
-        alt.hasOwnProperty("lang") && alt.lang ? `hreflang='${alt.lang}'` : "";
-      optional +=
-        alt.hasOwnProperty("type") && alt.type ? `type='${alt.type}'` : "";
-      return `<a rel='alternate' href='${alt.uri}' ${optional}>${alt.label}</a>`;
-    });
-  if (conf.bugTracker) {
-    if (conf.bugTracker.new && conf.bugTracker.open) {
-      conf.bugTrackerHTML = `<a href='${conf.bugTracker.new}'>${conf.l10n.file_a_bug}</a> ${conf.l10n.open_parens}<a href='${conf.bugTracker.open}'>${conf.l10n.open_bugs}</a>${conf.l10n.close_parens}`;
-    } else if (conf.bugTracker.open) {
-      conf.bugTrackerHTML = `<a href='${conf.bugTracker.open}'>open bugs</a>`;
-    } else if (conf.bugTracker.new) {
-      conf.bugTrackerHTML = `<a href='${conf.bugTracker.new}'>file a bug</a>`;
+  (conf.alternateFormats || []).forEach(it => {
+    if (!it.uri || !it.label) {
+      const msg = "All alternate formats must have a uri and a label.";
+      showError(msg, name);
     }
-  }
+  });
   if (conf.copyrightStart && conf.copyrightStart == conf.publishYear)
     conf.copyrightStart = "";
   for (const k in status2text) {
@@ -504,9 +565,11 @@ export function run(conf) {
   conf.isFinal =
     conf.isSpecTrack &&
     (conf.specStatus === "FINAL" || conf.specStatus === "PUB-FINAL");
-  if (conf.isFinal && !conf.errata)
-    pub("error", "Recommendations must have an errata link.");
-  conf.isUnofficial = conf.specStatus === "unofficial";
+  if (conf.isFinal && !conf.errata) {
+    const msg = "Recommendations must have an errata link.";
+    const hint = `Add an ${pcisig_docLink("errata")} URL to your respecConfig.`;
+    showError(msg, name, { hint });
+  }
   conf.prependPCISIG = !conf.isUnofficial;
   conf.isED =
     conf.specStatus === "ED" ||
@@ -532,17 +595,30 @@ export function run(conf) {
   conf.shortISODate = ISODate.format(conf.publishDate);
   // configuration done - yay!
 
-  // NOTE:
-  if (Array.isArray(conf.wg)) {
-    conf.multipleWGs = conf.wg.length > 1;
-    conf.wgHTML = joinAnd(conf.wg);
-  } else {
-    conf.multipleWGs = false;
-    conf.wgHTML = conf.wg;
-  }
+  const options = {
+    get multipleAlternates() {
+      return conf.alternateFormats && conf.alternateFormats.length > 1;
+    },
+    get alternatesHTML() {
+      return (
+        conf.alternateFormats &&
+        htmlJoinAnd(conf.alternateFormats, alt => {
+          const lang = alt.hasOwnProperty("lang") && alt.lang ? alt.lang : null;
+          const type = alt.hasOwnProperty("type") && alt.type ? alt.type : null;
+          return html`<a
+            rel="alternate"
+            href="${alt.uri}"
+            hreflang="${lang}"
+            type="${type}"
+            >${alt.label}</a
+          >`;
+        })
+      );
+    },
+  };
 
   // insert into document
-  const header = headersTmpl(conf);
+  const header = headersTmpl(conf, options);
   document.body.prepend(header);
   document.body.classList.add("h-entry");
 
@@ -550,19 +626,37 @@ export function run(conf) {
   const sotd =
     document.getElementById("sotd") || document.createElement("section");
   if (!conf.isNoTrack && !sotd.id) {
-    pub(
-      "error",
-      "A custom SotD paragraph is required for your type of document."
-    );
+    const msg =
+      "A custom SotD paragraph is required for your type of document.";
+    showError(msg, name);
   }
   sotd.id = sotd.id || "stod";
   sotd.classList.add("introductory");
 
+  const wgPotentialArray = [conf.wg, conf.wgURI];
+  if (
+    wgPotentialArray.some(item => Array.isArray(item)) &&
+    !wgPotentialArray.every(item => Array.isArray(item))
+  ) {
+    const msg =
+      "If either '`wg`' or '`wgURI`' is an array, they both have to be.";
+    showError(msg, name);
+  }
+
+  if (Array.isArray(conf.wg)) {
+    conf.multipleWGs = conf.wg.length > 1;
+    conf.wgHTML = htmlJoinAnd(conf.wg, (wg, idx) => {
+      return html`the <a href="${conf.wgURI[idx]}">${wg}</a>`;
+    });
+  } else {
+    conf.multipleWGs = false;
+    if (conf.wg) {
+      conf.wgHTML = html`the <a href="${conf.wgURI}">${conf.wg}</a>`;
+    }
+  }
   // invent toc if not already present
   if (!document.body.querySelector("#toc")) {
-    document
-      .querySelector("body")
-      .prepend('<nav id="toc"><section class="introductory"></section></nav>');
+    document.querySelector("body").prepend('<nav id="toc"></nav>');
   }
 
   // handle Revision History
@@ -570,33 +664,32 @@ export function run(conf) {
     document.body.querySelector("#revision-history") ||
     document.createElement("section");
   if (!conf.isNoTrack && !revision_history.id) {
-    pub(
-      "error",
-      "A Revision History section is required for your type of document."
-    );
+    const msg =
+      "A Revision History section is required for your type of document.";
+    showError(msg, name);
   }
   revision_history.id = revision_history.id || "revision-history";
   revision_history.classList.add("introductory");
 
   if (conf.specStatus === "PUB-CWG" && !conf.cwgReviewEnd) {
-    pub(
-      "error",
-      `'specStatus' is "PUB-CWG" but no 'cwgReviewEnd' is specified (needed to indicate end of the Cross Workgroup Review).`
-    );
+    const msg = "Status is PUB-CWG but no cwgReviewEnd is specified";
+    const hint = "Indicate when Cross Workgroup Review should end";
+    showError(msg, name, { hint });
   }
   conf.cwgReviewEnd = validateDateAndRecover(conf, "cwgReviewEnd");
   conf.humanCwgReviewEnd = PCISIGDate.format(conf.cwgReviewEnd);
 
   if (conf.specStatus === "PUB-MEM" && !conf.memReviewEnd) {
-    pub(
-      "error",
-      `'specStatus' is "PUB-MEM", but no 'memReviewEnd' is specified (needed to indicate end of the Member Review).`
-    );
+    const msg = "Status is PUB-MEM but no memReviewEnd is specified";
+    const hint = "Indicate when Member Review should end";
+    showError(msg, name, { hint });
   }
   conf.memReviewEnd = validateDateAndRecover(conf, "memReviewEnd");
   conf.humanMemReviewEnd = PCISIGDate.format(conf.memReviewEnd);
 
-  html.bind(sotd)`${populateSoTD(conf, sotd)}`;
+  if (!sotd.classList.contains("override")) {
+    html.bind(sotd)`${populateSoTD(conf, sotd)}`;
+  }
 
   // Requested by https://github.com/w3c/respec/issues/504
   // Makes a record of a few auto-generated things.
@@ -694,7 +787,7 @@ function normalizeOrcid(orcid) {
 
 /**
  * @param {Node} node
- * @return {node is Element}
+ * @return {boolean}
  */
 function isElement(node) {
   return node.nodeType === Node.ELEMENT_NODE;
