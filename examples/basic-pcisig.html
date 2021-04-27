@@ -7,12 +7,12 @@
     </title>
     <link href="../Spec/StyleSheets/2019/base.css"
           rel="stylesheet">
-    <script async="async"
+    <!--<script async="async"
           class="remove"
-          src="../builds/respec-pcisig.js"></script>
-    <!-- <script async
+          src="../builds/respec-pcisig.js"></script>-->
+     <script async
             class="remove"
-            src='../profiles/pcisig.js'></script> -->
+            src='../profiles/pcisig.js'></script>
     <script class="remove">
     const respecConfig = {
       specStatus: "WD",
@@ -26,9 +26,14 @@
         companyURL: "https://www.nvidia.com",
       }],
       wg: ["Protocol Workgroup (PWG)", "Electrical Workgroup (EWG)", "Serial Enabling Workgroup (SEG)"],
+      wgURI: ["https://pcisig.com", "https://pcisig.com", "https://pcisig.com"],
       shortName: "dahut",
       numberByChapter: "true",
       previousStatus: "none",
+      previousRevision: "none",
+      previousDraftLevel: "none",
+      prevStatus: "none",
+      noSpecTrack: "true",
       cssOverride: "../Spec/StyleSheets/2019/base.css"
     };
     </script>
@@ -511,6 +516,71 @@
         </pre>
         <figcaption>
           Graph for JSON Defined Capability Example
+        </figcaption>
+      </figure>
+      <pre class="json"
+           id="base-pre-for-fm-tlp-header-figs">
+              { "debug": false,
+             "preClass": "hide",
+             "cellwidth": 15,
+             "width" : 32,
+             "isMessage": true,
+             "defaultUnused" : "R",
+             "fields": [
+             {
+              "lsbyte": 0,
+              "lsbit": 0,
+              "msbyte": 0,
+              "msbit": 7,
+              "name": "Type",
+              "attr": "ro"
+            }, {
+              "lsbyte": 1,
+              "lsbit": 5,
+              "msbyte": 1,
+              "msbit": 7,
+              "name": "TC",
+              "attr": "ro"
+            },{
+                   "lsbyte": 1,
+                   "lsbit": 0,
+                   "msbyte": 1,
+                   "msbit": 4,
+                   "name": "OHC",
+                   "attr": "ro"
+                 }, {
+                   "lsbyte": 2,
+                   "lsbit": 5,
+                   "msbyte": 2,
+                   "msbit": 7,
+                   "name": "TS",
+                   "attr": "ro"
+                 }, {
+                   "lsbyte": 2,
+                   "lsbit": 2,
+                   "msbyte": 2,
+                   "msbit": 4,
+                   "name": "Attr",
+                   "attr": "ro"
+                 }, {
+                   "lsbyte": 3,
+                   "lsbit": 0,
+                   "msbyte": 2,
+                   "msbit": 1,
+                   "name": "Length",
+                   "attr": "ro"
+                 }]}
+       </pre>
+      <figure class="register"
+
+              id="first-dw-of-header-base"> 
+            <pre class="json"
+                 data-parents="base-pre-for-fm-tlp-header-figs">
+              { "debug": false
+                }
+       </pre>
+        <figcaption>
+          First DW of Header Base
         </figcaption>
       </figure>
       <figure class="message"
