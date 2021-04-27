@@ -9,7 +9,6 @@ import { SVG } from "../../js/deps/builds/svg.js";
 import { fetchAsset } from "../core/text-loader.js";
 import { html } from "../core/import-maps.js";
 // import { parse_table } from "./draw-csrs.js";
-import { pub } from "../core/pubsubhub.js";
 // import css from "text!../../src/pcisig/css/regpict.css";
 
 export const name = "pcisig/regpict";
@@ -1275,7 +1274,6 @@ function copyAttribute(dest, src, attribute, property) {
 }
 
 export async function run(conf) {
-  pub("start", "core/regpict");
   if (!conf.noRegpictCSS) {
     const css = await cssPromise;
     document.head.insertBefore(

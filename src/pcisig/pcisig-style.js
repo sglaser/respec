@@ -4,8 +4,12 @@
 // CONFIGURATION
 //  - specStatus: the short code for the specification's maturity level or type (required)
 
-import { createResourceHint, linkCSS, toKeyValuePairs } from "../core/utils.js";
-import { pub } from "../core/pubsubhub.js";
+import {
+  createResourceHint,
+  linkCSS,
+  showError,
+  toKeyValuePairs,
+} from "../core/utils.js";
 
 export const name = "pcisig/style";
 
@@ -92,9 +96,9 @@ function insertInitialElements(conf) {
 
 export function run(conf) {
   if (!conf.specStatus) {
-    const warn = "`respecConfig.specStatus` missing. Defaulting to 'base'.";
     conf.specStatus = "base";
-    pub("warn", warn);
+    const warn = "`respecConfig.specStatus` missing. Defaulting to 'base'.";
+    showError(warn, name);
   }
   insertInitialElements(conf);
 

@@ -8759,9 +8759,9 @@ for more information.`;
 
   function run$K(conf) {
     if (!conf.specStatus) {
-      const warn = "`respecConfig.specStatus` missing. Defaulting to 'base'.";
       conf.specStatus = "base";
-      pub("warn", warn);
+      const warn = "`respecConfig.specStatus` missing. Defaulting to 'base'.";
+      showError(warn, name$Q);
     }
     insertInitialElements(conf);
 
@@ -17290,6 +17290,7 @@ for more information.`;
   makeMorphable();
 
   // @ts-check
+  // import { parse_table } from "./draw-csrs.js";
   // import css from "text!../../src/pcisig/css/regpict.css";
 
   const name$B = "pcisig/regpict";
@@ -18470,7 +18471,6 @@ for more information.`;
   }
 
   async function run$y(conf) {
-    pub("start", "core/regpict");
     if (!conf.noRegpictCSS) {
       const css = await cssPromise$5;
       document.head.insertBefore(
