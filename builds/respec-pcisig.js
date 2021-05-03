@@ -17572,7 +17572,7 @@ for more information.`;
     json.rowLabelTop = pget_Number("rowLabelTop", 20); // top of text for regLabel
     json.cellValueTop = pget_Number("cellValueTop", 18); // top of text for regFieldValueInternal
     json.cellBitValueTop = pget_Number("cellBitValueTop", 22); // top of text for regFieldBitValue
-    json.cellNameTop = pget_Number("cellNameTop", 18); // top of text for regFieldNameInternal
+    json.cellNameTop = pget_Number("cellNameTop", 22); // top of text for regFieldNameInternal
 
     json.left_to_right = pget_Boolean("leftToRight", json.isMessage);
     json.forceFit = pget_Boolean(
