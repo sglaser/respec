@@ -10,6 +10,25 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const noop = () => {};
 
+function runnerLog(...args) {
+  try {
+    // Preferred: use the real runner if present
+    if (
+      typeof globalThis !== "undefined" &&
+      globalThis.runner &&
+      typeof globalThis.runner.log === "function"
+    ) {
+      globalThis.runner.log(...args);
+    } else {
+      // Fallback: just log to console
+      console.log("[runner]", ...args);
+    }
+  } catch {
+    // Absolutely last resort: don't let logging crash anything
+    console.log("[runner]", ...args);
+  }
+}
+
 /**
  * Fetches a ReSpec "src" URL, and writes the processed static HTML to an "out" path.
  * @param {string} src A URL or filepath that is the ReSpec source.
@@ -72,6 +91,34 @@ export async function toHTML(src, options = {}) {
 
   try {
     const page = await browser.newPage();
+  page.setDefaultTimeout(600000);
+  page.setDefaultNavigationTimeout(600000);
+  page.on("console", msg => console.log(`[browser ${msg.type()}] ${msg.text()}`));
+  //page.on("pageerror", err => console.error(`[browser pageerror] ${err.stack || err.message}`));
+  page.on("pageerror", err => {
+  const msg = String(
+    (err && (err.stack || err.message)) || err || ""
+  );
+
+  // Ignore the known Handlebars v4.7.8 "templates on string" bug
+  if (
+    msg.includes("Cannot create property 'templates' on string") &&
+    msg.includes("handlebars v4.7.8")
+  ) {
+    console.warn(
+      "[respecDocWriter] Ignoring known Handlebars templates pageerror:",
+      msg
+    );
+    return;
+  }
+
+  // Anything else is still fatal
+  console.error(err);
+  //reject(err);
+});
+  page.on("requestfailed", req => console.error(`[browser requestfailed] ${req.url()} ${req.failure()?.errorText}`));
+  page.on("response", res => { if (res.url().includes("respec-pcisig.js")) { console.log(`[browser response] ${res.url()} status=${res.status()}`); } });
+
 
     handleConsoleMessages(page, onError, onWarning);
     if (useLocal) {
@@ -79,6 +126,7 @@ export async function toHTML(src, options = {}) {
     }
 
     const url = new URL(src);
+  console.log(`[runner] Navigating to ${url.href}`);
     log(`Navigating to ${url}`);
     const response = await page.goto(url.href, { timeout: timer.remaining });
     if (
@@ -94,7 +142,7 @@ export async function toHTML(src, options = {}) {
 
     await checkIfReSpec(page);
     const version = await getVersion(page);
-    log(`Using ReSpec v${version.join(".")}`);
+    console.log(`Using ReSpec v${version.join(".")}`);
 
     log("Processing ReSpec document...");
     const html = await generateHTML(page, timer, version, url);
@@ -177,7 +225,8 @@ function isRespecScript(req) {
  * @returns {Promise<ReSpecVersion>}
  */
 async function getVersion(page) {
-  await page.waitForFunction(() => window.hasOwnProperty("respecVersion"));
+  //await page.console.log(`[runner] waiting for respecVersion`);
+  await page.waitForFunction(() => window.hasOwnProperty("respecVersion"), { timeout: 600000 });
   return await page.evaluate(() => {
     if (/^\D/.test(window.respecVersion)) {
       return [123456789, 0, 0];
