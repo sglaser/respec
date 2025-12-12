@@ -4,6 +4,7 @@
 // Modified from core/link-to-dfn.js to remove requirements that only data-for happens for webIDL
 import { run as runDataCite } from "../core/data-cite.js";
 import { pub } from "../core/pubsubhub.js";
+import { addId } from "../core/utils.js";
 
 export const name = "pcisig/link-to-dfn";
 
@@ -12,14 +13,18 @@ function ref_to(dfn) {
   return (dfn_id !== undefined) ? ("<a href=\"#" + encodeURIComponent(dfn_id) + "\">" + dfn_id + "</a>") : "";
 }
 
-export function run(conf, doc, cb) {
+export function run(conf) {
+  const doc = document;
   doc.normalize();
   let titles = {};
+  //Object.keys(conf.definitionMap).forEach(function (title) {
+  if (!conf.definitionMap) conf.definitionMap = {};
   Object.keys(conf.definitionMap).forEach(function (title) {
     titles[title] = {};
     conf.definitionMap[title].forEach(function (dfn) {
       if (dfn.attr("id") === undefined) {
-        dfn.makeID("dfn", title);
+        //dfn.makeID("dfn", title);
+        addId(dfn[0], "dfn", title);
       }
       const dfn_for = dfn.attr("data-dfn-for") || "";
       if (dfn_for in titles[title]) {
@@ -95,7 +100,8 @@ export function run(conf, doc, cb) {
         title +
         "' but no matching <dfn>.";
       pub("warn", error_msg);
-      $ant.makeID("error", error_msg);
+      //$ant.makeID("error", error_msg);
+      addId($ant[0], "error", error_msg);
       console.warn("Linkless element:", $ant[0]);
       //console.warn("Linkless Element Reference: "$("<span class=\"respec-error\"><a href=\"#" + $ant.attr("id") + "\">" + $ant.attr("id") + "</a></span>"));
     }
@@ -152,7 +158,7 @@ export function run(conf, doc, cb) {
       pub("end", "core/dfn/addDefinitionMap");
     }
 
-    cb();
+    //cb();
   })
   ;
 }

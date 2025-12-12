@@ -107,7 +107,8 @@ if (!document.head.querySelector("meta[name=viewport]")) {
 
 document.head.insertBefore(elements, document.head.firstChild);
 
-export function run(conf, doc, cb) {
+export function run(conf) {
+  const doc = document;
   if (!conf.specStatus) {
     const warn = "`respecConfig.specStatus` missing. Defaulting to 'base'.";
     conf.specStatus = "base";
@@ -185,5 +186,5 @@ export function run(conf, doc, cb) {
   } else {
     linkCSS(doc, finalStyleURL);
   }
-  cb();
+  //cb();
 }

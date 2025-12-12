@@ -10,7 +10,8 @@ import { pub } from "../core/pubsubhub.js";
 
 export const name = "pcisig/footnotes";
 
-export function run(conf, doc, cb) {
+export function run(conf) {
+  const doc = document;
 
   let $footnotes = $("span.footnote", doc);
   if ($footnotes.length) {
@@ -24,5 +25,5 @@ export function run(conf, doc, cb) {
         .prepend(input);
     });
   }
-  cb();
+  //cb();
 }

@@ -7,6 +7,9 @@ const path = require("path");
 const rollup = require("rollup");
 const alias = require("@rollup/plugin-alias");
 
+const commonjs = require("@rollup/plugin-commonjs");
+const resolve = require("@rollup/plugin-node-resolve");
+
 const rel = p => path.relative(process.cwd(), p);
 
 /**
@@ -59,8 +62,14 @@ const Builder = {
         alias({
           entries: [{ find: /^text!(.*)/, replacement: "./$1" }],
         }),
+        resolve(),
+        commonjs(),
+        //string({
+        //  include: [/\.runtime\.js$/, /\.svg$/, /respec-worker\.js$/],
+        //}),
         string({
-          include: [/\.runtime\.js$/, /\.svg$/, /respec-worker\.js$/],
+          include: [/(dfn-panel|highlight-vars)\.runtime\.js$/, /\.svg$/, /respec-worker\.js$/],
+          //include: [/(?<!handlebars)\.runtime\.js$/, /\.svg$/, /respec-worker\.js$/],
         }),
         !debug &&
           require("rollup-plugin-minify-html-literals").default({
@@ -89,6 +98,7 @@ const Builder = {
       format: "iife",
       sourcemap: true,
       banner: `window.respecVersion = "${version}";\n`,
+      name: "ReSpecPciSig",
     };
 
     return { inputOptions, outputOptions };

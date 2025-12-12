@@ -12,6 +12,7 @@ import { pub } from "../core/pubsubhub.js";
 import "../deps/jquery.js";
 import "../deps/jquery.svg.js";
 import css from "./css/regpict.css.js";
+import { addId } from "../core/utils.js";
 
 export const name = "pcisig/regpict";
 
@@ -899,7 +900,8 @@ function draw_regpict(divsvg, svg, reg) {
             {"class_": "regFieldName"});
           if ((!f.isUnused) && (f.lsb <= visibleMSB) && (f.msb >= visibleLSB)) {
             let $temp_dom = $("<span></span>").prependTo(divsvg);
-            let unique_id = $temp_dom.makeID("regpict", (f.id ? f.id : (figName + "-" + f.name)));
+            //let unique_id = $temp_dom.makeID("regpict", (f.id ? f.id : (figName + "-" + f.name)));
+            let unique_id = addId($temp_dom[0], "regpict", (f.id ? f.id : (figName + "-" + f.name)));
             $temp_dom.remove();
             svg.change(g, {id: unique_id});
           }
@@ -1148,7 +1150,8 @@ function parse_table(json, $tbl) {
         const lt = $tbl.attr("id").replace(/^tbl-/, "");
         $dfn.attr("data-dfn-for", lt);
         $dfn.attr("data-dfn-type", "field");
-        $dfn.last().makeID("field", lt + "-" + fieldName.toLowerCase());
+        //$dfn.last().makeID("field", lt + "-" + fieldName.toLowerCase());
+        addId($dfn.last()[0], "field", lt + "-" + fieldName.toLowerCase());
       }
       let $val = $("span.value:first", desc);
       let value = "";
@@ -1157,7 +1160,7 @@ function parse_table(json, $tbl) {
           value = JSON.parse($val.text().trim());
         } catch (e) {
           $tbl.before("<p class=\"issue\">Invalid data-json attribute in next span.value</p>");
-          $val.addclass("respec-error");
+          $val.addClass("respec-error");
         }
       }
       let validAttr = /^(rw|rws|ro|ros|rw1c|rw1cs|rw1s|rw1ss|wo|wos|hardwired|fixed|hwinit|rsvd|rsvdp|rsvdz|reserved|ignored|ign|unused|other)$/i;
@@ -1183,7 +1186,8 @@ function parse_table(json, $tbl) {
   return json;
 }
 
-export function run(conf, doc, cb) {
+export function run(conf) {
+  const doc = document;
 
   pub("start", "core/regpict");
   if (!(conf.noRegpictCSS)) {
@@ -1225,7 +1229,7 @@ export function run(conf, doc, cb) {
         $.extend(true, json, temp2);
       } catch (e) {
         $tbl.before("<p class=\"issue\">Invalid data-json attribute in next table</p>");
-        $tbl.addclass("respec-error");
+        $tbl.addClass("respec-error");
       }
     }
 
@@ -1329,7 +1333,7 @@ export function run(conf, doc, cb) {
           $.extend(true, json, temp2);
         } catch (e) {
           $fig.before("<p class=\"issue\">Invalid data-json attribute in next figure.register</p>");
-          $fig.addclass("respec-error");
+          $fig.addClass("respec-error");
         }
       }
 
@@ -1371,7 +1375,7 @@ export function run(conf, doc, cb) {
           $(this).hide();
         } catch (e) {
           $fig.before("<p class=\"issue\">Invalid JSON in pre.json, div.json, or span.json</p>");
-          $(this).addclass("respec-error");
+          $(this).addClass("respec-error");
         }
       });
 
@@ -1422,7 +1426,7 @@ export function run(conf, doc, cb) {
           $(me).hide();
         } catch (e) {
           $tbl.before("<p class=\"issue\">Invalid JSON in next merge_json</p>");
-          $(me).addclass("respec-error");
+          $(me).addClass("respec-error");
         }
       }
 
@@ -1433,7 +1437,8 @@ export function run(conf, doc, cb) {
           $.extend(true, temp_json, json);
           merge_json(temp_json, this);
           //$(this).hide();
-          $divsvg.last().makeID("svg", "render-" + index);
+          //$divsvg.last().makeID("svg", "render-" + index);
+          addId($divsvg.last()[0], "svg", "render-" + index);
           $divsvg.last().svg(function (svg) {
             draw_regpict(this, svg, temp_json);
           });
@@ -1478,5 +1483,5 @@ export function run(conf, doc, cb) {
       pub("end", "core/regpict figure.register id='" + $fig.attr("id") + "'");
     });
 
-  cb();
+  //cb();
 }

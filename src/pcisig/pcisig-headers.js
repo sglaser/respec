@@ -75,6 +75,7 @@ import { concatDate, joinAnd, ISODate } from "../core/utils.js";
 import hb from "../deps/handlebars.runtime.js";
 import { pub } from "../core/pubsubhub.js";
 import tmpls from "../deps/templates.js";
+import { html as hyperHTML } from "../core/import-maps.js";
 
 export const name = "pcisig/headers";
 
@@ -425,7 +426,8 @@ function validateDateAndRecover(conf, prop, fallbackDate = new Date()) {
   return new Date(ISODate.format(new Date()));
 }
 
-export function run(conf, doc, cb) {
+export function run(conf) {
+  const doc = document;
   // TODO: move to pcisig defaults
   if (!conf.logos) {
     conf.logos = [];
@@ -801,7 +803,7 @@ export function run(conf, doc, cb) {
     publishISODate: conf.publishISODate,
     generatedSubtitle: `${conf.longStatus} ${conf.publishHumanDate}`,
   });
-  cb();
+  //cb();
 }
 
 function populateSoTD(conf, sotd) {

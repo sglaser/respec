@@ -1,8 +1,10 @@
 // Module w3c/aria
 // Adds wai-aria landmarks and roles to entire document.
 // Introduced by Shane McCarron (shane@aptest.com) from the W3C PFWG
+import { addId } from "../core/utils.js";
 export const name = "w3c/aria";
-export function run(conf, doc, cb) {
+export function run(conf) {
+  const doc = document;
   // ensure head section is labeled
   if (!doc.body.hasAttribute("id")) {
     doc.body.setAttribute("id", "respecDocument");
@@ -33,14 +35,18 @@ export function run(conf, doc, cb) {
     element.setAttribute("aria-level", level);
     element.setAttribute("role", "heading");
     if (isIssue) {
-      $element.makeID("h", "issue" + issueCount++);
+      //$element.makeID("h", "issue" + issueCount++);
+      addId($element[0], "h", "issue" + issueCount++);
     } else if (isEdNote) {
-      $element.makeID("h", "ednote" + ednoteCount++);
+      //$element.makeID("h", "ednote" + ednoteCount++);
+      addId($element[0], "h", "ednote" + ednoteCount++);
     } else if (isImpnote) {
-      $element.makeID("h", "impnote" + impnoteCount++);
+      //$element.makeID("h", "impnote" + impnoteCount++);
+      addId($element[0], "h", "impnote" + impnoteCount++);
     } else {
-      $element.makeID("h", "note" + noteCount++);
+      //$element.makeID("h", "note" + noteCount++);
+      addId($element[0], "h", "note" + noteCount++);
     }
   });
-  cb();
+  //cb();
 }

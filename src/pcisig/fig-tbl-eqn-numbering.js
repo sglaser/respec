@@ -9,7 +9,8 @@ import { pub } from "../core/pubsubhub.js";
 
 export const name = "pcisig/fig-tbl-eqn-numbering";
 
-export function run(conf, doc, cb) {
+export function run(conf) {
+  const doc = document;
   if (conf.numberByChapter) {
     let $secs = $("body > section[data-secno]", doc);
     let figNumMap = new Map();
@@ -102,5 +103,5 @@ export function run(conf, doc, cb) {
       }
     });
   }
-  cb();
+  //cb();
 }

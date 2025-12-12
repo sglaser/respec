@@ -13,7 +13,8 @@ import { pub } from "../core/pubsubhub.js";
 
 export const name = "pcisig/xref-map";
 
-export function run(conf, doc, cb) {
+export function run(conf) {
+  const doc = document;
 
   if (conf.addXrefMap) {
     let $refs = $("a.tocxref", doc);
@@ -32,5 +33,5 @@ export function run(conf, doc, cb) {
       });
     }
   }
-  cb();
+  //cb();
 }

@@ -3,7 +3,8 @@
 
 export const name = "pcisig/pre-dfn";
 
-export function run(conf, doc, cb) {
+export function run(conf) {
+  const doc = document;
   "use strict";
   const dfnClass = ["dfn", "pin", "signal", "op", "opcode", "operation", "request", "response", "bit",
     "reply", "message", "msg", "command", "term", "field", "register",
@@ -17,5 +18,5 @@ export function run(conf, doc, cb) {
     });
     $dfn.attr("data-dfn-type", tag);   // core/dfn will convert this to data-dfn-type
   });
-  cb();
+  //cb();
 }

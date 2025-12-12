@@ -4,10 +4,12 @@
 // to be found as well as normalise the titles of tables.
 
 import { pub } from "../core/pubsubhub.js";
+import { addId, renameElement } from "../core/utils.js";
 
 export const name = "core/tables";
 
-export function run(conf, doc, cb) {
+export function run(conf) {
+  const doc = document;
 
   // process all tables
   let tblMap = {},
@@ -17,7 +19,8 @@ export function run(conf, doc, cb) {
     // set proper caption title
     let $cap = $(this),
       tit = $cap.text(),
-      id = $cap.parent().makeID("tbl", tit);
+      //id = $cap.parent().makeID("tbl", tit);
+      id = addId($cap.parent()[0], "tbl", tit);
     num++;
     $cap
       .wrapInner($("<span class='tbl-title'/>"))
@@ -26,8 +29,16 @@ export function run(conf, doc, cb) {
       .prepend($("<span class='tbl-tblno-decoration'>" + conf.l10n.tbl + "&nbsp;</span>"));
     tblMap[id] = $cap.contents();
     let $totCap = $cap.clone();
-    $totCap.find("a").renameElement("span").attr("class", "formerLink").removeAttr("href");
-    $totCap.find("dfn").renameElement("span");
+    //$totCap.find("a").renameElement("span").attr("class", "formerLink").removeAttr("href");
+    //$totCap.find("dfn").renameElement("span");
+    $totCap.find("a").each(function() {
+      const span = renameElement(this, "span");
+      span.className = "formerLink";
+      span.removeAttribute("href");
+    });
+    $totCap.find("dfn").each(function() {
+      renameElement(this, "span");
+    });
     $totCap.find("[id]").removeAttr("id");
     $totCap.find("span.footnote").remove();   // footnotes are in the caption, not #tot
     $totCap.find("span.issue").remove();      // issues are in the caption, not #tot
@@ -53,8 +64,16 @@ export function run(conf, doc, cb) {
       $a.addClass("tbl-ref");
       if ($a.html() === "") {
         let ref = tblMap[id].clone();
-        ref.find("a").renameElement("span").attr("class", "formerLink").removeAttr("href");
-        ref.find("dfn").renameElement("span");
+        //ref.find("a").renameElement("span").attr("class", "formerLink").removeAttr("href");
+        //ref.find("dfn").renameElement("span");
+        ref.find("a").each(function() {
+          const span = renameElement(this, "span");
+          span.className = "formerLink";
+          span.removeAttribute("href");
+        });
+        ref.find("dfn").each(function() {
+          renameElement(this, "span");
+        });
         ref.find("[id]").removeAttr("id");
         ref.find("span.footnote").remove();   // footnotes are in the caption, not references
         ref.find("span.issue").remove();      // issues are in the caption, not references
@@ -91,5 +110,5 @@ export function run(conf, doc, cb) {
     let $ul = $tot.find("ul");
     while (tot.length) $ul.append(tot.shift());
   }
-  cb();
+  //cb();
 }

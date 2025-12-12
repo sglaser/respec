@@ -5,10 +5,12 @@
 
 import { pub } from "../core/pubsubhub.js";
 import css from "./css/impnote.css.js";
+import { addId } from "../core/utils.js";
 //import { fetch as ghFetch, fetchIndex } from "core/github";
 export const name = "pcisig/impnote";
 
-export function run(conf, doc, cb) {
+export function run(conf) {
+  const doc = document;
   function handleIssues($ins) {
     $(doc).find("head link").first().before($("<style/>").text(css));
     $ins.each(function (i, inno) {
@@ -21,7 +23,8 @@ export function run(conf, doc, cb) {
           content: $inno.html(),
         };
       report.type = "impnote";
-      var impnoteid = $inno.makeID("impnote", $inno.attr("title"));
+      //var impnoteid = $inno.makeID("impnote", $inno.attr("title"));
+      var impnoteid = addId($inno[0], "impnote", $inno.attr("title"));
       // wrap
       if (!isInline) {
         var $div = $(
@@ -59,8 +62,8 @@ export function run(conf, doc, cb) {
   var $ins = $(".impnote");
   if ($ins.length) {
     handleIssues($ins);
-    cb();
+    //cb();
   } else {
-    cb();
+    //cb();
   }
 }

@@ -4,6 +4,7 @@ const modules = [
   // order is significant
   import("../src/core/location-hash.js"),
   import("../src/core/l10n.js"),
+  import("../src/pcisig/l10n.js"),
   import("../src/pcisig/pcisig-defaults.js"),
   import("../src/core/style.js"),
   import("../src/pcisig/pcisig-style.js"),
@@ -41,6 +42,10 @@ const modules = [
   import("../src/core/data-tests.js"),
   import("../src/pcisig/include-final-config.js"),
   import("../src/pcisig/empty-references.js"),
+  //import("../src/pcisig/l10n.js"),
 ];
 
-export default ReSpec.run(modules);
+//export default ReSpec.run(modules);
+Promise.all(modules)
+  .then(plugins => ReSpec.run(plugins))
+  .catch(err => console.error(err));

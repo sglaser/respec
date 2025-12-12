@@ -1,0 +1,30 @@
+// Module pcisig/l10n                                                                                                                                                                                         
+// Looks at the lang attribute on the root element and uses it to manage the config.l10n object so                                                                                                            
+// that other parts of the system can localise their text                                                                                                                                                     
+import { l10n } from "../core/l10n.js";                                                                                                                                                                       
+export const name = "pcisig/l10n";                                                                                                                                                                            
+const additions = {                                                                                                                                                                                           
+  en: {                                                                                                                                                                                                       
+    // Table strings                                                                                                                                                                                          
+    tbl: "Table ",                                                                                                                                                                                            
+    table_of_tbl: "List of Tables",                                                                                                                                                                           
+    // Equation strings                                                                                                                                                                                       
+    eqn: "Equation ",                                                                                                                                                                                         
+    table_of_eqn: "List of Equations",                                                                                                                                                                        
+    // Figure strings (if needed, though core/figures handles this)                                                                                                                                           
+    fig: "Figure ",                                                                                                                                                                                           
+    table_of_fig: "List of Figures",                                                                                                                                                                          
+    // Implementation note                                                                                                                                                                                    
+    impnote: "Implementation Note",                                                                                                                                                                           
+    // Bug tracker strings                                                                                                                                                                                    
+    file_a_bug: "file a bug",                                                                                                                                                                                 
+    open_parens: "(",                                                                                                                                                                                         
+    close_parens: ")",                                                                                                                                                                                        
+    open_bugs: "open bugs",                                                                                                                                                                                   
+  },                                                                                                                                                                                                          
+};                                                                                                                                                                                                            
+
+Object.keys(additions).forEach(key => {                                                                                                                                                                       
+  if (!l10n[key]) l10n[key] = {};                                                                                                                                                                             
+  Object.assign(l10n[key], additions[key]);                                                                                                                                                                   
+});    

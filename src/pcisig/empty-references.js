@@ -6,19 +6,21 @@ import { pub } from "../core/pubsubhub.js";
 
 export const name = "pcisig/empty-references";
 
-export function run(conf, doc, cb) {
+export function run(conf) {
+  const doc = document;
   // Update all anchors with empty content that are not in a table of contents
   $("a[href^='#']:empty():not(.tocxref)", doc).each(function() {
     let $a = $(this),
       id = $a.attr("href"),
       was = $a.attr("data-was");
     if (id) {
-      $a.addclass('respec-error');
+      //$a.addclass('respec-error');
+      $a.addClass('respec-error');
       $a.append("[["+ id);
       if (was) $a.append(" data-was=\"" + was + "\"");
       $a.append("]]");
     }
   });
 
-  cb();
+  //cb();
 }
