@@ -57,10 +57,17 @@ class SvgWrapper {
     return g;
   }
 
-  rect(parent, x, y, width, height, rx = 0, ry = 0, attrs = {}) {
+  /*rect(parent, x, y, width, height, rx = 0, ry = 0, attrs = {}) {
     const el = this.doc.createElementNS(SVG_NS, "rect");
     Object.assign(el, { x, y, width, height, rx, ry });
     applyAttrs(el, attrs);
+    parent.appendChild(el);
+    return el;
+  }*/
+
+  rect(parent, x, y, width, height, rx = 0, ry = 0, attrs = {}) {
+    const el = this.doc.createElementNS(SVG_NS, "rect");
+    applyAttrs(el, { x, y, width, height, rx, ry, ...attrs });
     parent.appendChild(el);
     return el;
   }

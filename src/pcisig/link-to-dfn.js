@@ -4,7 +4,7 @@
 // Modified from core/link-to-dfn.js to remove requirements that only data-for happens for webIDL
 import { run as runDataCite } from "../core/data-cite.js";
 import { pub } from "../core/pubsubhub.js";
-import { addId } from "../core/utils.js";
+import { addId, getLinkTargets } from "../core/utils.js";
 
 export const name = "pcisig/link-to-dfn";
 
@@ -48,11 +48,15 @@ export function run(conf) {
     let $ant = $(this);
     if ($ant.hasClass("externalDFN")) return;
     console.log("link-to-dfn:" + $ant.html());
-    let linkTargets = $ant.linkTargets();
+    //let linkTargets = $ant.linkTargets();
+    let linkTargets = getLinkTargets($ant[0]);
     let foundDfn = linkTargets.some(function (target) {
-      console.log("  linkTarget.title = '" + target.title + "' linkTarget.for_='" + target.for_ + "'");
-      if (titles[target.title] && titles[target.title][target.for_]) {
-        let dfn = titles[target.title][target.for_];
+      //console.log("  linkTarget.title = '" + target.title + "' linkTarget.for_='" + target.for_ + "'");
+      console.log("  linkTarget.title = '" + target.title + "' linkTarget.for='" + target.for + "'");
+      //if (titles[target.title] && titles[target.title][target.for_]) {
+      if (titles[target.title] && titles[target.title][target.for]) {
+        //let dfn = titles[target.title][target.for_];
+        let dfn = titles[target.title][target.for];
         if (dfn[0].dataset.cite) {
           $ant[0].dataset.cite = dfn[0].dataset.cite;
         } else {
@@ -90,7 +94,8 @@ export function run(conf) {
     });
 
     if (!foundDfn) {
-      let link_for = linkTargets[0].for_;
+      //let link_for = linkTargets[0].for_;
+      let link_for = linkTargets[0].for;
       let title = linkTargets[0].title;
       this.classList.add("respec-offending-element");
       this.title = "Linking error: no matching &lt;dfn&gt;";
