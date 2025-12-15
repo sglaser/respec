@@ -30,6 +30,7 @@ const modules = [
   import("../src/core/data-cite.js"),
   import("../src/pcisig/link-to-dfn.js"),
   import("../src/core/contrib.js"),
+  import("../src/core/anchor-expander.js"),
   import("../src/core/fix-headers.js"),
   import("../src/core/structure.js"),
   import("../src/core/informative.js"),

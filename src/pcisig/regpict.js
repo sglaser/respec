@@ -571,7 +571,19 @@ function draw_regpict(divsvg, svg, reg) {
     console.log(JSON.stringify(reg2, null, " "));
     console.log(" forceFit=" + forceFit + " left_to_right=" + left_to_right);
   }
-  $(divsvg).after(`<pre class="${preClass}">` + "\n" + JSON.stringify(reg2, null, " ") + "\n</pre>");
+  const hasHideClass = String(preClass || "")
+    .split(/\s+/)
+    .some(cls => cls === "hide");
+  const shouldShowPre = debug || (!hasHideClass && preClass);
+  if (shouldShowPre) {
+    const preStyle = hasHideClass ? ' style="display: none;"' : "";
+    $(divsvg).after(
+      `<pre class="${preClass}"${preStyle}>` +
+        "\n" +
+        JSON.stringify(reg2, null, " ") +
+        "\n</pre>"
+    );
+  }
 
   let g, p, f, text;
   let nextBitLine = cellTop + cellHeight + 20; //76;
@@ -1191,7 +1203,28 @@ export function run(conf) {
 
   pub("start", "core/regpict");
   if (!(conf.noRegpictCSS)) {
-    $(doc).find("head link").first().before($("<style id=\"regpict\"></style>").text(css));
+    const extraCss = `${css}
+figure .hide,
+figure pre.render,
+figure div.render,
+figure span.render,
+figure pre.json,
+figure div.json,
+figure span.json {
+  display: none !important;
+}`;
+    const $style = $(doc).find("#regpict");
+    if ($style.length) {
+      $style.text(extraCss);
+    } else {
+      const $head = $(doc).find("head");
+      const $regpictStyle = $("<style id=\"regpict\"></style>").text(extraCss);
+      if ($head.length) {
+        $head.prepend($regpictStyle);
+      } else {
+        $(doc.documentElement).prepend($regpictStyle);
+      }
+    }
   }
   let figNum = 1;
   $("figure.regipct-generated", doc).remove();
@@ -1268,7 +1301,7 @@ export function run(conf) {
     $divsvg.last().svg(function (svg) {
       json = draw_regpict(this, svg, json);
     });
-    $tbl.before(`<pre style="display: none;">${JSON.stringify(json, null, 2)}</pre>`);
+    // Debug JSON dump removed to prevent leaking into published docs.
     insert_unused_table_rows($tbl, json);
     pub("end", "core/regpict table id='" + $tbl.attr("id") + "'");
   });
@@ -1436,7 +1469,7 @@ export function run(conf) {
           let temp_json = {};
           $.extend(true, temp_json, json);
           merge_json(temp_json, this);
-          //$(this).hide();
+          $(this).hide();
           //$divsvg.last().makeID("svg", "render-" + index);
           addId($divsvg.last()[0], "svg", "render-" + index);
           $divsvg.last().svg(function (svg) {

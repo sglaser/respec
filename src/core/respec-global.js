@@ -13,6 +13,9 @@ export const name = "core/respec-global";
 
 class ReSpec {
   constructor() {
+    const toLoggable = err =>
+      typeof err?.toJSON === "function" ? err.toJSON() : err;
+
     /** @type {Promise<void>} */
     this._respecDonePromise = new Promise(resolve => {
       sub("end-all", () => resolve(), { once: true });
@@ -22,11 +25,11 @@ class ReSpec {
     this.warnings = [];
 
     sub("error", rsError => {
-      console.error(rsError, rsError.toJSON());
+      console.error(rsError, toLoggable(rsError));
       this.errors.push(rsError);
     });
     sub("warn", rsError => {
-      console.warn(rsError, rsError.toJSON());
+      console.warn(rsError, toLoggable(rsError));
       this.warnings.push(rsError);
     });
   }
