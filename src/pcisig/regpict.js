@@ -379,6 +379,11 @@ function draw_regpict(divsvg, svg, reg) {
   let figLeft = reg2.figLeft;
   let visibleLSB = reg2.visibleLSB;
   let visibleMSB = reg2.visibleMSB;
+  const addText = (el, val) => {
+    if (el && typeof el.textContent !== "undefined") {
+      el.textContent = String(val);
+    }
+  };
   let fields = reg2.fields;
   let isRegister = reg2.isRegister;
   let isMessage = reg2.isMessage;
@@ -596,10 +601,10 @@ function draw_regpict(divsvg, svg, reg) {
     let text_height = 18;            // Assume 18px: 1 row of text, 15px high
     g = svg.group();
     for (let b = 0; b < wordWidth; b++) {
-      text = svg.text(g, middleOf(b), cellTop - 4,
-        svg.createText().string(b), {
-          "class_": "regBitNumMiddle"
-        });
+      text = svg.text(g, middleOf(b), cellTop - 4, "", {
+        "class_": "regBitNumMiddle"
+      });
+      addText(text, b);
       if (debug) {
         console.log("bitnum-middle " + b + " at x=" + middleOf(b) + " y=" + (cellTop - 4));
       }
@@ -614,10 +619,11 @@ function draw_regpict(divsvg, svg, reg) {
       pos, cellTop,
       pos, cellTop - text_height,
       {"class_": "regBitNumLine"});
-    svg.text(g, (rightOf(-1.5) - 6),
+    text = svg.text(g, (rightOf(-1.5) - 6),
       cellTop - 4,
-      svg.createText().string("Byte Offset"),
+      "",
       {"class_": "regRowTagRight rowTagByteOffset"});
+    addText(text, "Byte Offset");
   } else if (isMessage) {
     // create header for message (+0/+1/+2/+3 then 4 of 7..0)
     let pos;
@@ -627,9 +633,10 @@ function draw_regpict(divsvg, svg, reg) {
 
       for (let bit = 0; bit < 8; bit++) {
         text = svg.text(g, middleOf(byte + bit), cellTop - 4,
-          svg.createText().string(7 - bit), {
+          "", {
             "class_": "regBitNumMiddle"
           });
+        addText(text, 7 - bit);
         if (debug) {
           console.log("bitnum-middle " + "+" + byte + "/" + bit + " at x=" + middleOf(bit + byte) + " y=" + (cellTop - 4));
         }
@@ -642,9 +649,10 @@ function draw_regpict(divsvg, svg, reg) {
 
       let byteHeight = cellTop - 4 - text_height;
       text = svg.text(g, leftOf(byte) + cellWidth * 4, byteHeight,
-        svg.createText().string(`+${byte / 8}`), {
+        "", {
           "class_": "regByteNumMiddle"
         });
+      addText(text, `+${byte / 8}`);
       if (debug) {
         console.log("bitnum-middle " + "+" + byte + " at x=" + leftOf(byte) + cellWidth * 4 + " y=" + byteHeight);
       }
@@ -670,9 +678,10 @@ function draw_regpict(divsvg, svg, reg) {
             //let bitnum_width;
             if (f.lsb === f.msb) {
               text = svg.text(g, middleOf(f.lsb), cellTop - 4,
-                svg.createText().string(f.lsb), {
+                "", {
                   "class_": "regBitNumMiddle"
                 });
+              addText(text, f.lsb);
               if (debug) {
                 console.log("bitnum-middle " + f.lsb + " at x=" + middleOf(f.lsb) + " y=" + (cellTop - 4));
               }
@@ -720,7 +729,8 @@ function draw_regpict(divsvg, svg, reg) {
                 }
               }
               text = svg.text(g, pos, cellTop - 4,
-                svg.createText().string(str), {"class_": cls});
+                "", {"class_": cls});
+              addText(text, str);
               if (debug) {
                 console.log("bitnum-lsb " + f.lsb + " at x=" + pos + " y=" + (cellTop - 4) + " left_to_right=" + left_to_right);
               }
@@ -764,7 +774,8 @@ function draw_regpict(divsvg, svg, reg) {
                 }
               }
               text = svg.text(g, pos, cellTop - 4,
-                svg.createText().string(str), {"class_": cls});
+                "", {"class_": cls});
+              addText(text, str);
               if (debug) {
                 console.log("bitnum-msb " + f.msb + " at x=" + pos + " y=" + (cellTop - 4) + " left_to_right=" + left_to_right);
               }
@@ -870,11 +881,31 @@ function draw_regpict(divsvg, svg, reg) {
             }
             p.line(0, -cellHeight, true);   // move back to start col
             p.close();
-            svg.path(g, p, {"class_": "regFieldBox"});
+            svg.path(g, p, {
+              "class_": "regFieldBox",
+              fill: "lightgray",
+              stroke: "black",
+              "stroke-width": 0.8,
+              opacity: 1.0
+            });
             svg.rect(g, leftCol1, cellTop + cellHeight * startRow, rightCol1 - leftCol1, cellHeight, 0, 0,
-              {"class_": "regFieldBox", "style": "display: none"});
+              {
+                "class_": "regFieldBox",
+                fill: "lightgray",
+                stroke: "black",
+                "stroke-width": 0.8,
+                opacity: 1.0,
+                "style": "display: none"
+              });
             svg.rect(g, leftCol2, cellTop + cellHeight * endRow, rightCol2 - leftCol2, cellHeight, 0, 0,
-              {"class_": "regFieldBox", "style": "display: none"});
+              {
+                "class_": "regFieldBox",
+                fill: "lightgray",
+                stroke: "black",
+                "stroke-width": 0.8,
+                opacity: 1.0,
+                "style": "display: none"
+              });
             for (j = 1; j <= (f.msb % wordWidth); j++) {
               let pos = (left_to_right ? leftOf(j) : rightOf(j));
               svg.line(g,
@@ -888,7 +919,13 @@ function draw_regpict(divsvg, svg, reg) {
             leftCol = left_to_right ? leftOf(f.lsb) : leftOf(f.msb);
             rightCol = left_to_right ? rightOf(f.msb) : rightOf(f.lsb);
             svg.rect(g, leftCol, cellTop + cellHeight * startRow, rightCol - leftCol, cellHeight, 0, 0,
-              {"class_": "regFieldBox"});
+              {
+                "class_": "regFieldBox",
+                fill: "lightgray",
+                stroke: "black",
+                "stroke-width": 0.8,
+                opacity: 1.0
+              });
             for (j = f.lsb + 1; j <= f.msb; j++) {
               if ((j >= visibleLSB) && (j <= visibleMSB)) {
                 let pos = (left_to_right ? leftOf(j) : rightOf(j));
@@ -902,14 +939,14 @@ function draw_regpict(divsvg, svg, reg) {
 
           if (isRegister) {
             text = svg.text(g, (leftOf(f.msb) + rightOf(f.lsb)) / 2, cellTop - bitWidthPos,
-              svg.createText().string((f.msb === f.lsb)
-                ? "1 bit"
-                : (f.msb - f.lsb + 1) + " bits"),
-              {"class_": "regBitWidth"});
+              "", {"class_": "regBitWidth"});
+            addText(text, (f.msb === f.lsb)
+              ? "1 bit"
+              : (f.msb - f.lsb + 1) + " bits");
           }
           text = svg.text(g, (leftOf(f.msb) + rightOf(f.lsb)) / 2, cellTop + cellNameTop + cellHeight * (startRow + (endRow - startRow) / 2),
-            svg.createText().string(f.name),
-            {"class_": "regFieldName"});
+            "", {"class_": "regFieldName"});
+          addText(text, f.name);
           if ((!f.isUnused) && (f.lsb <= visibleMSB) && (f.msb >= visibleLSB)) {
             let $temp_dom = $("<span></span>").prependTo(divsvg);
             //let unique_id = $temp_dom.makeID("regpict", (f.id ? f.id : (figName + "-" + f.name)));
@@ -922,28 +959,31 @@ function draw_regpict(divsvg, svg, reg) {
             if (Array.isArray(f.value) && f.value.length === (f.msb - f.lsb + 1)) {
               hasValue = true;
               for (i = 0; i < f.value.length; ++i) {
-                svg.text(g, (leftOf(f.lsb + i) + rightOf(f.lsb + i)) / 2,
+                text = svg.text(g, (leftOf(f.lsb + i) + rightOf(f.lsb + i)) / 2,
                   cellTop + cellBitValueTop + cellHeight * startRow,
-                  svg.createText().string(f.value[i]),
+                  "",
                   {
                     "class_": ("regFieldValue regFieldBitValue" +
                       " regFieldBitValue-" + i.toString() +
                       ((i === (f.value.length - 1)) ?
                         " regFieldBitValue-msb" : ""))
                   });
+                addText(text, f.value[i]);
               }
             } else if ((typeof(f.value) === "string") || (f.value instanceof String)) {
               if (f.value.length > 0) {
                 hasValue = true;
-                svg.text(g, (leftOf(f.msb) + rightOf(f.lsb)) / 2,
+                text = svg.text(g, (leftOf(f.msb) + rightOf(f.lsb)) / 2,
                   cellTop + (f.msb === f.lsb ? cellBitValueTop : cellValueTop) + cellHeight * startRow,
-                  svg.createText().string(f.value),
+                  "",
                   {"class_": "regFieldValue"});
+                addText(text, f.value);
               }
             } else {
-              svg.text(g, (leftOf(f.msb) + rightOf(f.lsb)) / 2, cellTop + cellValueTop + cellHeight * startRow,
-                svg.createText().string("INVALID VALUE"),
+              text = svg.text(g, (leftOf(f.msb) + rightOf(f.lsb)) / 2, cellTop + cellValueTop + cellHeight * startRow,
+                "",
                 {"class_": "svg_error"});
+              addText(text, "INVALID VALUE");
             }
           }
           let text_width = 0; // text.clientWidth;
@@ -1021,22 +1061,22 @@ function draw_regpict(divsvg, svg, reg) {
           if ((f.msb > visibleLSB) && (f.lsb < visibleLSB)) {
             if (left_to_right) {
               svg.text(g, leftOf(0) - 2, cellTop + cellNameTop + cellHeight * startRow,
-                svg.createText().string("..."),
+                "...",
                 {"class_": "regFieldExtendsLeft"});
             } else {
               svg.text(g, rightOf(0) + 2, cellTop + cellNameTop + cellHeight * startRow,
-                svg.createText().string("..."),
+                "...",
                 {"class_": "regFieldExtendsRight"});
             }
           }
           if ((f.msb > visibleMSB) && (f.lsb < visibleMSB)) {
             if (left_to_right) {
               svg.text(g, rightOf(f.msb) + 2, cellTop + cellNameTop + cellHeight * startRow,
-                svg.createText().string("..."),
+                "...",
                 {"class_": "regFieldExtendsRight"});
             } else {
               svg.text(g, leftOf(f.msb) - 2, cellTop + cellNameTop + cellHeight * startRow,
-                svg.createText().string("..."),
+                "...",
                 {"class_": "regFieldExtendsLeft"});
             }
           }
@@ -1051,10 +1091,11 @@ function draw_regpict(divsvg, svg, reg) {
     for (let i = 0; i < width; i += wordWidth) {
       let rowLabel = isMemoryBlock ? ("+" + Math.floor(i / 8).hex(3, "0") + "h") :
         ("Byte " + (i / 8) + " → ");
-      svg.text(g2, left_to_right ? (leftOf(0) - 8) : (rightOf(-1.5) + 2),
+      text = svg.text(g2, left_to_right ? (leftOf(0) - 8) : (rightOf(-1.5) + 2),
         cellTop + rowLabelTop + cellHeight * (i / wordWidth),
-        svg.createText().string(rowLabel),
+        "",
         {"class_": left_to_right ? "regRowTagLeft" : "regRowTagRight"});
+      addText(text, rowLabel);
     }
   }
 
