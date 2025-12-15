@@ -1405,7 +1405,7 @@ figure span.json {
         try {
           temp2 = JSON.parse(this.textContent);
           $.extend(true, json, temp2);
-          $(this).hide();
+          $(this).remove();
         } catch (e) {
           $fig.before("<p class=\"issue\">Invalid JSON in pre.json, div.json, or span.json</p>");
           $(this).addClass("respec-error");
@@ -1446,7 +1446,7 @@ figure span.json {
               merge_json(result, $temp[0]);
               //$.extend(true, result, JSON.parse($temp[0].textContent));
               // console.log("result=" + JSON.stringify(result, null, 2));
-              $temp.hide();
+              $temp.remove();
             }
           }
         }
@@ -1456,7 +1456,7 @@ figure span.json {
           temp2 = JSON.parse(me.textContent);
           $.extend(true, result, temp2);
           // console.log("result=" + JSON.stringify(result, null, 2));
-          $(me).hide();
+          $(me).remove();
         } catch (e) {
           $tbl.before("<p class=\"issue\">Invalid JSON in next merge_json</p>");
           $(me).addClass("respec-error");
@@ -1469,7 +1469,7 @@ figure span.json {
           let temp_json = {};
           $.extend(true, temp_json, json);
           merge_json(temp_json, this);
-          $(this).hide();
+          $(this).remove();
           //$divsvg.last().makeID("svg", "render-" + index);
           addId($divsvg.last()[0], "svg", "render-" + index);
           $divsvg.last().svg(function (svg) {
