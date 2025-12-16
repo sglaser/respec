@@ -188,7 +188,6 @@ export function run(conf) {
   }
   // Ensure section references render the section symbol
   const secRefStyle = doc.createElement("style");
-  secRefStyle.classList.add("removeOnSave");
   secRefStyle.textContent = ".sec-ref::before { content: \"§\\00a0\"; }";
   doc.head.appendChild(secRefStyle);
   //cb();
