@@ -1113,7 +1113,7 @@ function draw_regpict(divsvg, svg, reg) {
     viewBox: "0 0 " + max_text_width + " " + (Math.ceil(nextBitLine + cellHeight * rowOf(width - 1)) + ""),
     "xmlns:xlink": "http://www.w3.org/1999/xlink",
     "class_": svgClass.join(" "),
-    style: "font-family: 'Source Sans Pro', Calibri, 'Gill Sans', 'Gill Sans MT', 'Myriad Pro', Myriad, 'DejaVu Sans Condensed', 'Helvetica Neue', Arial, sans-serif;"
+    style: "font-size: 12px;"
   });
   return reg2;
 }
