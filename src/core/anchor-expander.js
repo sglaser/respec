@@ -9,7 +9,15 @@ export function run() {
   const anchorElements = document.querySelectorAll(
     "a[href^='#']:not(.self-link):not([href$='the-empty-string'])"
   );
-  const anchors = [...anchorElements].filter(a => a.textContent.trim() === "");
+  const anchors = [...anchorElements].filter(a => {
+    const txt = a.textContent.trim();
+    if (txt === "") return true;
+    if (/^\[\[#.+\]\]$/.test(txt)) {
+      a.textContent = "";
+      return true;
+    }
+    return false;
+  });
   for (const a of anchors) {
     const id = a.getAttribute("href").slice(1);
     const matchingElement = document.getElementById(id);
@@ -146,8 +154,6 @@ function processHeading(heading, a) {
     node => !node.classList || !node.classList.contains("self-link")
   );
   a.append(...children);
-  if (hadSelfLink) a.prepend("за");
-  //a.prepend("за");
   a.classList.add("sec-ref");
   // Trim stray whitespace of the last text node (see bug #3265).
   if (a.lastChild.nodeType === Node.TEXT_NODE) {
