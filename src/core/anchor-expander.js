@@ -146,7 +146,8 @@ function processHeading(heading, a) {
     node => !node.classList || !node.classList.contains("self-link")
   );
   a.append(...children);
-  if (hadSelfLink) a.prepend("┬з\u00A0");
+  if (hadSelfLink) a.prepend("за");
+  //a.prepend("за");
   a.classList.add("sec-ref");
   // Trim stray whitespace of the last text node (see bug #3265).
   if (a.lastChild.nodeType === Node.TEXT_NODE) {
@@ -185,3 +186,5 @@ function localize(matchingElement, newElement) {
     newElement.setAttribute(attrName, matchingClosest.getAttribute(attrName));
   }
 }
+
+
