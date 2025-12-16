@@ -1113,7 +1113,7 @@ function draw_regpict(divsvg, svg, reg) {
     viewBox: "0 0 " + max_text_width + " " + (Math.ceil(nextBitLine + cellHeight * rowOf(width - 1)) + ""),
     "xmlns:xlink": "http://www.w3.org/1999/xlink",
     "class_": svgClass.join(" "),
-    style: "font-size: 12px;"
+    style: "font-size: 11px;"
   });
   return reg2;
 }
