@@ -15,6 +15,9 @@ export function run() {
     const matchingElement = document.getElementById(id);
     if (!matchingElement) {
       a.textContent = a.getAttribute("href");
+      const msg = `Couldn't expand inline reference. The id "${id}" is not in the document.`;
+      const title = `No matching id in document: ${id}.`;
+      showError(msg, name, { title, elements: [a] });
       continue;
     }
     switch (matchingElement.localName) {
