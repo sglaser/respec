@@ -52,6 +52,7 @@ const pcisigDefaults = {
   license: "pcisig-draft",
   specStatus: "WD",
   logos: [],
+  numberByChapter: true,
 };
 
 /*function computeProps(conf) {

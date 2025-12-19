@@ -572,6 +572,27 @@ function draw_regpict(divsvg, svg, reg) {
     return (isMultiRow && (i >= 0)) ? Math.floor(i / wordWidth) : 0;
   }
 
+  function measureText(textEl, fallbackStr) {
+    let width = 0;
+    let height = 0;
+    try {
+      const box = textEl.getBBox();
+      if (box && isFinite(box.width) && isFinite(box.height)) {
+        width = box.width;
+        height = box.height;
+      }
+    } catch (e) {
+      // getBBox can throw if the element isn't fully laid out yet.
+    }
+    if (width === 0) {
+      width = (fallbackStr || "").length * 8; // rough estimate per character
+    }
+    if (height === 0) {
+      height = textEl.clientHeight || 18; // assume 18px if unknown
+    }
+    return { width, height };
+  }
+
   if (debug) {
     console.log(JSON.stringify(reg2, null, " "));
     console.log(" forceFit=" + forceFit + " left_to_right=" + left_to_right);
@@ -966,17 +987,8 @@ function draw_regpict(divsvg, svg, reg) {
               addText(text, "INVALID VALUE");
             }
           }
-          let text_width = 0; // text.clientWidth;
-          if (text_width === 0) {
-            // bogus fix to guess width when clientWidth is 0 (e.g. IE10)
-            text_width = f.name.length * 8; // Assume 8px per character on average for 15px height chars
-          }
-          let text_height = text.clientHeight;
-          if (text_height === 0) {
-            // bogus fix to guess width when clientHeight is 0 (e.g. IE10)
-            text_height = 18;             // Assume 18px: 1 row of text, 15px high
-          }
-          let boxLeft = leftOf(left_to_right ? max(visibleLSB, f.lsb) : min(visibleMSB, f.msb));
+          const { width: text_width, height: text_height } = measureText(text, f.name);
+                    let boxLeft = leftOf(left_to_right ? max(visibleLSB, f.lsb) : min(visibleMSB, f.msb));
           let boxRight = rightOf(left_to_right ? min(visibleMSB, f.msb) : max(visibleLSB, f.lsb));
           let boxTop = cellTop + cellHeight * startRow;
           if (debug) {

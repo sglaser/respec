@@ -11,7 +11,11 @@ export const name = "pcisig/fig-tbl-eqn-numbering";
 
 export function run(conf) {
   const doc = document;
-  const numberByChapter = conf.numberByChapter !== false;
+  const numberByChapterRaw = conf.numberByChapter;
+  const numberByChapter = !(
+    typeof numberByChapterRaw !== "undefined" &&
+    String(numberByChapterRaw).toLowerCase() === "false"
+  );
   if (numberByChapter) {
     let $secs = $("body > section[data-secno]", doc);
     let figNumMap = new Map();
@@ -24,7 +28,7 @@ export function run(conf) {
 
       // Process Figure Captions, populating figNumMap
       first = 0;
-      $("figcaption > span.figno", $sec).each(function () {
+      $("figcaption .figno", $sec).each(function () {
           let $figno_elem = $(this);
           let figno = parseInt($figno_elem.text(), 10);
           if (first === 0) first = figno;
