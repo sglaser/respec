@@ -7,6 +7,7 @@ import {
   addId,
   getIntlData,
   getLinkTargets,
+  norm,
   showError,
   showWarning,
   wrapInner,
@@ -184,7 +185,17 @@ function findMatchingDfn(anchor, titleToDfns) {
       titleToDfns.has(target.title) &&
       titleToDfns.get(target.title).has(target.for)
   );
-  if (!target) return;
+  if (!target) {
+    // Legacy hotlink support: match by text when there is exactly one definition
+    const legacyTitle = norm(anchor.textContent);
+    if (definitionMap.has(legacyTitle)) {
+      const dfns = definitionMap.get(legacyTitle);
+      if (dfns.size === 1) {
+        return [...dfns][0];
+      }
+    }
+    return;
+  }
 
   const dfnsByType = titleToDfns.get(target.title).get(target.for);
   const { linkType } = anchor.dataset;
@@ -237,6 +248,12 @@ function processAnchor(anchor, dfn, titleToDfns) {
   if (!anchor.hasAttribute("data-link-type")) {
     anchor.dataset.linkType = "idl" in dfn.dataset ? "idl" : "dfn";
   }
+  // propagate selected dfn classes for styling legacy hotlinks
+  ["field", "value"].forEach(cls => {
+    if (dfn.classList.contains(cls)) {
+      anchor.classList.add(cls);
+    }
+  });
   if (isCode(dfn)) {
     wrapAsCode(anchor, dfn);
   }

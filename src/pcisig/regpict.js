@@ -987,8 +987,23 @@ function draw_regpict(divsvg, svg, reg) {
               addText(text, "INVALID VALUE");
             }
           }
-          const { width: text_width, height: text_height } = measureText(text, f.name);
-                    let boxLeft = leftOf(left_to_right ? max(visibleLSB, f.lsb) : min(visibleMSB, f.msb));
+          // measure and shrink text if needed to fit inside the box
+          let { width: text_width, height: text_height } = measureText(text, f.name);
+          const boxWidth = rightOf(left_to_right ? min(visibleMSB, f.msb) : max(visibleLSB, f.lsb)) -
+            leftOf(left_to_right ? max(visibleLSB, f.lsb) : min(visibleMSB, f.msb));
+          const boxHeight = cellHeight - cellInternalHeight;
+          const safeW = boxWidth - 2;
+          const safeH = boxHeight - 2;
+          if (safeW > 0 && safeH > 0 && (text_width > safeW || text_height > safeH)) {
+            const scaleW = safeW / text_width;
+            const scaleH = safeH / text_height;
+            const scale = Math.min(1, scaleW, scaleH);
+            if (scale < 1) {
+              svg.change(text, { "font-size": `${scale.toFixed(3)}em` });
+              ({ width: text_width, height: text_height } = measureText(text, f.name));
+            }
+          }
+          let boxLeft = leftOf(left_to_right ? max(visibleLSB, f.lsb) : min(visibleMSB, f.msb));
           let boxRight = rightOf(left_to_right ? min(visibleMSB, f.msb) : max(visibleLSB, f.lsb));
           let boxTop = cellTop + cellHeight * startRow;
           if (debug) {

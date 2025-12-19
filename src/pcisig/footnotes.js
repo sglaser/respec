@@ -13,6 +13,16 @@ export const name = "pcisig/footnotes";
 export function run(conf) {
   const doc = document;
 
+  const styleId = "pcisig-footnotes-style";
+  if (!doc.getElementById(styleId)) {
+    const style = doc.createElement("style");
+    style.id = styleId;
+    style.textContent = `
+      span.footnote > input { display: none; }
+    `;
+    doc.head.prepend(style);
+  }
+
   let $footnotes = $("span.footnote", doc);
   if ($footnotes.length) {
     $footnotes.each(function (index) {
