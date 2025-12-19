@@ -11,7 +11,8 @@ export const name = "pcisig/fig-tbl-eqn-numbering";
 
 export function run(conf) {
   const doc = document;
-  if (conf.numberByChapter) {
+  const numberByChapter = conf.numberByChapter !== false;
+  if (numberByChapter) {
     let $secs = $("body > section[data-secno]", doc);
     let figNumMap = new Map();
     let tblNumMap = new Map();

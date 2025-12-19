@@ -881,29 +881,15 @@ function draw_regpict(divsvg, svg, reg) {
             }
             p.line(0, -cellHeight, true);   // move back to start col
             p.close();
-            svg.path(g, p, {
-              "class_": "regFieldBox",
-              fill: "lightgray",
-              stroke: "black",
-              "stroke-width": 0.8,
-              opacity: 1.0
-            });
+            svg.path(g, p, {"class_": "regFieldBox"});
             svg.rect(g, leftCol1, cellTop + cellHeight * startRow, rightCol1 - leftCol1, cellHeight, 0, 0,
               {
                 "class_": "regFieldBox",
-                fill: "lightgray",
-                stroke: "black",
-                "stroke-width": 0.8,
-                opacity: 1.0,
                 "style": "display: none"
               });
             svg.rect(g, leftCol2, cellTop + cellHeight * endRow, rightCol2 - leftCol2, cellHeight, 0, 0,
               {
                 "class_": "regFieldBox",
-                fill: "lightgray",
-                stroke: "black",
-                "stroke-width": 0.8,
-                opacity: 1.0,
                 "style": "display: none"
               });
             for (j = 1; j <= (f.msb % wordWidth); j++) {
@@ -919,13 +905,7 @@ function draw_regpict(divsvg, svg, reg) {
             leftCol = left_to_right ? leftOf(f.lsb) : leftOf(f.msb);
             rightCol = left_to_right ? rightOf(f.msb) : rightOf(f.lsb);
             svg.rect(g, leftCol, cellTop + cellHeight * startRow, rightCol - leftCol, cellHeight, 0, 0,
-              {
-                "class_": "regFieldBox",
-                fill: "lightgray",
-                stroke: "black",
-                "stroke-width": 0.8,
-                opacity: 1.0
-              });
+              {"class_": "regFieldBox"});
             for (j = f.lsb + 1; j <= f.msb; j++) {
               if ((j >= visibleLSB) && (j <= visibleMSB)) {
                 let pos = (left_to_right ? leftOf(j) : rightOf(j));
@@ -1112,9 +1092,7 @@ function draw_regpict(divsvg, svg, reg) {
     width: Math.ceil(scale * max_text_width) + "",
     viewBox: "0 0 " + max_text_width + " " + (Math.ceil(nextBitLine + cellHeight * rowOf(width - 1)) + ""),
     "xmlns:xlink": "http://www.w3.org/1999/xlink",
-    "class_": svgClass.join(" "),
-    //style: "font-size: 11px;"
-    style: "font-size: 0.5em;"
+    "class_": svgClass.join(" ")
   });
   return reg2;
 }
