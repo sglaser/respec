@@ -4,3 +4,8 @@
 html, body, p, li, h1, h2, h3, h4, h5, h6 {
   font-family: "Source Sans 3", "Source Sans Pro", "DejaVu Sans", Arial, sans-serif !important;
 }
+
+/* Catch other elements that set their own font-family */
+body *:not(code):not(pre):not(kbd):not(samp) {
+  font-family: "Source Sans 3", "Source Sans Pro", "DejaVu Sans", Arial, sans-serif !important;
+}
