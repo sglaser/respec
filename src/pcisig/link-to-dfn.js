@@ -5,6 +5,7 @@
 import { run as runDataCite } from "../core/data-cite.js";
 import { pub } from "../core/pubsubhub.js";
 import { addId, getLinkTargets, norm } from "../core/utils.js";
+import { definitionMap as coreDefinitionMap } from "../core/dfn-map.js";
 
 export const name = "pcisig/link-to-dfn";
 
@@ -17,8 +18,14 @@ export function run(conf) {
   const doc = document;
   doc.normalize();
   let titles = {};
-  //Object.keys(conf.definitionMap).forEach(function (title) {
-  if (!conf.definitionMap) conf.definitionMap = {};
+  // Populate from the core definitionMap (CaseInsensitiveMap) into the legacy
+  // object/array shape this module expects.
+  if (!conf.definitionMap || Object.keys(conf.definitionMap).length === 0) {
+    conf.definitionMap = {};
+    for (const [title, dfns] of coreDefinitionMap) {
+      conf.definitionMap[title] = Array.from(dfns).map(dfn => $(dfn));
+    }
+  }
   Object.keys(conf.definitionMap).forEach(function (title) {
     titles[title] = {};
     conf.definitionMap[title].forEach(function (dfn) {
@@ -47,12 +54,9 @@ export function run(conf) {
   $("a:not([href]):not([data-cite]):not(.logo)").each(function () {
     let $ant = $(this);
     if ($ant.hasClass("externalDFN")) return;
-    console.log("link-to-dfn:" + $ant.html());
     //let linkTargets = $ant.linkTargets();
     let linkTargets = getLinkTargets($ant[0]);
     let foundDfn = linkTargets.some(function (target) {
-      //console.log("  linkTarget.title = '" + target.title + "' linkTarget.for_='" + target.for_ + "'");
-      console.log("  linkTarget.title = '" + target.title + "' linkTarget.for='" + target.for + "'");
       //if (titles[target.title] && titles[target.title][target.for_]) {
       if (titles[target.title] && titles[target.title][target.for]) {
         //let dfn = titles[target.title][target.for_];
