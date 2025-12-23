@@ -91,11 +91,12 @@ export async function run(conf) {
         possibleExternalLinks.push(anchor);
       }
     } else {
-      if (anchor.dataset.cite === "") {
-        badLinks.push(anchor);
-      } else {
-        possibleExternalLinks.push(anchor);
+      // If there's no matching dfn and no explicit cite, quietly unwrap (legacy behavior).
+      if (!anchor.dataset.cite || anchor.dataset.cite === "") {
+        anchor.replaceWith(...anchor.childNodes);
+        continue;
       }
+      possibleExternalLinks.push(anchor);
     }
   }
 
