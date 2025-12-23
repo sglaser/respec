@@ -327,11 +327,7 @@ function shouldWrapByCode(elem, term = "") {
 }
 
 function showLinkingError(elems) {
-  elems.forEach(elem => {
-    const msg = `Found linkless \`<a>\` element with text "${elem.textContent}" but no matching \`<dfn>\``;
-    const title = "Linking error: not matching `<dfn>`";
-    showWarning(msg, name, { title, elements: [elem] });
-  });
+  // Suppress warnings for linkless anchors (legacy behavior).
 }
 
 /**

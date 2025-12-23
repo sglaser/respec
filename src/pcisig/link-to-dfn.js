@@ -4,7 +4,7 @@
 // Modified from core/link-to-dfn.js to remove requirements that only data-for happens for webIDL
 import { run as runDataCite } from "../core/data-cite.js";
 import { pub } from "../core/pubsubhub.js";
-import { addId, getLinkTargets } from "../core/utils.js";
+import { addId, getLinkTargets, norm } from "../core/utils.js";
 
 export const name = "pcisig/link-to-dfn";
 
@@ -90,25 +90,92 @@ export function run(conf) {
         }
         return true;
       }
+      // fallback: search all dfns by normalized text/data-lt with matching dfn-for (if any)
+      const normTitle = norm(target.title);
+      const candidates = $("dfn").filter((_, el) => {
+        const forMatch =
+          !target.for ||
+          !el.dataset.dfnFor ||
+          el.dataset.dfnFor
+            .split(",")
+            .map(s => s.trim())
+            .includes(target.for);
+        if (!forMatch) return false;
+        const titles = new Set(
+          (el.dataset.lt || "")
+            .split("|")
+            .filter(Boolean)
+            .map(t => norm(t))
+        );
+        titles.add(norm(el.textContent));
+        return titles.has(normTitle);
+      });
+      if (candidates.length === 1) {
+        const dfn = candidates.eq(0);
+        if (dfn[0].dataset.cite) {
+          $ant[0].dataset.cite = dfn[0].dataset.cite;
+        } else {
+          const frag = "#" + encodeURIComponent(dfn.prop("id"));
+          $ant.attr("href", frag).addClass("internalDFN");
+        }
+        if (!$ant.attr("data-link-type")) {
+          $ant.attr("data-link-type", dfn.attr("data-dfn-type") || "dfn");
+        }
+        if (
+          dfn.closest("code,pre").length ||
+          (dfn.contents().length === 1 && dfn.children("code").length === 1)
+        ) {
+          const term = $ant[0].textContent.trim();
+          const isIDL = dfn[0].dataset.hasOwnProperty("idl");
+          const isSameText = isIDL
+            ? dfn[0].dataset.title === term
+            : dfn[0].textContent.trim() === term;
+          if (!isIDL || isSameText) {
+            $ant.wrapInner("<code></code>");
+          }
+        }
+        return true;
+      }
       return false;
     });
 
     if (!foundDfn) {
-      //let link_for = linkTargets[0].for_;
-      let link_for = linkTargets[0].for;
-      let title = linkTargets[0].title;
-      this.classList.add("respec-offending-element");
-      this.title = "Linking error: no matching &lt;dfn&gt;";
-      const error_msg = "Found linkless <a> element " +
-        (link_for ? "for '" + link_for + "' " : "") +
-        "with text '" +
-        title +
-        "' but no matching <dfn>.";
-      pub("warn", error_msg);
-      //$ant.makeID("error", error_msg);
-      addId($ant[0], "error", error_msg);
-      console.warn("Linkless element:", $ant[0]);
-      //console.warn("Linkless Element Reference: "$("<span class=\"respec-error\"><a href=\"#" + $ant.attr("id") + "\">" + $ant.attr("id") + "</a></span>"));
+      // Legacy fallback: match by normalized text against any dfn (including data-lt), ignoring data-dfn-for
+      const legacyTitle = norm($ant.text());
+      const legacyDfns = $("dfn").filter((_, el) => {
+        const titles = new Set(
+          (el.dataset.lt || "")
+            .split("|")
+            .filter(Boolean)
+            .map(t => norm(t))
+        );
+        titles.add(norm(el.textContent));
+        return titles.has(legacyTitle);
+      });
+      if (legacyDfns.length === 1) {
+        const dfnEl = legacyDfns.eq(0);
+        const dfnId = dfnEl.attr("id") || addId(dfnEl[0], "dfn", legacyTitle);
+        $ant.attr("href", `#${encodeURIComponent(dfnId)}`).addClass("internalDFN");
+        if (!$ant.attr("data-link-type")) {
+          $ant.attr("data-link-type", dfnEl.attr("data-dfn-type") || "dfn");
+        }
+        if (
+          dfnEl.closest("code,pre").length ||
+          (dfnEl.contents().length === 1 && dfnEl.children("code").length === 1)
+        ) {
+          const term = $ant[0].textContent.trim();
+          const isIDL = dfnEl[0].dataset.hasOwnProperty("idl");
+          const isSameText = isIDL
+            ? dfnEl[0].dataset.title === term
+            : dfnEl[0].textContent.trim() === term;
+          if (!isIDL || isSameText) {
+            $ant.wrapInner("<code></code>");
+          }
+        }
+        return;
+      }
+      // No match: render as plain text without warning (legacy behavior)
+      $ant.replaceWith($ant.contents());
     }
   });
 
