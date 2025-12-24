@@ -1,6 +1,7 @@
 /**
  * Sets the defaults for W3C specs
  */
+import { definitionMap } from "../core/dfn-map.js";
 export const name = "pcisig/pcisig-defaults";
 
 /*const cgbg = new Set(["BG-DRAFT", "BG-FINAL", "CG-DRAFT", "CG-FINAL"]);
@@ -70,6 +71,8 @@ const pcisigDefaults = {
 export function run(conf) {
   // assign the defaults
   Object.assign(conf, { ...pcisigDefaults, ...conf });
+  // expose the collected definitions for legacy pcisig/link-to-dfn
+  Object.assign(conf, { definitionMap });
   //computed properties
   //Object.assign(conf, computeProps(conf));
 }
