@@ -582,13 +582,29 @@ function draw_regpict(divsvg, svg, reg) {
         height = box.height;
       }
     } catch (e) {
-      // getBBox can throw if the element isn't fully laid out yet.
+      // getBBox can throw if the element isn't fully laid out yet (e.g., in jsdom).
     }
-    if (width === 0) {
-      width = (fallbackStr || "").length * 8; // rough estimate per character
-    }
-    if (height === 0) {
-      height = textEl.clientHeight || 18; // assume 18px if unknown
+
+    // If we couldn't get a real box, fall back to an estimate based on font size.
+    if (width === 0 || height === 0) {
+      const text = (fallbackStr || textEl.textContent || "");
+      let fontSizePx = 0;
+      try {
+        fontSizePx =
+          parseFloat(textEl.getAttribute("font-size")) ||
+          parseFloat(getComputedStyle(textEl).fontSize);
+      } catch (e) {
+        // computed style not available in some runtimes (e.g., jsdom)
+      }
+      if (!fontSizePx || !isFinite(fontSizePx)) {
+        fontSizePx = 14; // sensible default (~11pt)
+      }
+      if (width === 0) {
+        width = text.length * fontSizePx * 0.6; // approximate average glyph width
+      }
+      if (height === 0) {
+        height = fontSizePx * 1.2; // approximate line height
+      }
     }
     return { width, height };
   }
