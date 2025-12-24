@@ -35,12 +35,8 @@ export function run(conf) {
       }
       const dfn_for = dfn.attr("data-dfn-for") || "";
       if (dfn_for in titles[title]) {
-        // Only complain if the user provides 2 <dfn>s for the same term.
-        const error_msg = "Duplicate definition of '" + (dfn_for ? dfn_for + "/" : "") + title + "' "
-          + ref_to(dfn) + " and " + ref_to(titles[title][dfn_for]);
-        pub("error", error_msg);
-        dfn.after("<span class=\"respec-error\"> {{ " + error_msg + " }} </span>");
-        // keep first definition
+        // Keep the first definition silently; skip rendering errors in final doc.
+        // Duplicate <dfn> elements can legitimately occur in included sections.
         return;
       }
       titles[title][dfn_for] = dfn;

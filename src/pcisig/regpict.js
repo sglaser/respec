@@ -1048,8 +1048,10 @@ function draw_regpict(divsvg, svg, reg) {
             if (!(forceFit || f.forceFit) && (hasValue ||
               ((text_width + 2) > (boxRight - boxLeft)) ||
               ((text_height + 2) > (cellHeight - cellInternalHeight)))) {
-              if (text_width > max_text_width) {
-                max_text_width = text_width;
+              // Track how much horizontal space we actually need when we push labels outside.
+              const neededWidth = rightOf(-0.5) + text_width + 4; // add a small pad
+              if (neededWidth > max_text_width) {
+                max_text_width = neededWidth;
               }
               svg.change(text,
                 {
