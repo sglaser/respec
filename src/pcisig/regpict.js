@@ -1048,15 +1048,17 @@ function draw_regpict(divsvg, svg, reg) {
             if (!(forceFit || f.forceFit) && (hasValue ||
               ((text_width + 2) > (boxRight - boxLeft)) ||
               ((text_height + 2) > (cellHeight - cellInternalHeight)))) {
-              // Move the label outside and, if needed, shrink to fit in the available exterior margin.
-              const externalSpace = Math.max(
-                0,
-                (maxFigWidth > 0 ? maxFigWidth : (max_text_width + rightOf(-1))) - rightOf(-0.5) - 4
-              );
-              if (externalSpace > 0 && text_width > externalSpace) {
-                const scale = Math.min(1, externalSpace / text_width);
-                svg.change(text, { "font-size": `${scale.toFixed(3)}em` });
-                ({ width: text_width, height: text_height } = measureText(text, f.name));
+              // Move the label outside and, if needed, shrink to fit in the available exterior margin
+              // without shrinking the whole figure.
+              const targetWidth =
+                maxFigWidth > 0 ? maxFigWidth : (max_text_width + rightOf(-1));
+              const available = Math.max(0, targetWidth - rightOf(-0.5) - 4);
+              if (available > 0 && text_width > available) {
+                const scale = Math.max(0.35, Math.min(1, available / text_width));
+                if (scale < 1) {
+                  svg.change(text, { "font-size": `${scale.toFixed(3)}em` });
+                  ({ width: text_width, height: text_height } = measureText(text, f.name));
+                }
               }
               svg.change(text,
                 {
