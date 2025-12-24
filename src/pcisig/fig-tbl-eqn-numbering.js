@@ -64,14 +64,16 @@ export function run(conf) {
     }
 
     // Convert Figure References using figNumMap
-    $("a.fig-ref > span.figno", doc).each(function () {
+    //$("a.fig-ref > span.figno", doc).each(function () {
+    $("a.fig-ref > bdi", doc).each(function () {
       let old_num = parseInt($(this).text(), 10);
       if (figNumMap.has(old_num)) {
         $(this).text(figNumMap.get(old_num));
       }
     });
     // Convert List of Figures using figNumMap
-    $("li.tofline > a.tocxref > span.figno", doc).each(function () {
+    //$("li.tofline > a.tocxref > span.figno", doc).each(function () {
+    $("li.tofline bdi.figno", doc).each(function () {
       let old_num = parseInt($(this).text(), 10);
       if (figNumMap.has(old_num)) {
         $(this).text(figNumMap.get(old_num));
