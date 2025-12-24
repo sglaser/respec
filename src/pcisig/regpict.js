@@ -961,9 +961,10 @@ function draw_regpict(divsvg, svg, reg) {
               ? "1 bit"
               : (f.msb - f.lsb + 1) + " bits");
           }
-          text = svg.text(g, (leftOf(f.msb) + rightOf(f.lsb)) / 2, cellTop + cellNameTop + cellHeight * (startRow + (endRow - startRow) / 2),
+          const fieldNameText = svg.text(g, (leftOf(f.msb) + rightOf(f.lsb)) / 2, cellTop + cellNameTop + cellHeight * (startRow + (endRow - startRow) / 2),
             "", {"class_": "regFieldName"});
-          addText(text, f.name);
+          addText(fieldNameText, f.name);
+          text = fieldNameText;
           if ((!f.isUnused) && (f.lsb <= visibleMSB) && (f.msb >= visibleLSB)) {
             let $temp_dom = $("<span></span>").prependTo(divsvg);
             //let unique_id = $temp_dom.makeID("regpict", (f.id ? f.id : (figName + "-" + f.name)));
@@ -972,6 +973,7 @@ function draw_regpict(divsvg, svg, reg) {
             svg.change(g, {id: unique_id});
           }
           let hasValue = false;
+          const valueTextElements = [];
           if ("value" in f) {
             if (Array.isArray(f.value) && f.value.length === (f.msb - f.lsb + 1)) {
               hasValue = true;
@@ -986,6 +988,7 @@ function draw_regpict(divsvg, svg, reg) {
                         " regFieldBitValue-msb" : ""))
                   });
                 addText(text, f.value[i]);
+                valueTextElements.push({ el: text, content: String(f.value[i]) });
               }
             } else if ((typeof(f.value) === "string") || (f.value instanceof String)) {
               if (f.value.length > 0) {
@@ -995,6 +998,7 @@ function draw_regpict(divsvg, svg, reg) {
                   "",
                   {"class_": "regFieldValue"});
                 addText(text, f.value);
+                valueTextElements.push({ el: text, content: f.value });
               }
             } else {
               text = svg.text(g, (leftOf(f.msb) + rightOf(f.lsb)) / 2, cellTop + cellValueTop + cellHeight * startRow,
@@ -1003,20 +1007,39 @@ function draw_regpict(divsvg, svg, reg) {
               addText(text, "INVALID VALUE");
             }
           }
-          // measure and shrink text if needed to fit inside the box
-          let { width: text_width, height: text_height } = measureText(text, f.name);
+          // measure field name text to check if it fits inside the box
+          let { width: text_width, height: text_height } = measureText(fieldNameText, f.name);
           const boxWidth = rightOf(left_to_right ? min(visibleMSB, f.msb) : max(visibleLSB, f.lsb)) -
             leftOf(left_to_right ? max(visibleLSB, f.lsb) : min(visibleMSB, f.msb));
           const boxHeight = cellHeight - cellInternalHeight;
           const safeW = boxWidth - 2;
           const safeH = boxHeight - 2;
-          if (safeW > 0 && safeH > 0 && (text_width > safeW || text_height > safeH)) {
+          // Scale field name ONLY if forceFit is enabled and it would overflow
+          // (when forceFit is false and text doesn't fit, it will be moved outside instead)
+          if ((forceFit || f.forceFit) && safeW > 0 && safeH > 0 && (text_width > safeW || text_height > safeH)) {
             const scaleW = safeW / text_width;
             const scaleH = safeH / text_height;
             const scale = Math.min(1, scaleW, scaleH);
             if (scale < 1) {
-              svg.change(text, { "font-size": `${scale.toFixed(3)}em` });
-              ({ width: text_width, height: text_height } = measureText(text, f.name));
+              svg.change(fieldNameText, { "font-size": `${scale.toFixed(3)}em` });
+              ({ width: text_width, height: text_height } = measureText(fieldNameText, f.name));
+            }
+          }
+          // Scale value text elements if they would overflow their cells (values always stay inside)
+          for (const valTextInfo of valueTextElements) {
+            const valEl = valTextInfo.el;
+            const valContent = valTextInfo.content;
+            let { width: valW, height: valH } = measureText(valEl, valContent);
+            // For individual bit values, the cell width is one bit wide
+            const valCellWidth = cellWidth - 2;
+            const valCellHeight = boxHeight - 2;
+            if (valCellWidth > 0 && valCellHeight > 0 && (valW > valCellWidth || valH > valCellHeight)) {
+              const scaleValW = valCellWidth / valW;
+              const scaleValH = valCellHeight / valH;
+              const scaleVal = Math.min(1, scaleValW, scaleValH);
+              if (scaleVal < 1) {
+                svg.change(valEl, { "font-size": `${scaleVal.toFixed(3)}em` });
+              }
             }
           }
           let boxLeft = leftOf(left_to_right ? max(visibleLSB, f.lsb) : min(visibleMSB, f.msb));
@@ -1056,11 +1079,11 @@ function draw_regpict(divsvg, svg, reg) {
               if (available > 0 && text_width > available) {
                 const scale = Math.max(0.35, Math.min(1, available / text_width));
                 if (scale < 1) {
-                  svg.change(text, { "font-size": `${scale.toFixed(3)}em` });
-                  ({ width: text_width, height: text_height } = measureText(text, f.name));
+                  svg.change(fieldNameText, { "font-size": `${scale.toFixed(3)}em` });
+                  ({ width: text_width, height: text_height } = measureText(fieldNameText, f.name));
                 }
               }
-              svg.change(text,
+              svg.change(fieldNameText,
                 {
                   x: rightOf(-0.5),
                   y: nextBitLine,
