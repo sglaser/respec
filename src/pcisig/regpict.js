@@ -1113,8 +1113,21 @@ function draw_regpict(divsvg, svg, reg) {
             if (!(forceFit || f.forceFit) && (hasValue || !fitsInBox)) {
               // Move the label outside and, if needed, shrink to fit in the available exterior margin
               // without shrinking the whole figure.
-              const targetWidth = max_text_width + rightOf(-1);
-              const available = Math.max(0, targetWidth - rightOf(-0.5) - 4);
+              const labelX = rightOf(-0.5);
+              const margin = 4;
+              const currentWidth = max_text_width + rightOf(-1);
+              const hardMaxWidth = (isRegister && maxFigWidth > 0) ? maxFigWidth : 0;
+              const effectiveMaxWidth = hardMaxWidth > 0 ? Math.max(hardMaxWidth, currentWidth) : 0;
+              let desiredWidth = labelX + text_width + margin;
+              let targetWidth = desiredWidth;
+              if (effectiveMaxWidth > 0) {
+                targetWidth = Math.min(desiredWidth, effectiveMaxWidth);
+              }
+              const requiredExtra = Math.max(0, targetWidth - rightOf(-1));
+              if (requiredExtra > max_text_width) {
+                max_text_width = requiredExtra;
+              }
+              const available = Math.max(0, targetWidth - labelX - margin);
               if (available > 0 && text_width > available) {
                 const scale = Math.min(1, available / text_width);
                 if (scale < 1) {
@@ -1124,7 +1137,7 @@ function draw_regpict(divsvg, svg, reg) {
               }
               svg.change(fieldNameText,
                 {
-                  x: rightOf(-0.5),
+                  x: labelX,
                   y: nextBitLine,
                   "class_": "regFieldName"
                 });
