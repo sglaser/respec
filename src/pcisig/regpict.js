@@ -586,6 +586,18 @@ function draw_regpict(divsvg, svg, reg) {
     }
 
     // If we couldn't get a real box, fall back to an estimate based on font size.
+    if (width === 0) {
+      try {
+        if (typeof textEl.getComputedTextLength === "function") {
+          const length = textEl.getComputedTextLength();
+          if (isFinite(length)) {
+            width = length;
+          }
+        }
+      } catch (e) {
+        // getComputedTextLength can throw if layout isn't ready.
+      }
+    }
     if (width === 0 || height === 0) {
       const text = (fallbackStr || textEl.textContent || "");
       let fontSizePx = 0;
@@ -607,6 +619,25 @@ function draw_regpict(divsvg, svg, reg) {
       }
     }
     return { width, height };
+  }
+
+  function scaleTextToFit(textEl, fallbackStr, maxW, maxH, minScale) {
+    let { width, height } = measureText(textEl, fallbackStr);
+    if (maxW <= 0 || maxH <= 0) {
+      return { width, height, scale: 1, applied: false };
+    }
+    if (width <= maxW && height <= maxH) {
+      return { width, height, scale: 1, applied: false };
+    }
+    const scaleW = maxW / width;
+    const scaleH = maxH / height;
+    const scale = Math.min(1, scaleW, scaleH);
+    if (scale < 1 && scale >= minScale) {
+      svg.change(textEl, { "font-size": `${scale.toFixed(3)}em` });
+      ({ width, height } = measureText(textEl, fallbackStr));
+      return { width, height, scale, applied: true };
+    }
+    return { width, height, scale, applied: false };
   }
 
   if (debug) {
@@ -1014,15 +1045,26 @@ function draw_regpict(divsvg, svg, reg) {
           const boxHeight = cellHeight - cellInternalHeight;
           const safeW = boxWidth - 2;
           const safeH = boxHeight - 2;
-          // Scale field name ONLY if forceFit is enabled and it would overflow
-          // (when forceFit is false and text doesn't fit, it will be moved outside instead)
-          if ((forceFit || f.forceFit) && safeW > 0 && safeH > 0 && (text_width > safeW || text_height > safeH)) {
-            const scaleW = safeW / text_width;
-            const scaleH = safeH / text_height;
-            const scale = Math.min(1, scaleW, scaleH);
-            if (scale < 1) {
-              svg.change(fieldNameText, { "font-size": `${scale.toFixed(3)}em` });
-              ({ width: text_width, height: text_height } = measureText(fieldNameText, f.name));
+          let fitsInBox = safeW > 0 && safeH > 0 && (text_width <= safeW && text_height <= safeH);
+          if (!fitsInBox && safeW > 0 && safeH > 0) {
+            if (forceFit || f.forceFit) {
+              ({ width: text_width, height: text_height } = scaleTextToFit(
+                fieldNameText,
+                f.name,
+                safeW,
+                safeH,
+                0
+              ));
+              fitsInBox = text_width <= safeW && text_height <= safeH;
+            } else if (!hasValue) {
+              ({ width: text_width, height: text_height } = scaleTextToFit(
+                fieldNameText,
+                f.name,
+                safeW,
+                safeH,
+                0.6
+              ));
+              fitsInBox = text_width <= safeW && text_height <= safeH;
             }
           }
           // Scale value text elements if they would overflow their cells (values always stay inside)
@@ -1068,16 +1110,13 @@ function draw_regpict(divsvg, svg, reg) {
           if ((f.lsb > visibleMSB) || (f.msb < visibleLSB)) {
             gAddClass[0] = "regFieldHidden";
           } else {
-            if (!(forceFit || f.forceFit) && (hasValue ||
-              ((text_width + 2) > (boxRight - boxLeft)) ||
-              ((text_height + 2) > (cellHeight - cellInternalHeight)))) {
+            if (!(forceFit || f.forceFit) && (hasValue || !fitsInBox)) {
               // Move the label outside and, if needed, shrink to fit in the available exterior margin
               // without shrinking the whole figure.
-              const targetWidth =
-                maxFigWidth > 0 ? maxFigWidth : (max_text_width + rightOf(-1));
+              const targetWidth = max_text_width + rightOf(-1);
               const available = Math.max(0, targetWidth - rightOf(-0.5) - 4);
               if (available > 0 && text_width > available) {
-                const scale = Math.max(0.35, Math.min(1, available / text_width));
+                const scale = Math.min(1, available / text_width);
                 if (scale < 1) {
                   svg.change(fieldNameText, { "font-size": `${scale.toFixed(3)}em` });
                   ({ width: text_width, height: text_height } = measureText(fieldNameText, f.name));
