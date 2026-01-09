@@ -621,6 +621,22 @@ function draw_regpict(divsvg, svg, reg) {
     return { width, height };
   }
 
+  function estimateTextWidth(textEl, fallbackStr) {
+    const text = (fallbackStr || textEl.textContent || "");
+    let fontSizePx = 0;
+    try {
+      fontSizePx =
+        parseFloat(textEl.getAttribute("font-size")) ||
+        parseFloat(getComputedStyle(textEl).fontSize);
+    } catch (e) {
+      // computed style not available in some runtimes (e.g., jsdom)
+    }
+    if (!fontSizePx || !isFinite(fontSizePx)) {
+      fontSizePx = 14; // sensible default (~11pt)
+    }
+    return text.length * fontSizePx * 0.65;
+  }
+
   function scaleTextToFit(textEl, fallbackStr, maxW, maxH, minScale) {
     let { width, height } = measureText(textEl, fallbackStr);
     if (maxW <= 0 || maxH <= 0) {
@@ -1113,21 +1129,29 @@ function draw_regpict(divsvg, svg, reg) {
             if (!(forceFit || f.forceFit) && (hasValue || !fitsInBox)) {
               // Move the label outside and, if needed, shrink to fit in the available exterior margin
               // without shrinking the whole figure.
+              const labelX = rightOf(-0.5);
               const targetWidth = max_text_width + rightOf(-1);
-              const available = Math.max(0, targetWidth - rightOf(-0.5) - 4);
-              const safetyPad = 6;
-              const safetyScale = 1.08;
-              const adjustedWidth = text_width * safetyScale + safetyPad;
-              if (available > 0 && adjustedWidth > available) {
-                const scale = Math.min(1, available / adjustedWidth);
+              const available = Math.max(0, targetWidth - labelX - 4);
+              const initialEstimate = estimateTextWidth(fieldNameText, f.name);
+              const initialWidth = Math.max(text_width, initialEstimate);
+              if (available > 0 && initialWidth > available) {
+                const scale = Math.min(1, available / initialWidth);
                 if (scale < 1) {
                   svg.change(fieldNameText, { "font-size": `${scale.toFixed(3)}em` });
                   ({ width: text_width, height: text_height } = measureText(fieldNameText, f.name));
                 }
+                const finalEstimate = estimateTextWidth(fieldNameText, f.name);
+                const finalWidth = Math.max(text_width, finalEstimate);
+                if (finalWidth > available) {
+                  svg.change(fieldNameText, {
+                    "textLength": `${available}`,
+                    "lengthAdjust": "spacingAndGlyphs"
+                  });
+                }
               }
               svg.change(fieldNameText,
                 {
-                  x: rightOf(-0.5),
+                  x: labelX,
                   y: nextBitLine,
                   "class_": "regFieldName"
                 });
