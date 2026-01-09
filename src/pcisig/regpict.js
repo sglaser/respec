@@ -1115,8 +1115,11 @@ function draw_regpict(divsvg, svg, reg) {
               // without shrinking the whole figure.
               const targetWidth = max_text_width + rightOf(-1);
               const available = Math.max(0, targetWidth - rightOf(-0.5) - 4);
-              if (available > 0 && text_width > available) {
-                const scale = Math.min(1, available / text_width);
+              const safetyPad = 6;
+              const safetyScale = 1.08;
+              const adjustedWidth = text_width * safetyScale + safetyPad;
+              if (available > 0 && adjustedWidth > available) {
+                const scale = Math.min(1, available / adjustedWidth);
                 if (scale < 1) {
                   svg.change(fieldNameText, { "font-size": `${scale.toFixed(3)}em` });
                   ({ width: text_width, height: text_height } = measureText(fieldNameText, f.name));
