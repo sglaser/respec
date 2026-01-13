@@ -1135,10 +1135,11 @@ function draw_regpict(divsvg, svg, reg) {
               const initialEstimate = estimateTextWidth(fieldNameText, f.name);
               const initialWidth = Math.max(text_width, initialEstimate);
               if (available > 0 && initialWidth > available) {
-                const safetyPad = 2;
-                const safetyScale = 1.02;
-                const effectiveAvailable = Math.max(0, (available - safetyPad) / safetyScale);
-                const scale = Math.min(1, effectiveAvailable / initialWidth);
+                // const safetyPad = 2;
+                // const safetyScale = 1.02;
+                // const effectiveAvailable = Math.max(0, (available - safetyPad) / safetyScale);
+                // const scale = Math.min(1, effectiveAvailable / initialWidth);
+                const scale = Math.min(1, available / initialWidth);
                 if (scale < 1) {
                   svg.change(fieldNameText, { "font-size": `${scale.toFixed(3)}em` });
                   ({ width: text_width, height: text_height } = measureText(fieldNameText, f.name));
