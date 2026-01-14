@@ -627,6 +627,7 @@ function draw_regpict(divsvg, svg, reg) {
     return text.length * fontSizePx * 0.9;
   }
 
+  /*
   function setFontSizePx(textEl, sizePx) {
     const safePx = Math.max(1, sizePx);
     const value = `${safePx.toFixed(2)}px`;
@@ -657,6 +658,7 @@ function draw_regpict(divsvg, svg, reg) {
     }
     return { width, height, applied: true };
   }
+  */
 
   function getFontSizePx(textEl) {
     let fontSizeRaw = "";
@@ -1179,14 +1181,19 @@ function draw_regpict(divsvg, svg, reg) {
               const labelX = rightOf(-0.5);
               const targetWidth = max_text_width + rightOf(-1);
               const available = Math.max(0, targetWidth - labelX - 4);
-              ({ width: text_width, height: text_height } =
-                scaleTextToWidthPx(fieldNameText, f.name, available));
+              // ({ width: text_width, height: text_height } =
+              //   scaleTextToWidthPx(fieldNameText, f.name, available));
               svg.change(fieldNameText,
                 {
                   x: labelX,
                   y: nextBitLine,
                   "class_": "regFieldName"
                 });
+                // Track actual label width to prevent cutoff
+              const actualLabelEnd = labelX + text_width + 10; // 10px padding
+              if (actualLabelEnd > max_text_width + rightOf(-1)) {
+                max_text_width = actualLabelEnd - rightOf(-1) + figLeft;
+              }
               p = svg.createPath();
               p.move(boxLeft, cellTop + cellHeight * (startRow + 1));
               p.line(((boxRight - boxLeft) / 2), bracketHeight, true);
