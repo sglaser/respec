@@ -627,6 +627,37 @@ function draw_regpict(divsvg, svg, reg) {
     return text.length * fontSizePx * 0.9;
   }
 
+  function setFontSizePx(textEl, sizePx) {
+    const safePx = Math.max(1, sizePx);
+    const value = `${safePx.toFixed(2)}px`;
+    if (textEl && textEl.style) {
+      textEl.style.fontSize = value;
+    }
+    svg.change(textEl, { "font-size": value });
+  }
+
+  function scaleTextToWidthPx(textEl, fallbackStr, maxW) {
+    const safeW = Math.max(0, maxW - 2);
+    let { width, height } = measureText(textEl, fallbackStr);
+    if (width === 0) {
+      width = estimateTextWidth(textEl, fallbackStr);
+    }
+    if (safeW <= 0 || width <= safeW) {
+      return { width, height, applied: false };
+    }
+    let scale = safeW / width;
+    const baseSize = getFontSizePx(textEl);
+    setFontSizePx(textEl, baseSize * scale);
+    ({ width, height } = measureText(textEl, fallbackStr));
+    if (width > safeW && width > 0) {
+      const currentSize = getFontSizePx(textEl);
+      scale = safeW / width;
+      setFontSizePx(textEl, currentSize * scale);
+      ({ width, height } = measureText(textEl, fallbackStr));
+    }
+    return { width, height, applied: true };
+  }
+
   function getFontSizePx(textEl) {
     let fontSizeRaw = "";
     try {
@@ -1148,20 +1179,8 @@ function draw_regpict(divsvg, svg, reg) {
               const labelX = rightOf(-0.5);
               const targetWidth = max_text_width + rightOf(-1);
               const available = Math.max(0, targetWidth - labelX - 4);
-              const initialEstimate = estimateTextWidth(fieldNameText, f.name);
-              const measuredWidth = Math.max(text_width, initialEstimate);
-              const safetyPad = 8;
-              const safetyScale = 1.2;
-              const requiredWidth = measuredWidth * safetyScale + safetyPad;
-              if (available > 0 && requiredWidth > available) {
-                const scale = Math.min(1, available / requiredWidth);
-                if (scale < 1) {
-                  const baseFontSizePx = getFontSizePx(fieldNameText);
-                  const scaledFontSizePx = Math.max(1, baseFontSizePx * scale);
-                  svg.change(fieldNameText, { "font-size": `${scaledFontSizePx.toFixed(2)}px` });
-                  ({ width: text_width, height: text_height } = measureText(fieldNameText, f.name));
-                }
-              }
+              ({ width: text_width, height: text_height } =
+                scaleTextToWidthPx(fieldNameText, f.name, available));
               svg.change(fieldNameText,
                 {
                   x: labelX,
