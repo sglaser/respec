@@ -623,18 +623,34 @@ function draw_regpict(divsvg, svg, reg) {
 
   function estimateTextWidth(textEl, fallbackStr) {
     const text = (fallbackStr || textEl.textContent || "");
-    let fontSizePx = 0;
+    const fontSizePx = getFontSizePx(textEl);
+    return text.length * fontSizePx * 0.9;
+  }
+
+  function getFontSizePx(textEl) {
+    let fontSizeRaw = "";
     try {
-      fontSizePx =
-        parseFloat(textEl.getAttribute("font-size")) ||
-        parseFloat(getComputedStyle(textEl).fontSize);
+      fontSizeRaw = textEl.getAttribute("font-size") || "";
     } catch (e) {
-      // computed style not available in some runtimes (e.g., jsdom)
+      fontSizeRaw = "";
+    }
+    if (!fontSizeRaw) {
+      try {
+        fontSizeRaw = getComputedStyle(textEl).fontSize || "";
+      } catch (e) {
+        fontSizeRaw = "";
+      }
+    }
+    const match = /^\s*([\d.]+)\s*([a-z%]*)\s*$/i.exec(fontSizeRaw || "");
+    let fontSizePx = match ? parseFloat(match[1]) : 0;
+    const unit = match ? match[2].toLowerCase() : "";
+    if (fontSizePx && unit === "pt") {
+      fontSizePx = fontSizePx * (96 / 72);
     }
     if (!fontSizePx || !isFinite(fontSizePx)) {
       fontSizePx = 14; // sensible default (~11pt)
     }
-    return text.length * fontSizePx * 0.7;
+    return fontSizePx;
   }
 
   function scaleTextToFit(textEl, fallbackStr, maxW, maxH, minScale) {
@@ -1134,13 +1150,15 @@ function draw_regpict(divsvg, svg, reg) {
               const available = Math.max(0, targetWidth - labelX - 4);
               const initialEstimate = estimateTextWidth(fieldNameText, f.name);
               const measuredWidth = Math.max(text_width, initialEstimate);
-              const safetyPad = 6;
-              const safetyScale = 1.1;
+              const safetyPad = 8;
+              const safetyScale = 1.2;
               const requiredWidth = measuredWidth * safetyScale + safetyPad;
               if (available > 0 && requiredWidth > available) {
                 const scale = Math.min(1, available / requiredWidth);
                 if (scale < 1) {
-                  svg.change(fieldNameText, { "font-size": `${scale.toFixed(3)}em` });
+                  const baseFontSizePx = getFontSizePx(fieldNameText);
+                  const scaledFontSizePx = Math.max(1, baseFontSizePx * scale);
+                  svg.change(fieldNameText, { "font-size": `${scaledFontSizePx.toFixed(2)}px` });
                   ({ width: text_width, height: text_height } = measureText(fieldNameText, f.name));
                 }
               }
