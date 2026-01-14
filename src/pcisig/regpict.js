@@ -634,7 +634,7 @@ function draw_regpict(divsvg, svg, reg) {
     if (!fontSizePx || !isFinite(fontSizePx)) {
       fontSizePx = 14; // sensible default (~11pt)
     }
-    return text.length * fontSizePx * 0.65;
+    return text.length * fontSizePx * 0.7;
   }
 
   function scaleTextToFit(textEl, fallbackStr, maxW, maxH, minScale) {
@@ -1133,13 +1133,12 @@ function draw_regpict(divsvg, svg, reg) {
               const targetWidth = max_text_width + rightOf(-1);
               const available = Math.max(0, targetWidth - labelX - 4);
               const initialEstimate = estimateTextWidth(fieldNameText, f.name);
-              const initialWidth = Math.max(text_width, initialEstimate);
-              if (available > 0 && initialWidth > available) {
-                const safetyPad = 2;
-                const safetyScale = 1.02;
-                const effectiveAvailable = Math.max(0, (available - safetyPad) / safetyScale);
-                const scale = Math.min(1, effectiveAvailable / initialWidth);
-                //const scale = Math.min(1, available / initialWidth);
+              const measuredWidth = Math.max(text_width, initialEstimate);
+              const safetyPad = 6;
+              const safetyScale = 1.1;
+              const requiredWidth = measuredWidth * safetyScale + safetyPad;
+              if (available > 0 && requiredWidth > available) {
+                const scale = Math.min(1, available / requiredWidth);
                 if (scale < 1) {
                   svg.change(fieldNameText, { "font-size": `${scale.toFixed(3)}em` });
                   ({ width: text_width, height: text_height } = measureText(fieldNameText, f.name));
