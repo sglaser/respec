@@ -9,6 +9,55 @@ import { pub } from "../core/pubsubhub.js";
 
 export const name = "pcisig/fig-tbl-eqn-numbering";
 
+const leadingLabelRegex = /^(?:figure|equation)\b\s*/i;
+const leadingPunctRegex = /^[\s:.-]+/;
+
+function stripLeadingLabelText(text) {
+  let cleaned = text;
+  let prev;
+  do {
+    prev = cleaned;
+    cleaned = cleaned.replace(leadingLabelRegex, "");
+    cleaned = cleaned.replace(leadingPunctRegex, "");
+  } while (cleaned !== prev);
+  return cleaned;
+}
+
+function stripLeadingLabelsFromTitle(titleElem) {
+  if (!titleElem) return;
+  let node = titleElem.firstChild;
+  while (node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const raw = node.nodeValue || "";
+      if (!raw.trim()) {
+        node = node.nextSibling;
+        continue;
+      }
+      const cleaned = stripLeadingLabelText(raw);
+      if (cleaned !== raw) {
+        node.nodeValue = cleaned;
+      }
+      if (!node.nodeValue.trim()) {
+        const next = node.nextSibling;
+        node.remove();
+        node = next;
+        continue;
+      }
+      break;
+    }
+    node = node.nextSibling;
+  }
+}
+
+function cleanListTitles(doc) {
+  $("li.tofline .fig-title", doc).each(function () {
+    stripLeadingLabelsFromTitle(this);
+  });
+  $("li.toeline .eqn-title", doc).each(function () {
+    stripLeadingLabelsFromTitle(this);
+  });
+}
+
 export function run(conf) {
   const doc = document;
   const numberByChapterRaw = conf.numberByChapter;
@@ -110,5 +159,6 @@ export function run(conf) {
       }
     });
   }
+  cleanListTitles(doc);
   //cb();
 }
