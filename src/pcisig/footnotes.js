@@ -30,6 +30,12 @@ function hasMeaningfulContent(node) {
       continue;
     }
     if (child.nodeType === Node.ELEMENT_NODE) {
+      if (child.classList?.contains("footnote-online")) {
+        continue;
+      }
+      if (child.tagName && child.tagName.toLowerCase() === "input") {
+        continue;
+      }
       const tag = child.tagName.toLowerCase();
       if (meaningfulEmptyTags.has(tag)) {
         return true;

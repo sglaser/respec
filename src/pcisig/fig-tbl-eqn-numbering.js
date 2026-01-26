@@ -47,9 +47,31 @@ function stripLeadingLabelsFromTitle(titleElem) {
   }
 }
 
-function cleanTitles(doc) {
-  $(".fig-title, .eqn-title, .tbl-title", doc).each(function () {
-    stripLeadingLabelsFromTitle(this);
+function normalizeListEntry($line, numberSelector, titleSelector) {
+  const $toc = $line.find("a.tocxref").first();
+  const $number = $toc.find(numberSelector).first();
+  const $title = $toc.find(titleSelector).first();
+  if (!$toc.length || !$number.length || !$title.length) {
+    return;
+  }
+  const numberClone = $number.clone();
+  const titleClone = $title.clone();
+  stripLeadingLabelsFromTitle(titleClone[0]);
+  $toc.empty();
+  $toc.append(numberClone);
+  $toc.append(document.createTextNode(" "));
+  $toc.append(titleClone);
+}
+
+function cleanListEntries(doc) {
+  $("li.tofline", doc).each(function () {
+    normalizeListEntry($(this), ".figno", ".fig-title");
+  });
+  $("li.toeline", doc).each(function () {
+    normalizeListEntry($(this), ".eqnno", ".eqn-title");
+  });
+  $("li.totline", doc).each(function () {
+    normalizeListEntry($(this), ".tblno", ".tbl-title");
   });
 }
 
@@ -154,6 +176,6 @@ export function run(conf) {
       }
     });
   }
-  cleanTitles(doc);
+  cleanListEntries(doc);
   //cb();
 }
