@@ -24,11 +24,15 @@ const meaningfulEmptyTags = new Set([
 function hasMeaningfulContent(node) {
   for (const child of node.childNodes) {
     if (child.nodeType === Node.TEXT_NODE) {
-      if ((child.nodeValue || "").replace(/\u00a0/g, " ").trim()) {
-        return true;
+        const text = (child.nodeValue || "")
+          .replace(/\u00a0/g, " ")
+          .replace(/^\s*[\d\w]+[.)]\s*/, "")
+          .trim();
+        if (text) {
+          return true;
+        }
+        continue;
       }
-      continue;
-    }
     if (child.nodeType === Node.ELEMENT_NODE) {
       if (child.classList?.contains("footnote-online")) {
         continue;
