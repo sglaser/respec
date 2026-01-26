@@ -47,7 +47,28 @@ function stripLeadingLabelsFromTitle(titleElem) {
   }
 }
 
-function normalizeListEntry($line, numberSelector, titleSelector) {
+function stripLeadingNumberPrefix(titleElem) {
+  const walker = document.createTreeWalker(
+    titleElem,
+    NodeFilter.SHOW_TEXT,
+    null
+  );
+  let node;
+  while ((node = walker.nextNode())) {
+    const raw = node.nodeValue || "";
+    const cleaned = raw.replace(/\u00a0/g, " ");
+    if (!cleaned.trim()) {
+      continue;
+    }
+    const updated = cleaned.replace(/^\s*\d+\s+/, "");
+    if (updated !== cleaned) {
+      node.nodeValue = updated;
+    }
+    break;
+  }
+}
+
+function normalizeListEntry($line, numberSelector, titleSelector, cleanLeadingNumber) {
   const $toc = $line.find("a.tocxref").first();
   const $number = $toc.find(numberSelector).first();
   const $title = $toc.find(titleSelector).first();
@@ -57,6 +78,9 @@ function normalizeListEntry($line, numberSelector, titleSelector) {
   const numberClone = $number.clone();
   const titleClone = $title.clone();
   stripLeadingLabelsFromTitle(titleClone[0]);
+  if (cleanLeadingNumber) {
+    stripLeadingNumberPrefix(titleClone[0]);
+  }
   $toc.empty();
   $toc.append(numberClone);
   $toc.append(document.createTextNode(" "));
@@ -65,13 +89,13 @@ function normalizeListEntry($line, numberSelector, titleSelector) {
 
 function cleanListEntries(doc) {
   $("li.tofline", doc).each(function () {
-    normalizeListEntry($(this), ".figno", ".fig-title");
+    normalizeListEntry($(this), ".figno", ".fig-title", false);
   });
   $("li.toeline", doc).each(function () {
-    normalizeListEntry($(this), ".eqnno", ".eqn-title");
+    normalizeListEntry($(this), ".eqnno", ".eqn-title", true);
   });
   $("li.totline", doc).each(function () {
-    normalizeListEntry($(this), ".tblno", ".tbl-title");
+    normalizeListEntry($(this), ".tblno", ".tbl-title", false);
   });
 }
 
