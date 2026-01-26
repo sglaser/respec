@@ -9,7 +9,7 @@ import { pub } from "../core/pubsubhub.js";
 
 export const name = "pcisig/fig-tbl-eqn-numbering";
 
-const leadingLabelRegex = /^(?:figure|equation)\b\s*/i;
+const leadingLabelRegex = /^(?:figure|equation|table)\b(?:\s+\d+(?:[.-]\d+)*)?\s*/i;
 const leadingPunctRegex = /^[\s:.-]+/;
 
 function stripLeadingLabelText(text) {
@@ -25,35 +25,30 @@ function stripLeadingLabelText(text) {
 
 function stripLeadingLabelsFromTitle(titleElem) {
   if (!titleElem) return;
-  let node = titleElem.firstChild;
-  while (node) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const raw = node.nodeValue || "";
-      if (!raw.trim()) {
-        node = node.nextSibling;
-        continue;
-      }
-      const cleaned = stripLeadingLabelText(raw);
-      if (cleaned !== raw) {
-        node.nodeValue = cleaned;
-      }
-      if (!node.nodeValue.trim()) {
-        const next = node.nextSibling;
-        node.remove();
-        node = next;
-        continue;
-      }
-      break;
+  const walker = document.createTreeWalker(
+    titleElem,
+    NodeFilter.SHOW_TEXT,
+    null
+  );
+  let node;
+  while ((node = walker.nextNode())) {
+    const raw = node.nodeValue || "";
+    if (!raw.replace(/\u00a0/g, " ").trim()) {
+      continue;
     }
-    node = node.nextSibling;
+    const cleaned = stripLeadingLabelText(raw);
+    if (cleaned !== raw) {
+      node.nodeValue = cleaned;
+    }
+    if (!node.nodeValue || !node.nodeValue.replace(/\u00a0/g, " ").trim()) {
+      continue;
+    }
+    break;
   }
 }
 
-function cleanListTitles(doc) {
-  $("li.tofline .fig-title", doc).each(function () {
-    stripLeadingLabelsFromTitle(this);
-  });
-  $("li.toeline .eqn-title", doc).each(function () {
+function cleanTitles(doc) {
+  $(".fig-title, .eqn-title, .tbl-title", doc).each(function () {
     stripLeadingLabelsFromTitle(this);
   });
 }
@@ -159,6 +154,6 @@ export function run(conf) {
       }
     });
   }
-  cleanListTitles(doc);
+  cleanTitles(doc);
   //cb();
 }

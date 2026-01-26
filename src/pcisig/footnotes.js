@@ -6,7 +6,7 @@
 //  Handles footnotes.
 
 // CONFIGURATION:
-import { pub } from "../core/pubsubhub.js";
+import { sub } from "../core/pubsubhub.js";
 
 export const name = "pcisig/footnotes";
 
@@ -40,6 +40,15 @@ function hasMeaningfulContent(node) {
     }
   }
   return false;
+}
+
+function removeEmptyFootnotes(doc) {
+  doc.querySelectorAll("span.footnote").forEach(footnote => {
+    const content = footnote.querySelector("span.footnote-contents") || footnote;
+    if (!hasMeaningfulContent(content)) {
+      footnote.remove();
+    }
+  });
 }
 
 export function run(conf) {
@@ -77,5 +86,12 @@ export function run(conf) {
     let input = "<input type='checkbox' name='" + id + "' value='#" + id + "'></input>";
     $footnote.wrapInner(span).prepend(input);
   });
+  sub(
+    "end-all",
+    () => {
+      removeEmptyFootnotes(doc);
+    },
+    { once: true }
+  );
   //cb();
 }
