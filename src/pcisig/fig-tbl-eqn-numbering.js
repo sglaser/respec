@@ -77,6 +77,7 @@ function normalizeListEntry($line, numberSelector, titleSelector, cleanLeadingNu
   }
   const numberClone = $number.clone();
   const titleClone = $title.clone();
+  titleClone.find(".footnote").remove();
   stripLeadingLabelsFromTitle(titleClone[0]);
   if (cleanLeadingNumber) {
     stripLeadingNumberPrefix(titleClone[0]);

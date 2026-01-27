@@ -52,29 +52,10 @@ function hasMeaningfulContent(node) {
   return false;
 }
 
-function getFootnoteText(footnote) {
-  const clone = footnote.cloneNode(true);
-  clone.querySelectorAll("input, .footnote-online").forEach(el => el.remove());
-  const contents = clone.querySelector(".footnote-contents") || clone;
-  return (contents.textContent || "").replace(/\u00a0/g, " ").trim();
-}
-
-function isOnlyFootnoteNumber(text, number) {
-  const numberPattern = new RegExp(
-    `^[\\s\\[(]*${number}[\\s\\]\\).,:-]*$`
-  );
-  return numberPattern.test(text);
-}
-
 function removeEmptyFootnotes(doc) {
-  doc.querySelectorAll("span.footnote").forEach((footnote, index) => {
+  doc.querySelectorAll("span.footnote").forEach(footnote => {
     const content = footnote.querySelector("span.footnote-contents") || footnote;
     if (!hasMeaningfulContent(content)) {
-      footnote.remove();
-      return;
-    }
-    const text = getFootnoteText(footnote);
-    if (!text || isOnlyFootnoteNumber(text, index + 1)) {
       footnote.remove();
     }
   });
