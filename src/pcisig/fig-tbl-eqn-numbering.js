@@ -60,9 +60,17 @@ function stripLeadingNumberPrefix(titleElem) {
     if (!cleaned.trim()) {
       continue;
     }
-    const updated = cleaned.replace(/^\s*\d+\s+/, "");
+    if (/^\s*\d+[\s\].,:-]*$/.test(cleaned)) {
+      node.remove();
+      continue;
+    }
+    const updated = cleaned.replace(/^\s*\d+[\s\].,:-]*/, "");
     if (updated !== cleaned) {
       node.nodeValue = updated;
+      if (!updated.trim()) {
+        node.remove();
+        continue;
+      }
     }
     break;
   }
