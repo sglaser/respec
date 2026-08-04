@@ -16,6 +16,28 @@ import { restructure } from "./sections.js";
 export const name = "core/data-include";
 
 /**
+ * `data-include-format="first-section"` is a PCI-SIG convention: the included
+ * file is a standalone ReSpec document in its own right (with its own
+ * boilerplate and, often, a trailing block of placeholder stub sections used
+ * to satisfy cross-references when the file is previewed on its own). The
+ * single section actually meant to be pulled into the master document is
+ * marked with `data-top="yes"` there, and it shares its `id` with the
+ * placeholder element that's including it. Grabbing just that section's
+ * contents (rather than the whole fetched document body) avoids nesting a
+ * second, duplicate-id copy of the placeholder's own section inside itself,
+ * and drops any trailing placeholder stubs along with it.
+ * @param {string} rawHtml
+ * @param {string} targetId
+ */
+function extractFirstSection(rawHtml, targetId) {
+  const doc = new DOMParser().parseFromString(rawHtml, "text/html");
+  const candidates = [...doc.querySelectorAll('[data-top="yes"]')];
+  const matched =
+    candidates.find(section => section.id === targetId) || candidates[0];
+  return matched ? matched.innerHTML : rawHtml;
+}
+
+/**
  * @param {HTMLElement} el
  * @param {string} data
  * @param {object} options
@@ -26,6 +48,8 @@ function fillWithText(el, data, { replace }) {
   let fill = data;
   if (includeFormat === "markdown") {
     fill = markdownToHtml(fill);
+  } else if (includeFormat === "first-section") {
+    fill = extractFirstSection(fill, el.id);
   }
 
   if (includeFormat === "text") {
@@ -75,14 +99,24 @@ function removeIncludeAttributes(el) {
 }
 
 export async function run() {
-  await runIncludes(document, 1);
+  await runIncludes(document, 1, document.baseURI);
 }
 
 /**
+ * A nested `data-include` (one found inside a file that was itself pulled in
+ * by an earlier include) commonly points to a sibling file with a bare
+ * relative path, e.g. `sect-logical-sub-block.html` written inside
+ * `Chapter-4/Chapter-4.html`. `fetch()` resolves relative URLs against the
+ * page's own URL, not against whichever included file happened to contain
+ * the reference, so without tracking a per-level base URL those nested
+ * fetches resolve to the wrong path and silently 404. `baseURL` is threaded
+ * through the recursion so each level resolves against the file that
+ * actually contained its `data-include` attribute.
  * @param {HTMLElement | Document} root
  * @param {number} currentDepth
+ * @param {string} baseURL
  */
-async function runIncludes(root, currentDepth) {
+async function runIncludes(root, currentDepth, baseURL) {
   /** @type {NodeListOf<HTMLElement>} */
   const includables = root.querySelectorAll("[data-include]");
   const promisesToInclude = Array.from(includables).map(async el => {
@@ -90,15 +124,19 @@ async function runIncludes(root, currentDepth) {
     if (!url) {
       return; // just skip it
     }
+    const resolvedURL = new URL(url, baseURL).href;
     const id = `include-${String(Math.random()).slice(2)}`;
     el.dataset.includeId = id;
     try {
-      const response = await fetch(url);
+      const response = await fetch(resolvedURL);
       const text = await response.text();
-      processResponse(text, id, url);
-      if (currentDepth < 3) {
-        // For performance reasons, only allow limited nesting.
-        await runIncludes(el, currentDepth + 1);
+      processResponse(text, id, resolvedURL);
+      if (currentDepth < 5) {
+        // For performance reasons, only allow limited nesting. (The PCI-SIG
+        // chapter-splitting convention needs up to 4 levels of `data-include`
+        // to reach its deepest subsections, so this leaves a little headroom
+        // beyond that.)
+        await runIncludes(el, currentDepth + 1, resolvedURL);
       }
     } catch (err) {
       const msg = `\`data-include\` failed: \`${url}\` (${err.message}).`;

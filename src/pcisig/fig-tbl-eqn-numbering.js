@@ -108,6 +108,31 @@ function cleanListEntries(doc) {
   });
 }
 
+// core/anchor-expander clones the full target heading (section number and
+// title) into `a.sec-ref` links. PCI-SIG convention is to reference sections
+// by number only, e.g. "Section 4.1", so strip the title back out here, once
+// core/structure has had a chance to number the sections.
+function normalizeSectionRefs(doc) {
+  $("a.sec-ref", doc).each(function () {
+    const $ref = $(this);
+    const $secno = $ref.find(".secno").first();
+    if (!$secno.length) {
+      // No section number available (e.g. an introductory section); leave
+      // the title-based text as a fallback.
+      return;
+    }
+    const secnoText = $secno
+      .text()
+      .replace(/ /g, " ")
+      .trim()
+      .replace(/\.$/, "");
+    if (!secnoText) {
+      return;
+    }
+    $ref.empty().text(`Section ${secnoText}`);
+  });
+}
+
 export function run(conf) {
   const doc = document;
   const numberByChapterRaw = conf.numberByChapter;
@@ -210,5 +235,6 @@ export function run(conf) {
     });
   }
   cleanListEntries(doc);
+  normalizeSectionRefs(doc);
   //cb();
 }

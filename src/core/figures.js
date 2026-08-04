@@ -57,7 +57,7 @@ export function run() {
   if (tof.length && tofElement) {
     decorateTableOfFigures(tofElement);
     tofElement.append(
-      html`<h1>${l10n.list_of_figures}</h1>`,
+      html`<h2>${l10n.list_of_figures}</h2>`,
       html`<ul class="tof">
         ${tof}
       </ul>`
