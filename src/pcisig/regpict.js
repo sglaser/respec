@@ -1602,15 +1602,7 @@ figure span.json {
       }
 
       $("pre.json,div.json,span.json", $fig).each(function () {
-        let temp2 = {};
-        try {
-          temp2 = JSON.parse(this.textContent);
-          $.extend(true, json, temp2);
-          $(this).remove();
-        } catch (e) {
-          $fig.before("<p class=\"issue\">Invalid JSON in pre.json, div.json, or span.json</p>");
-          $(this).addClass("respec-error");
-        }
+        merge_json(json, this);
       });
 
       if ($fig.hasClass("pcisig_reg") && json.hasOwnProperty("table")) {
@@ -1659,7 +1651,7 @@ figure span.json {
           // console.log("result=" + JSON.stringify(result, null, 2));
           $(me).remove();
         } catch (e) {
-          $tbl.before("<p class=\"issue\">Invalid JSON in next merge_json</p>");
+          $fig.before("<p class=\"issue\">Invalid JSON in pre.json, div.json, or span.json</p>");
           $(me).addClass("respec-error");
         }
       }
