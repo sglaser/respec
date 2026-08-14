@@ -83,7 +83,7 @@ function createResourceHints() {
     },
     {
       hint: "preload", // all specs show the logo.
-      href: "https://sglaser.github.io/respec/Spec/StyleSheets/2017/logos/pci_express_PMS.svg",
+      href: "../Art/pci_express_PMS.svg",
       as: "image",
     },
   ]

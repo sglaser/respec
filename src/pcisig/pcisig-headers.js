@@ -709,6 +709,17 @@ export function run(conf) {
     pub("error", "Recommendations must have an errata link.");
   conf.isUnofficial = conf.specStatus === "unofficial";
   conf.prependPCISIG = !conf.isUnofficial;
+  // Nothing else ever sets these, so without an explicit author override
+  // the PCI Express logo would never render. Every spec is meant to show
+  // it by default (see the "all specs show the logo" preload hint in
+  // pcisig-style.js); the plain PCI-SIG logo variant has no such default,
+  // it's opt-in only.
+  if (typeof conf.prependPCIeLogo === "undefined") {
+    conf.prependPCIeLogo = !conf.isUnofficial;
+  }
+  if (typeof conf.prependPCISIGLogo === "undefined") {
+    conf.prependPCISIGLogo = false;
+  }
   conf.isWD = conf.specStatus === "WD" || conf.specStatus === "WD-CWG" || conf.specStatus === "WD-MEM" || conf.specStatus === "WD-FINAL";
   conf.isRC = conf.specStatus === "RC" || conf.specStatus === "RC-CWG" || conf.specStatus === "RC-MEM" || conf.specStatus === "RC-FINAL";
   conf.isPUB = conf.specStatus === "PUB" || conf.specStatus === "PUB-CWG" || conf.specStatus === "PUB-MEM";
@@ -744,7 +755,23 @@ export function run(conf) {
 // insert into document and mark with microformat
   let bp;
   bp = headersTmpl(conf);
-  $("body", doc).prepend($(bp)).addClass("h-entry");
+  const $header = $(bp);
+  $("body", doc).prepend($header).addClass("h-entry");
+
+  // The template hardcodes both logos' `src` to a github.io URL that no
+  // longer resolves. Point them at the local copy every PCI-SIG document
+  // keeps alongside its HTML (the same convention `cssOverride` relies on),
+  // unless the author supplied their own path.
+  if (conf.prependPCIeLogo) {
+    $header
+      .find("img[alt='PCI Express Logo']")
+      .attr("src", conf.pcieLogoOverride || "../Art/pci_express_PMS.svg");
+  }
+  if (conf.prependPCISIGLogo) {
+    $header
+      .find("img[alt='PCI-SIG Logo']")
+      .attr("src", conf.pcisigLogoOverride || "../Art/pci_sig_logo_PMS_273.svg");
+  }
 
 // invent toc if not already present
   if (!document.body.querySelector("#toc")) {
