@@ -761,16 +761,26 @@ export function run(conf) {
   // The template hardcodes both logos' `src` to a github.io URL that no
   // longer resolves. Point them at the local copy every PCI-SIG document
   // keeps alongside its HTML (the same convention `cssOverride` relies on),
-  // unless the author supplied their own path.
+  // unless the author supplied their own path. Also tag the wrapping anchor
+  // with a class of its own: `Art/base.css` still carries a W3C-logo rule
+  // (`.head p:not(.copyright):first-child > a { float: right; }`) that this
+  // anchor matches incidentally, since it happens to be the first link in
+  // the first paragraph of the header too. A dedicated class lets PCI-SIG's
+  // stylesheet override that rule for this logo specifically instead of
+  // having to touch or remove the shared one.
   if (conf.prependPCIeLogo) {
     $header
       .find("img[alt='PCI Express Logo']")
-      .attr("src", conf.pcieLogoOverride || "../Art/pci_express_PMS.svg");
+      .attr("src", conf.pcieLogoOverride || "../Art/pci_express_PMS.svg")
+      .parent("a")
+      .addClass("pcisig-logo");
   }
   if (conf.prependPCISIGLogo) {
     $header
       .find("img[alt='PCI-SIG Logo']")
-      .attr("src", conf.pcisigLogoOverride || "../Art/pci_sig_logo_PMS_273.svg");
+      .attr("src", conf.pcisigLogoOverride || "../Art/pci_sig_logo_PMS_273.svg")
+      .parent("a")
+      .addClass("pcisig-logo");
   }
 
 // invent toc if not already present
