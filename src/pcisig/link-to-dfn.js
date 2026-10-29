@@ -14,6 +14,35 @@ function ref_to(dfn) {
   return (dfn_id !== undefined) ? ("<a href=\"#" + encodeURIComponent(dfn_id) + "\">" + dfn_id + "</a>") : "";
 }
 
+/**
+ * Index every <dfn> once by its normalized titles (data-lt parts and text), so
+ * the fallback lookups below are O(1) per link instead of rescanning (and
+ * re-normalizing) every <dfn> in the document for every unresolved link.
+ * @returns {Map<string, {el: HTMLElement, forList: string[]|null}[]>}
+ */
+function buildDfnTitleIndex() {
+  const index = new Map();
+  for (const el of document.querySelectorAll("dfn")) {
+    const keys = new Set(
+      (el.dataset.lt || "")
+        .split("|")
+        .filter(Boolean)
+        .map(t => norm(t))
+    );
+    keys.add(norm(el.textContent));
+    const forList = el.dataset.dfnFor
+      ? el.dataset.dfnFor.split(",").map(s => s.trim())
+      : null;
+    const entry = { el, forList };
+    for (const key of keys) {
+      let list = index.get(key);
+      if (!list) index.set(key, (list = []));
+      list.push(entry);
+    }
+  }
+  return index;
+}
+
 export function run(conf) {
   const doc = document;
   doc.normalize();
@@ -46,6 +75,8 @@ export function run(conf) {
     }
 
   });
+
+  const dfnTitleIndex = buildDfnTitleIndex();
 
   $("a:not([href]):not([data-cite]):not(.logo)").each(function () {
     let $ant = $(this);
@@ -92,24 +123,14 @@ export function run(conf) {
       }
       // fallback: search all dfns by normalized text/data-lt with matching dfn-for (if any)
       const normTitle = norm(target.title);
-      const candidates = $("dfn").filter((_, el) => {
-        const forMatch =
-          !target.for ||
-          !el.dataset.dfnFor ||
-          el.dataset.dfnFor
-            .split(",")
-            .map(s => s.trim())
-            .includes(target.for);
-        if (!forMatch) return false;
-        const titles = new Set(
-          (el.dataset.lt || "")
-            .split("|")
-            .filter(Boolean)
-            .map(t => norm(t))
-        );
-        titles.add(norm(el.textContent));
-        return titles.has(normTitle);
-      });
+      const candidates = $(
+        (dfnTitleIndex.get(normTitle) || [])
+          .filter(
+            ({ forList }) =>
+              !target.for || !forList || forList.includes(target.for)
+          )
+          .map(({ el }) => el)
+      );
       if (candidates.length === 1) {
         const dfn = candidates.eq(0);
         if (dfn[0].dataset.cite) {
@@ -142,16 +163,7 @@ export function run(conf) {
     if (!foundDfn) {
       // Legacy fallback: match by normalized text against any dfn (including data-lt), ignoring data-dfn-for
       const legacyTitle = norm($ant.text());
-      const legacyDfns = $("dfn").filter((_, el) => {
-        const titles = new Set(
-          (el.dataset.lt || "")
-            .split("|")
-            .filter(Boolean)
-            .map(t => norm(t))
-        );
-        titles.add(norm(el.textContent));
-        return titles.has(legacyTitle);
-      });
+      const legacyDfns = $((dfnTitleIndex.get(legacyTitle) || []).map(({ el }) => el));
       if (legacyDfns.length === 1) {
         const dfnEl = legacyDfns.eq(0);
         const dfnId = dfnEl.attr("id") || addId(dfnEl[0], "dfn", legacyTitle);
